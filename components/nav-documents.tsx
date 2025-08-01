@@ -1,12 +1,7 @@
 "use client"
 
-import {
-  IconDots,
-  IconFolder,
-  IconShare3,
-  IconTrash,
-  type Icon,
-} from "@tabler/icons-react"
+import { IconDots, IconFolder, IconShare3, IconTrash, type Icon } from "@tabler/icons-react"
+import { useRouter } from "next/navigation" // Use next/navigation for App Router
 
 import {
   DropdownMenu,
@@ -25,16 +20,34 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
+type PageName =
+  | "dashboard"
+  | "single-payment"
+  | "bulk-upload"
+  | "approvals"
+  | "analytics"
+  | "transactions"
+  | "settings"
+  | "help"
+  | "reports"
+  | "templates"
+  | "merchants"
+
 export function NavDocuments({
   items,
+  onNavigate,
+  currentPath, // Pass currentPath as a prop
 }: {
   items: {
     name: string
-    url: string
+    page: PageName
     icon: Icon
   }[]
+  onNavigate: (page: PageName) => void
+  currentPath: string // Define prop type
 }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -43,17 +56,17 @@ export function NavDocuments({
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
+              <button
+                onClick={() => onNavigate(item.page)}
+                className={currentPath === `/${item.page}` ? "data-[active=true]" : ""} // Use currentPath
+              >
                 <item.icon />
                 <span>{item.name}</span>
-              </a>
+              </button>
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuAction
-                  showOnHover
-                  className="data-[state=open]:bg-accent rounded-sm"
-                >
+                <SidebarMenuAction showOnHover className="data-[state=open]:bg-accent rounded-sm">
                   <IconDots />
                   <span className="sr-only">More</span>
                 </SidebarMenuAction>

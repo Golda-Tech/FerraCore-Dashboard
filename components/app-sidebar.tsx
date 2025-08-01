@@ -1,20 +1,17 @@
 "use client"
 
-import * as React from "react"
+import type * as React from "react"
+import { useRouter, usePathname } from "next/navigation" // Use next/navigation for App Router
 import {
-  IconCamera,
+  IconBuildingBank,
   IconChartBar,
+  IconCreditCard,
   IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconFolder,
+  IconFileUpload,
   IconHelp,
+  IconHistory,
   IconInnerShadowTop,
-  IconListDetails,
   IconReport,
-  IconSearch,
   IconSettings,
   IconUsers,
 } from "@tabler/icons-react"
@@ -32,149 +29,131 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { logout } from "@/lib/auth" // Import logout from lib/auth
+
+type PageName =
+  | "dashboard"
+  | "single-payment"
+  | "bulk-upload"
+  | "approvals"
+  | "analytics"
+  | "transactions"
+  | "settings"
+  | "help"
+  | "reports"
+  | "templates"
+  | "merchants"
 
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "John Merchant",
+    email: "john@firstbank.com",
+    avatar: "/placeholder.svg?height=32&width=32",
   },
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      page: "dashboard",
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
-      url: "#",
-      icon: IconListDetails,
+      title: "Single Payment",
+      page: "single-payment",
+      icon: IconCreditCard,
+    },
+    {
+      title: "Bulk Upload",
+      page: "bulk-upload",
+      icon: IconFileUpload,
+    },
+    {
+      title: "Approvals",
+      page: "approvals",
+      icon: IconUsers,
     },
     {
       title: "Analytics",
-      url: "#",
+      page: "analytics",
       icon: IconChartBar,
     },
     {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
+      title: "Transactions",
+      page: "transactions",
+      icon: IconHistory,
     },
     {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
-    },
-  ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
+      title: "Merchants",
+      page: "merchants",
+      icon: IconBuildingBank,
     },
   ],
   navSecondary: [
     {
       title: "Settings",
-      url: "#",
+      page: "settings",
       icon: IconSettings,
     },
     {
       title: "Get Help",
-      url: "#",
+      page: "help",
       icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
     },
   ],
   documents: [
     {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
       name: "Reports",
-      url: "#",
+      page: "reports",
       icon: IconReport,
     },
     {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
+      name: "Templates",
+      page: "templates",
+      icon: IconFileUpload,
     },
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
+
+export function AppSidebar({ ...props }: AppSidebarProps) {
+  const router = useRouter()
+  const pathname = usePathname() // Use usePathname for current path
+
+  const handleNavigation = (page: PageName) => {
+    router.push(`/${page}`)
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/login")
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="#">
+            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
+              <button onClick={() => handleNavigation("dashboard")}>
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
+                <span className="text-base font-semibold">Collections Gateway</span>
+              </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={data.navMain} onNavigate={handleNavigation} currentPath={pathname} />
+        <NavDocuments items={data.documents} onNavigate={handleNavigation} currentPath={pathname} />
+        <NavSecondary
+          items={data.navSecondary}
+          onNavigate={handleNavigation}
+          currentPath={pathname}
+          className="mt-auto"
+        />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={data.user} onLogout={handleLogout} />
       </SidebarFooter>
     </Sidebar>
   )

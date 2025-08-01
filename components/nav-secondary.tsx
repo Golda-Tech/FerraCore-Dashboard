@@ -1,7 +1,8 @@
 "use client"
 
-import * as React from "react"
-import { type Icon } from "@tabler/icons-react"
+import type * as React from "react"
+import type { Icon } from "@tabler/icons-react"
+import { useRouter } from "next/navigation" // Use next/navigation for App Router
 
 import {
   SidebarGroup,
@@ -11,16 +12,35 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
+type PageName =
+  | "dashboard"
+  | "single-payment"
+  | "bulk-upload"
+  | "approvals"
+  | "analytics"
+  | "transactions"
+  | "settings"
+  | "help"
+  | "reports"
+  | "templates"
+  | "merchants"
+
 export function NavSecondary({
   items,
+  onNavigate,
+  currentPath, // Pass currentPath as a prop
   ...props
 }: {
   items: {
     title: string
-    url: string
+    page: PageName
     icon: Icon
   }[]
+  onNavigate: (page: PageName) => void
+  currentPath: string // Define prop type
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
+  const router = useRouter()
+
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
@@ -28,10 +48,13 @@ export function NavSecondary({
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
-                <a href={item.url}>
+                <button
+                  onClick={() => onNavigate(item.page)}
+                  className={currentPath === `/${item.page}` ? "data-[active=true]" : ""} // Use currentPath
+                >
                   <item.icon />
                   <span>{item.title}</span>
-                </a>
+                </button>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
