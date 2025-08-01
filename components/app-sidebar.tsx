@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import type * as React from "react"
-import { useRouter, usePathname } from "next/navigation" // Use next/navigation for App Router
+import type * as React from "react";
+import { useRouter, usePathname } from "next/navigation"; // Use next/navigation for App Router
 import {
   IconBuildingBank,
   IconChartBar,
@@ -14,12 +14,12 @@ import {
   IconReport,
   IconSettings,
   IconUsers,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
-import { NavDocuments } from "@/components/nav-documents"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavDocuments } from "@/components/nav-documents";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -28,8 +28,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { logout } from "@/lib/auth" // Import logout from lib/auth
+} from "@/components/ui/sidebar";
+import { logout } from "@/lib/auth"; // Import logout from lib/auth
 
 type PageName =
   | "dashboard"
@@ -42,7 +42,7 @@ type PageName =
   | "help"
   | "reports"
   | "templates"
-  | "merchants"
+  | "merchants";
 
 const data = {
   user: {
@@ -53,98 +53,106 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      page: "dashboard",
+      page: "dashboard" as PageName,
       icon: IconDashboard,
     },
     {
       title: "Single Payment",
-      page: "single-payment",
+      page: "single-payment" as PageName,
       icon: IconCreditCard,
     },
     {
       title: "Bulk Upload",
-      page: "bulk-upload",
+      page: "bulk-upload" as PageName,
       icon: IconFileUpload,
     },
     {
       title: "Approvals",
-      page: "approvals",
+      page: "approvals" as PageName,
       icon: IconUsers,
     },
     {
       title: "Analytics",
-      page: "analytics",
+      page: "analytics" as PageName,
       icon: IconChartBar,
     },
     {
       title: "Transactions",
-      page: "transactions",
+      page: "transactions" as PageName,
       icon: IconHistory,
-    },
-    {
-      title: "Merchants",
-      page: "merchants",
-      icon: IconBuildingBank,
     },
   ],
   navSecondary: [
     {
       title: "Settings",
-      page: "settings",
+      page: "settings" as PageName,
       icon: IconSettings,
     },
     {
       title: "Get Help",
-      page: "help",
+      page: "help" as PageName,
       icon: IconHelp,
     },
   ],
   documents: [
-    {
-      name: "Reports",
-      page: "reports",
-      icon: IconReport,
-    },
-    {
-      name: "Templates",
-      page: "templates",
-      icon: IconFileUpload,
-    },
+    // {
+    //   name: "Reports",
+    //   page: "reports" as PageName,
+    //   icon: IconReport,
+    // },
+    // {
+    //   name: "Templates",
+    //   page: "templates" as PageName,
+    //   icon: IconFileUpload,
+    // },
   ],
-}
+};
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
 
 export function AppSidebar({ ...props }: AppSidebarProps) {
-  const router = useRouter()
-  const pathname = usePathname() // Use usePathname for current path
+  const router = useRouter();
+  const pathname = usePathname(); // Use usePathname for current path
 
   const handleNavigation = (page: PageName) => {
-    router.push(`/${page}`)
-  }
+    router.push(`/${page}`);
+  };
 
   const handleLogout = async () => {
-    await logout()
-    router.push("/login")
-  }
+    await logout();
+    router.push("/login");
+  };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:!p-1.5"
+            >
               <button onClick={() => handleNavigation("dashboard")}>
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Collections Gateway</span>
+                <span className="text-base font-semibold">
+                  Collections Gateway
+                </span>
               </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} onNavigate={handleNavigation} currentPath={pathname} />
-        <NavDocuments items={data.documents} onNavigate={handleNavigation} currentPath={pathname} />
+        <NavMain
+          items={data.navMain}
+          onNavigate={handleNavigation}
+          currentPath={pathname}
+        />
+        <NavDocuments
+          items={data.documents}
+          onNavigate={handleNavigation}
+          currentPath={pathname}
+        />
         <NavSecondary
           items={data.navSecondary}
           onNavigate={handleNavigation}
@@ -156,5 +164,5 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
         <NavUser user={data.user} onLogout={handleLogout} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
