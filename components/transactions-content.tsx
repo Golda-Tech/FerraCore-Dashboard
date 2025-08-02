@@ -1,5 +1,5 @@
-"use client"
-import { useState } from "react"
+"use client";
+import { useState } from "react";
 import {
   IconCircleCheckFilled,
   IconCircleXFilled,
@@ -9,17 +9,42 @@ import {
   IconLoader,
   IconSearch,
   IconX,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Extended transaction data
 const allTransactions = [
@@ -139,64 +164,78 @@ const allTransactions = [
     transactionId: null,
     rejectionReason: "Invalid recipient details",
   },
-]
+];
 
 const getStatusIcon = (status: string) => {
   switch (status) {
     case "Completed":
-      return <IconCircleCheckFilled className="h-4 w-4 text-green-500" />
+      return <IconCircleCheckFilled className="h-4 w-4 text-green-500" />;
     case "Processing":
-      return <IconLoader className="h-4 w-4 text-blue-500 animate-spin" />
+      return <IconLoader className="h-4 w-4 text-blue-500 animate-spin" />;
     case "Failed":
-      return <IconCircleXFilled className="h-4 w-4 text-red-500" />
+      return <IconCircleXFilled className="h-4 w-4 text-red-500" />;
     case "Pending Approval":
-      return <IconClock className="h-4 w-4 text-yellow-500" />
+      return <IconClock className="h-4 w-4 text-yellow-500" />;
     case "Rejected":
-      return <IconX className="h-4 w-4 text-red-500" />
+      return <IconX className="h-4 w-4 text-red-500" />;
     default:
-      return <IconClock className="h-4 w-4 text-gray-500" />
+      return <IconClock className="h-4 w-4 text-gray-500" />;
   }
-}
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Completed":
-      return "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+      return "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800";
     case "Processing":
-      return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
+      return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800";
     case "Failed":
     case "Rejected":
-      return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800"
+      return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800";
     case "Pending Approval":
-      return "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800"
+      return "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800";
     default:
-      return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800"
+      return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800";
   }
-}
+};
 
 export function TransactionsContent() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [typeFilter, setTypeFilter] = useState("all")
-  const [selectedTransaction, setSelectedTransaction] = useState<(typeof allTransactions)[0] | null>(null)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [selectedTransaction, setSelectedTransaction] = useState<
+    (typeof allTransactions)[0] | null
+  >(null);
 
   const filteredTransactions = allTransactions.filter((transaction) => {
     const matchesSearch =
       transaction.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.recipientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.recipientName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       transaction.recipient.includes(searchTerm) ||
-      transaction.network.toLowerCase().includes(searchTerm.toLowerCase())
+      transaction.network.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter
-    const matchesType = typeFilter === "all" || transaction.recipientType === typeFilter
+    const matchesStatus =
+      statusFilter === "all" || transaction.status === statusFilter;
+    const matchesType =
+      typeFilter === "all" || transaction.recipientType === typeFilter;
 
-    return matchesSearch && matchesStatus && matchesType
-  })
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
-  const completedTransactions = filteredTransactions.filter((t) => t.status === "Completed")
-  const processingTransactions = filteredTransactions.filter((t) => t.status === "Processing")
-  const failedTransactions = filteredTransactions.filter((t) => t.status === "Failed" || t.status === "Rejected")
-  const pendingTransactions = filteredTransactions.filter((t) => t.status === "Pending Approval")
+  const completedTransactions = filteredTransactions.filter(
+    (t) => t.status === "Completed"
+  );
+  const processingTransactions = filteredTransactions.filter(
+    (t) => t.status === "Processing"
+  );
+  const failedTransactions = filteredTransactions.filter(
+    (t) => t.status === "Failed" || t.status === "Rejected"
+  );
+  const pendingTransactions = filteredTransactions.filter(
+    (t) => t.status === "Pending Approval"
+  );
 
   const exportTransactions = () => {
     const csvContent = [
@@ -211,26 +250,30 @@ export function TransactionsContent() {
           t.status,
           new Date(t.dateInitiated).toLocaleDateString(),
           t.description,
-        ].join(","),
+        ].join(",")
       ),
-    ].join("\n")
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", "transactions_export.csv")
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "transactions_export.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Transactions</h1>
-        <Button variant="outline" onClick={exportTransactions} className="flex items-center gap-2 bg-transparent">
+        <Button
+          variant="outline"
+          onClick={exportTransactions}
+          className="flex items-center gap-2 bg-transparent"
+        >
           <IconDownload className="h-4 w-4" />
           Export CSV
         </Button>
@@ -252,8 +295,12 @@ export function TransactionsContent() {
             <CardDescription>Completed</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{completedTransactions.length}</div>
-            <p className="text-xs text-muted-foreground">Successfully processed</p>
+            <div className="text-2xl font-bold text-green-600">
+              {completedTransactions.length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Successfully processed
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -261,10 +308,10 @@ export function TransactionsContent() {
             <CardDescription>Processing</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{processingTransactions.length}</div>
-            <p className className="text-xs text-muted-foreground">
-              In progress
-            </p>
+            <div className="text-2xl font-bold text-blue-600">
+              {processingTransactions.length}
+            </div>
+            <p className="text-xs text-muted-foreground">In progress</p>
           </CardContent>
         </Card>
         <Card>
@@ -272,7 +319,9 @@ export function TransactionsContent() {
             <CardDescription>Failed/Rejected</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{failedTransactions.length}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {failedTransactions.length}
+            </div>
             <p className="text-xs text-muted-foreground">Needs attention</p>
           </CardContent>
         </Card>
@@ -282,7 +331,9 @@ export function TransactionsContent() {
       <Card>
         <CardHeader>
           <CardTitle>Filter Transactions</CardTitle>
-          <CardDescription>Search and filter your transaction history</CardDescription>
+          <CardDescription>
+            Search and filter your transaction history
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 md:flex-row md:items-end">
@@ -311,7 +362,9 @@ export function TransactionsContent() {
                   <SelectItem value="Processing">Processing</SelectItem>
                   <SelectItem value="Failed">Failed</SelectItem>
                   <SelectItem value="Rejected">Rejected</SelectItem>
-                  <SelectItem value="Pending Approval">Pending Approval</SelectItem>
+                  <SelectItem value="Pending Approval">
+                    Pending Approval
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -362,39 +415,58 @@ export function TransactionsContent() {
         </TabsList>
 
         <TabsContent value="all">
-          <TransactionTable transactions={filteredTransactions} onViewDetails={setSelectedTransaction} />
+          <TransactionTable
+            transactions={filteredTransactions}
+            onViewDetails={setSelectedTransaction}
+          />
         </TabsContent>
         <TabsContent value="completed">
-          <TransactionTable transactions={completedTransactions} onViewDetails={setSelectedTransaction} />
+          <TransactionTable
+            transactions={completedTransactions}
+            onViewDetails={setSelectedTransaction}
+          />
         </TabsContent>
         <TabsContent value="processing">
-          <TransactionTable transactions={processingTransactions} onViewDetails={setSelectedTransaction} />
+          <TransactionTable
+            transactions={processingTransactions}
+            onViewDetails={setSelectedTransaction}
+          />
         </TabsContent>
         <TabsContent value="failed">
-          <TransactionTable transactions={failedTransactions} onViewDetails={setSelectedTransaction} />
+          <TransactionTable
+            transactions={failedTransactions}
+            onViewDetails={setSelectedTransaction}
+          />
         </TabsContent>
       </Tabs>
 
       {/* Transaction Details Dialog */}
-      <Dialog open={!!selectedTransaction} onOpenChange={() => setSelectedTransaction(null)}>
+      <Dialog
+        open={!!selectedTransaction}
+        onOpenChange={() => setSelectedTransaction(null)}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Transaction Details</DialogTitle>
-            <DialogDescription>Reference: {selectedTransaction?.reference}</DialogDescription>
+            <DialogDescription>
+              Reference: {selectedTransaction?.reference}
+            </DialogDescription>
           </DialogHeader>
-          {selectedTransaction && <TransactionDetails transaction={selectedTransaction} />}
+          {selectedTransaction && (
+            <TransactionDetails transaction={selectedTransaction} />
+          )}
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
 
 function TransactionTable({
   transactions,
   onViewDetails,
 }: {
-  transactions: (typeof allTransactions)[0][]
-  onViewDetails: (transaction: (typeof allTransactions)[0]) => void
+  transactions: (typeof allTransactions)[0][];
+  onViewDetails: (transaction: (typeof allTransactions)[0]) => void;
 }) {
   return (
     <Card>
@@ -417,27 +489,48 @@ function TransactionTable({
               {transactions.length > 0 ? (
                 transactions.map((transaction) => (
                   <TableRow key={transaction.id}>
-                    <TableCell className="font-mono">{transaction.reference}</TableCell>
+                    <TableCell className="font-mono">
+                      {transaction.reference}
+                    </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{transaction.recipientName}</div>
-                        <div className="text-sm text-muted-foreground font-mono">{transaction.recipient}</div>
+                        <div className="font-medium">
+                          {transaction.recipientName}
+                        </div>
+                        <div className="text-sm text-muted-foreground font-mono">
+                          {transaction.recipient}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{transaction.recipientType}</Badge>
+                      <Badge variant="outline">
+                        {transaction.recipientType}
+                      </Badge>
                     </TableCell>
                     <TableCell>{transaction.network}</TableCell>
-                    <TableCell className="font-medium">₵{transaction.amount.toFixed(2)}</TableCell>
+                    <TableCell className="font-medium">
+                      ₵{transaction.amount.toFixed(2)}
+                    </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`px-2 py-1 ${getStatusColor(transaction.status)}`}>
+                      <Badge
+                        variant="outline"
+                        className={`px-2 py-1 ${getStatusColor(
+                          transaction.status
+                        )}`}
+                      >
                         {getStatusIcon(transaction.status)}
                         {transaction.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(transaction.dateInitiated).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => onViewDetails(transaction)}>
+                      {new Date(transaction.dateInitiated).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onViewDetails(transaction)}
+                      >
                         <IconEye className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -455,64 +548,91 @@ function TransactionTable({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-function TransactionDetails({ transaction }: { transaction: (typeof allTransactions)[0] }) {
+function TransactionDetails({
+  transaction,
+}: {
+  transaction: (typeof allTransactions)[0];
+}) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Reference</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Reference
+          </Label>
           <p className="font-mono">{transaction.reference}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Batch ID</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Batch ID
+          </Label>
           <p className="font-mono">{transaction.batchId}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Recipient Name</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Recipient Name
+          </Label>
           <p>{transaction.recipientName}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Recipient</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Recipient
+          </Label>
           <p className="font-mono">{transaction.recipient}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Payment Type</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Payment Type
+          </Label>
           <p>{transaction.recipientType}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Network/Bank</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Network/Bank
+          </Label>
           <p>{transaction.network}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Amount
+          </Label>
           <p className="font-medium">₵{transaction.amount.toFixed(2)}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Fees</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Fees
+          </Label>
           <p>₵{transaction.fees.toFixed(2)}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Total</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Total
+          </Label>
           <p className="font-medium">₵{transaction.totalAmount.toFixed(2)}</p>
         </div>
       </div>
 
       <div>
-        <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+        <Label className="text-sm font-medium text-muted-foreground">
+          Status
+        </Label>
         <div className="mt-1">
-          <Badge variant="outline" className={`px-2 py-1 ${getStatusColor(transaction.status)}`}>
+          <Badge
+            variant="outline"
+            className={`px-2 py-1 ${getStatusColor(transaction.status)}`}
+          >
             {getStatusIcon(transaction.status)}
             {transaction.status}
           </Badge>
@@ -521,53 +641,73 @@ function TransactionDetails({ transaction }: { transaction: (typeof allTransacti
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Initiated By</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Initiated By
+          </Label>
           <p>{transaction.initiatedBy}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Approved By</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Approved By
+          </Label>
           <p>{transaction.approvedBy || "Pending"}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Date Initiated</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Date Initiated
+          </Label>
           <p>{new Date(transaction.dateInitiated).toLocaleString()}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Date Completed</Label>
-          <p>{transaction.dateCompleted ? new Date(transaction.dateCompleted).toLocaleString() : "Not completed"}</p>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Date Completed
+          </Label>
+          <p>
+            {transaction.dateCompleted
+              ? new Date(transaction.dateCompleted).toLocaleString()
+              : "Not completed"}
+          </p>
         </div>
       </div>
 
       {transaction.transactionId && (
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Transaction ID</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Transaction ID
+          </Label>
           <p className="font-mono">{transaction.transactionId}</p>
         </div>
       )}
 
       {transaction.description && (
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Description
+          </Label>
           <p>{transaction.description}</p>
         </div>
       )}
 
       {transaction.failureReason && (
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Failure Reason</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Failure Reason
+          </Label>
           <p className="text-red-600">{transaction.failureReason}</p>
         </div>
       )}
 
       {transaction.rejectionReason && (
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Rejection Reason</Label>
+          <Label className="text-sm font-medium text-muted-foreground">
+            Rejection Reason
+          </Label>
           <p className="text-red-600">{transaction.rejectionReason}</p>
         </div>
       )}
     </div>
-  )
+  );
 }
