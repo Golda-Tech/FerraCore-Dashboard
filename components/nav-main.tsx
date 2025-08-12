@@ -1,16 +1,20 @@
-"use client"
+"use client";
 
-import { IconCirclePlusFilled, IconFileUpload, type Icon } from "@tabler/icons-react"
-import { useRouter } from "next/navigation" // Use next/navigation for App Router
+import {
+  IconCirclePlusFilled,
+  IconFileUpload,
+  type Icon,
+} from "@tabler/icons-react";
+import { useRouter } from "next/navigation"; // Use next/navigation for App Router
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 type PageName =
   | "dashboard"
@@ -23,7 +27,7 @@ type PageName =
   | "help"
   | "reports"
   | "templates"
-  | "merchants"
+  | "merchants";
 
 export function NavMain({
   items,
@@ -31,14 +35,14 @@ export function NavMain({
   currentPath, // Pass currentPath as a prop
 }: {
   items: {
-    title: string
-    page: PageName
-    icon?: Icon
-  }[]
-  onNavigate: (page: PageName) => void
-  currentPath: string // Define prop type
+    title: string;
+    page: PageName;
+    icon?: Icon;
+  }[];
+  onNavigate: (page: PageName) => void;
+  currentPath: string; // Define prop type
 }) {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <SidebarGroup>
@@ -47,12 +51,12 @@ export function NavMain({
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
               asChild
-              tooltip="New Disbursement"
+              tooltip="New Payout"
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
               <button onClick={() => onNavigate("single-payment")}>
                 <IconCirclePlusFilled />
-                <span>New Disbursement</span>
+                <span>New Payout</span>
               </button>
             </SidebarMenuButton>
             <Button
@@ -74,7 +78,9 @@ export function NavMain({
               <SidebarMenuButton asChild tooltip={item.title}>
                 <button
                   onClick={() => onNavigate(item.page)}
-                  className={currentPath === `/${item.page}` ? "data-[active=true]" : ""} // Use currentPath
+                  className={
+                    currentPath === `/${item.page}` ? "data-[active=true]" : ""
+                  } // Use currentPath
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
@@ -85,5 +91,5 @@ export function NavMain({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }
