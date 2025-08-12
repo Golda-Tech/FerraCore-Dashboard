@@ -81,7 +81,7 @@ export default function SinglePaymentPage() {
               Payment Details
             </CardTitle>
             <CardDescription>
-              Enter the recipient details and amount for disbursement
+              Enter the recipient details and amount for payout
             </CardDescription>
           </CardHeader>
           <CardContent>

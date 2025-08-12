@@ -157,7 +157,7 @@ export default function BulkUploadPage() {
             </CardTitle>
             <CardDescription>
               Upload a file containing recipient details, payment types,
-              networks/banks, and amounts for bulk disbursement
+              networks/banks, and amounts for bulk payout
             </CardDescription>
           </CardHeader>
           <CardContent>

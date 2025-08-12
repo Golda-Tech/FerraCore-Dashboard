@@ -1,47 +1,71 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { IconCreditCard, IconLoader, IconPhone, IconWallet } from "@tabler/icons-react"
+import { useState } from "react";
+import {
+  IconCreditCard,
+  IconLoader,
+  IconPhone,
+  IconWallet,
+} from "@tabler/icons-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 export function SinglePaymentContent() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     recipientType: "mobile-money",
     recipient: "",
     network: "",
     amount: "",
     description: "",
-  })
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
     // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsLoading(false)
-    alert("Payment initiated successfully!")
-  }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    setIsLoading(false);
+    alert("Payment initiated successfully!");
+  };
 
   const calculateFees = (amount: number) => {
-    return Math.round(amount * 0.005 * 100) / 100 // 0.5% fee
-  }
+    return Math.round(amount * 0.005 * 100) / 100; // 0.5% fee
+  };
 
-  const amount = Number.parseFloat(formData.amount) || 0
-  const fees = calculateFees(amount)
-  const total = amount + fees
+  const amount = Number.parseFloat(formData.amount) || 0;
+  const fees = calculateFees(amount);
+  const total = amount + fees;
 
-  const mobileNetworks = ["MTN Ghana", "Vodafone", "AirtelTigo"]
-  const banks = ["GCB Bank", "Ecobank Ghana", "Standard Chartered", "Absa Bank", "Fidelity Bank", "CAL Bank"]
+  const mobileNetworks = ["MTN Ghana", "Vodafone", "AirtelTigo"];
+  const banks = [
+    "GCB Bank",
+    "Ecobank Ghana",
+    "Standard Chartered",
+    "Absa Bank",
+    "Fidelity Bank",
+    "CAL Bank",
+  ];
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
@@ -56,7 +80,9 @@ export function SinglePaymentContent() {
               <IconCreditCard className="h-5 w-5" />
               Payment Details
             </CardTitle>
-            <CardDescription>Enter the recipient details and amount for disbursement</CardDescription>
+            <CardDescription>
+              Enter the recipient details and amount for payout
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -64,7 +90,13 @@ export function SinglePaymentContent() {
                 <Label>Payment Type</Label>
                 <RadioGroup
                   value={formData.recipientType}
-                  onValueChange={(value) => setFormData({ ...formData, recipientType: value, network: "" })}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      recipientType: value,
+                      network: "",
+                    })
+                  }
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="mobile-money" id="mobile-money" />
@@ -79,15 +111,23 @@ export function SinglePaymentContent() {
 
               <div className="space-y-2">
                 <Label htmlFor="recipient">
-                  {formData.recipientType === "mobile-money" ? "Mobile Number" : "Account Number"}
+                  {formData.recipientType === "mobile-money"
+                    ? "Mobile Number"
+                    : "Account Number"}
                 </Label>
                 <div className="relative">
                   <IconPhone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="recipient"
-                    placeholder={formData.recipientType === "mobile-money" ? "0244123456" : "1234567890123456"}
+                    placeholder={
+                      formData.recipientType === "mobile-money"
+                        ? "0244123456"
+                        : "1234567890123456"
+                    }
                     value={formData.recipient}
-                    onChange={(e) => setFormData({ ...formData, recipient: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, recipient: e.target.value })
+                    }
                     className="pl-10"
                     required
                   />
@@ -95,19 +135,32 @@ export function SinglePaymentContent() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="network">{formData.recipientType === "mobile-money" ? "Mobile Network" : "Bank"}</Label>
+                <Label htmlFor="network">
+                  {formData.recipientType === "mobile-money"
+                    ? "Mobile Network"
+                    : "Bank"}
+                </Label>
                 <Select
                   value={formData.network}
-                  onValueChange={(value) => setFormData({ ...formData, network: value })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, network: value })
+                  }
                   required
                 >
                   <SelectTrigger>
                     <SelectValue
-                      placeholder={formData.recipientType === "mobile-money" ? "Select network" : "Select bank"}
+                      placeholder={
+                        formData.recipientType === "mobile-money"
+                          ? "Select network"
+                          : "Select bank"
+                      }
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {(formData.recipientType === "mobile-money" ? mobileNetworks : banks).map((option) => (
+                    {(formData.recipientType === "mobile-money"
+                      ? mobileNetworks
+                      : banks
+                    ).map((option) => (
                       <SelectItem key={option} value={option}>
                         {option}
                       </SelectItem>
@@ -126,7 +179,9 @@ export function SinglePaymentContent() {
                     step="0.01"
                     placeholder="500.00"
                     value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, amount: e.target.value })
+                    }
                     className="pl-10"
                     required
                   />
@@ -139,7 +194,9 @@ export function SinglePaymentContent() {
                   id="description"
                   placeholder="Payment description..."
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                 />
               </div>
 
@@ -166,15 +223,21 @@ export function SinglePaymentContent() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payment Type:</span>
-                <span className="capitalize">{formData.recipientType.replace("-", " ")}</span>
+                <span className="capitalize">
+                  {formData.recipientType.replace("-", " ")}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Recipient:</span>
-                <span className="font-mono">{formData.recipient || "Not specified"}</span>
+                <span className="font-mono">
+                  {formData.recipient || "Not specified"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">
-                  {formData.recipientType === "mobile-money" ? "Network:" : "Bank:"}
+                  {formData.recipientType === "mobile-money"
+                    ? "Network:"
+                    : "Bank:"}
                 </span>
                 <span>{formData.network || "Not selected"}</span>
               </div>
@@ -201,8 +264,11 @@ export function SinglePaymentContent() {
                 <li>• Processing fee is 0.5% of the amount</li>
                 <li>• Funds will be debited after approval</li>
                 <li>
-                  • {formData.recipientType === "mobile-money" ? "Mobile money" : "Bank"} transfers typically process
-                  within 5 minutes
+                  •{" "}
+                  {formData.recipientType === "mobile-money"
+                    ? "Mobile money"
+                    : "Bank"}{" "}
+                  transfers typically process within 5 minutes
                 </li>
               </ul>
             </div>
@@ -210,5 +276,5 @@ export function SinglePaymentContent() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

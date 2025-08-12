@@ -1,14 +1,33 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { IconCloudUpload, IconDownload, IconFileSpreadsheet, IconLoader, IconX } from "@tabler/icons-react"
+import { useState } from "react";
+import {
+  IconCloudUpload,
+  IconDownload,
+  IconFileSpreadsheet,
+  IconLoader,
+  IconX,
+} from "@tabler/icons-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const sampleData = [
   {
@@ -51,68 +70,79 @@ const sampleData = [
     status: "Valid",
     name: "Alice Brown",
   },
-]
+];
 
 export function BulkUploadContent() {
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [validationResults, setValidationResults] = useState<typeof sampleData | null>(null)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [validationResults, setValidationResults] = useState<
+    typeof sampleData | null
+  >(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
-      setUploadedFile(file)
-      setValidationResults(null)
+      setUploadedFile(file);
+      setValidationResults(null);
     }
-  }
+  };
 
   const downloadTemplate = () => {
     // Create CSV content for the template
     const csvContent = `Recipient,Recipient Type,Network/Bank,Amount,Description
 0244123456,Mobile Money,MTN Ghana,500.00,Sample mobile money payment
 1234567890123456,Bank Account,GCB Bank,750.00,Sample bank transfer
-0201234567,Mobile Money,Vodafone,300.00,Another mobile money payment`
+0201234567,Mobile Money,Vodafone,300.00,Another mobile money payment`;
 
     // Create and download the file
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", "bulk_payment_template.csv")
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "bulk_payment_template.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const processFile = async () => {
-    if (!uploadedFile) return
+    if (!uploadedFile) return;
 
-    setIsProcessing(true)
-    setProgress(0)
+    setIsProcessing(true);
+    setProgress(0);
 
     // Simulate file processing
     for (let i = 0; i <= 100; i += 10) {
-      setProgress(i)
-      await new Promise((resolve) => setTimeout(resolve, 200))
+      setProgress(i);
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     // Simulate validation results
-    setValidationResults(sampleData)
-    setIsProcessing(false)
-  }
+    setValidationResults(sampleData);
+    setIsProcessing(false);
+  };
 
-  const validRecords = validationResults?.filter((record) => record.status === "Valid") || []
-  const invalidRecords = validationResults?.filter((record) => record.status === "Invalid") || []
-  const totalAmount = validRecords.reduce((sum, record) => sum + record.amount, 0)
-  const totalFees = Math.round(totalAmount * 0.005 * 100) / 100
+  const validRecords =
+    validationResults?.filter((record) => record.status === "Valid") || [];
+  const invalidRecords =
+    validationResults?.filter((record) => record.status === "Invalid") || [];
+  const totalAmount = validRecords.reduce(
+    (sum, record) => sum + record.amount,
+    0
+  );
+  const totalFees = Math.round(totalAmount * 0.005 * 100) / 100;
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Bulk Upload</h1>
-        <Button variant="outline" className="flex items-center gap-2 bg-transparent" onClick={downloadTemplate}>
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 bg-transparent"
+          onClick={downloadTemplate}
+        >
           <IconDownload className="h-4 w-4" />
           Download Template
         </Button>
@@ -126,8 +156,8 @@ export function BulkUploadContent() {
               Upload Excel/CSV File
             </CardTitle>
             <CardDescription>
-              Upload a file containing recipient details, payment types, networks/banks, and amounts for bulk
-              disbursement
+              Upload a file containing recipient details, payment types,
+              networks/banks, and amounts for bulk payout
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -136,8 +166,12 @@ export function BulkUploadContent() {
                 <div className="flex flex-col items-center justify-center space-y-2">
                   <IconFileSpreadsheet className="h-10 w-10 text-muted-foreground" />
                   <div className="text-center">
-                    <p className="text-sm font-medium">Drop your file here, or click to browse</p>
-                    <p className="text-xs text-muted-foreground">Supports .xlsx, .xls, .csv files up to 10MB</p>
+                    <p className="text-sm font-medium">
+                      Drop your file here, or click to browse
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Supports .xlsx, .xls, .csv files up to 10MB
+                    </p>
                   </div>
                   <input
                     type="file"
@@ -158,15 +192,19 @@ export function BulkUploadContent() {
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div className="flex items-center gap-2">
                     <IconFileSpreadsheet className="h-4 w-4" />
-                    <span className="text-sm font-medium">{uploadedFile.name}</span>
-                    <span className="text-xs text-muted-foreground">({(uploadedFile.size / 1024).toFixed(1)} KB)</span>
+                    <span className="text-sm font-medium">
+                      {uploadedFile.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({(uploadedFile.size / 1024).toFixed(1)} KB)
+                    </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      setUploadedFile(null)
-                      setValidationResults(null)
+                      setUploadedFile(null);
+                      setValidationResults(null);
                     }}
                   >
                     <IconX className="h-4 w-4" />
@@ -175,7 +213,11 @@ export function BulkUploadContent() {
               )}
 
               {uploadedFile && !validationResults && (
-                <Button onClick={processFile} disabled={isProcessing} className="w-full">
+                <Button
+                  onClick={processFile}
+                  disabled={isProcessing}
+                  className="w-full"
+                >
                   {isProcessing ? (
                     <>
                       <IconLoader className="mr-2 h-4 w-4 animate-spin" />
@@ -208,7 +250,9 @@ export function BulkUploadContent() {
                   <CardDescription>Total Records</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{validationResults.length}</div>
+                  <div className="text-2xl font-bold">
+                    {validationResults.length}
+                  </div>
                 </CardContent>
               </Card>
               <Card>
@@ -216,7 +260,9 @@ export function BulkUploadContent() {
                   <CardDescription>Valid Records</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{validRecords.length}</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {validRecords.length}
+                  </div>
                 </CardContent>
               </Card>
               <Card>
@@ -224,7 +270,9 @@ export function BulkUploadContent() {
                   <CardDescription>Invalid Records</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-red-600">{invalidRecords.length}</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {invalidRecords.length}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -232,7 +280,9 @@ export function BulkUploadContent() {
             <Card>
               <CardHeader>
                 <CardTitle>Validation Results</CardTitle>
-                <CardDescription>Review the validation results before proceeding</CardDescription>
+                <CardDescription>
+                  Review the validation results before proceeding
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border">
@@ -250,7 +300,9 @@ export function BulkUploadContent() {
                     <TableBody>
                       {validationResults.map((record, index) => (
                         <TableRow key={index}>
-                          <TableCell className="font-mono">{record.recipient}</TableCell>
+                          <TableCell className="font-mono">
+                            {record.recipient}
+                          </TableCell>
                           <TableCell>{record.recipientType}</TableCell>
                           <TableCell>{record.network}</TableCell>
                           <TableCell>₵{record.amount.toFixed(2)}</TableCell>
@@ -276,20 +328,36 @@ export function BulkUploadContent() {
                   <h4 className="font-medium mb-2">Summary</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-muted-foreground">Total Amount:</span>
-                      <span className="ml-2 font-medium">₵{totalAmount.toFixed(2)}</span>
+                      <span className="text-muted-foreground">
+                        Total Amount:
+                      </span>
+                      <span className="ml-2 font-medium">
+                        ₵{totalAmount.toFixed(2)}
+                      </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Processing Fees:</span>
-                      <span className="ml-2 font-medium">₵{totalFees.toFixed(2)}</span>
+                      <span className="text-muted-foreground">
+                        Processing Fees:
+                      </span>
+                      <span className="ml-2 font-medium">
+                        ₵{totalFees.toFixed(2)}
+                      </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Grand Total:</span>
-                      <span className="ml-2 font-medium">₵{(totalAmount + totalFees).toFixed(2)}</span>
+                      <span className="text-muted-foreground">
+                        Grand Total:
+                      </span>
+                      <span className="ml-2 font-medium">
+                        ₵{(totalAmount + totalFees).toFixed(2)}
+                      </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Valid Records:</span>
-                      <span className="ml-2 font-medium">{validRecords.length}</span>
+                      <span className="text-muted-foreground">
+                        Valid Records:
+                      </span>
+                      <span className="ml-2 font-medium">
+                        {validRecords.length}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -304,5 +372,5 @@ export function BulkUploadContent() {
         )}
       </div>
     </div>
-  )
+  );
 }

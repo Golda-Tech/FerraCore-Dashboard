@@ -1,8 +1,15 @@
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
 
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChartAreaInteractive } from "@/components/chart-area-interactive";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export function AnalyticsContent() {
   return (
@@ -24,7 +31,9 @@ export function AnalyticsContent() {
           </CardHeader>
           <CardContent>
             <CardTitle className="text-2xl font-bold">₵45.2M</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">Total disbursed this month</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total disbursed this month
+            </p>
           </CardContent>
         </Card>
 
@@ -40,7 +49,9 @@ export function AnalyticsContent() {
           </CardHeader>
           <CardContent>
             <CardTitle className="text-2xl font-bold">2,847</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">Transactions processed</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Transactions processed
+            </p>
           </CardContent>
         </Card>
 
@@ -56,7 +67,9 @@ export function AnalyticsContent() {
           </CardHeader>
           <CardContent>
             <CardTitle className="text-2xl font-bold">₵15,890</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">Per transaction</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Per transaction
+            </p>
           </CardContent>
         </Card>
 
@@ -72,7 +85,9 @@ export function AnalyticsContent() {
           </CardHeader>
           <CardContent>
             <CardTitle className="text-2xl font-bold">96.8%</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">Transaction success</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Transaction success
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -83,7 +98,7 @@ export function AnalyticsContent() {
         <Card>
           <CardHeader>
             <CardTitle>Network Distribution</CardTitle>
-            <CardDescription>Disbursement by network provider</CardDescription>
+            <CardDescription>Payout by network provider</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -92,7 +107,10 @@ export function AnalyticsContent() {
                 <span className="text-sm text-muted-foreground">45.2%</span>
               </div>
               <div className="w-full bg-secondary rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full" style={{ width: "45.2%" }}></div>
+                <div
+                  className="bg-primary h-2 rounded-full"
+                  style={{ width: "45.2%" }}
+                ></div>
               </div>
             </div>
 
@@ -102,7 +120,10 @@ export function AnalyticsContent() {
                 <span className="text-sm text-muted-foreground">28.7%</span>
               </div>
               <div className="w-full bg-secondary rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full" style={{ width: "28.7%" }}></div>
+                <div
+                  className="bg-primary h-2 rounded-full"
+                  style={{ width: "28.7%" }}
+                ></div>
               </div>
             </div>
 
@@ -112,7 +133,10 @@ export function AnalyticsContent() {
                 <span className="text-sm text-muted-foreground">16.8%</span>
               </div>
               <div className="w-full bg-secondary rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full" style={{ width: "16.8%" }}></div>
+                <div
+                  className="bg-primary h-2 rounded-full"
+                  style={{ width: "16.8%" }}
+                ></div>
               </div>
             </div>
 
@@ -122,7 +146,10 @@ export function AnalyticsContent() {
                 <span className="text-sm text-muted-foreground">9.3%</span>
               </div>
               <div className="w-full bg-secondary rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full" style={{ width: "9.3%" }}></div>
+                <div
+                  className="bg-primary h-2 rounded-full"
+                  style={{ width: "9.3%" }}
+                ></div>
               </div>
             </div>
           </CardContent>
@@ -192,15 +219,25 @@ export function AnalyticsContent() {
           <CardContent>
             <div className="space-y-3">
               <div className="text-sm">
-                <p className="font-medium text-yellow-600">High volume detected</p>
-                <p className="text-muted-foreground">MTN network - 2 mins ago</p>
+                <p className="font-medium text-yellow-600">
+                  High volume detected
+                </p>
+                <p className="text-muted-foreground">
+                  MTN network - 2 mins ago
+                </p>
               </div>
               <div className="text-sm">
-                <p className="font-medium text-green-600">System maintenance completed</p>
-                <p className="text-muted-foreground">All services restored - 1 hour ago</p>
+                <p className="font-medium text-green-600">
+                  System maintenance completed
+                </p>
+                <p className="text-muted-foreground">
+                  All services restored - 1 hour ago
+                </p>
               </div>
               <div className="text-sm">
-                <p className="font-medium text-blue-600">New merchant onboarded</p>
+                <p className="font-medium text-blue-600">
+                  New merchant onboarded
+                </p>
                 <p className="text-muted-foreground">UBA Bank - 3 hours ago</p>
               </div>
             </div>
@@ -208,5 +245,5 @@ export function AnalyticsContent() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

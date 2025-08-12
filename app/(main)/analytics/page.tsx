@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Network Distribution</CardTitle>
-            <CardDescription>Disbursement by network provider</CardDescription>
+            <CardDescription>Payout by network provider</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">

@@ -406,14 +406,14 @@ export function DataTable({
 
   return (
     <Tabs
-      defaultValue="all-disbursements"
+      defaultValue="all-payouts"
       className="w-full flex-col justify-start gap-6"
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
         <Label htmlFor="view-selector" className="sr-only">
           View
         </Label>
-        <Select defaultValue="all-disbursements">
+        <Select defaultValue="all-payouts">
           <SelectTrigger
             className="flex w-fit @4xl/main:hidden"
             size="sm"
@@ -422,14 +422,14 @@ export function DataTable({
             <SelectValue placeholder="Select a view" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all-disbursements">All Disbursements</SelectItem>
+            <SelectItem value="all-payouts">All Payouts</SelectItem>
             <SelectItem value="pending-approval">Pending Approval</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
             <SelectItem value="failed">Failed</SelectItem>
           </SelectContent>
         </Select>
         <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
-          <TabsTrigger value="all-disbursements">All Disbursements</TabsTrigger>
+          <TabsTrigger value="all-payouts">All Payouts</TabsTrigger>
           <TabsTrigger value="pending-approval">
             Pending Approval <Badge variant="secondary">3</Badge>
           </TabsTrigger>
@@ -474,12 +474,12 @@ export function DataTable({
           </DropdownMenu>
           <Button variant="outline" size="sm">
             <IconPlus />
-            <span className="hidden lg:inline">New Disbursement</span>
+            <span className="hidden lg:inline">New Payout</span>
           </Button>
         </div>
       </div>
       <TabsContent
-        value="all-disbursements"
+        value="all-payouts"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
       >
         <div className="overflow-hidden rounded-lg border">
@@ -525,7 +525,7 @@ export function DataTable({
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      No disbursements found.
+                      No Payouts found.
                     </TableCell>
                   </TableRow>
                 )}
@@ -620,7 +620,7 @@ export function DataTable({
             <IconClock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium">Pending Approvals</h3>
             <p className="text-muted-foreground">
-              Disbursements awaiting approval will appear here
+              Payouts awaiting approval will appear here
             </p>
           </div>
         </div>
@@ -629,9 +629,9 @@ export function DataTable({
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed flex items-center justify-center">
           <div className="text-center">
             <IconCircleCheckFilled className="mx-auto h-12 w-12 text-green-500 mb-4" />
-            <h3 className="text-lg font-medium">Completed Disbursements</h3>
+            <h3 className="text-lg font-medium">Completed Payouts</h3>
             <p className="text-muted-foreground">
-              Successfully completed disbursements will appear here
+              Successfully completed payouts will appear here
             </p>
           </div>
         </div>
@@ -640,9 +640,9 @@ export function DataTable({
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed flex items-center justify-center">
           <div className="text-center">
             <IconCircleXFilled className="mx-auto h-12 w-12 text-red-500 mb-4" />
-            <h3 className="text-lg font-medium">Failed Disbursements</h3>
+            <h3 className="text-lg font-medium">Failed Payouts</h3>
             <p className="text-muted-foreground">
-              Failed disbursements will appear here
+              Failed payouts will appear here
             </p>
           </div>
         </div>
@@ -686,7 +686,7 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader className="gap-1">
-          <DrawerTitle>Disbursement Details</DrawerTitle>
+          <DrawerTitle>Payout Details</DrawerTitle>
           <DrawerDescription>Reference: {item.reference}</DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
@@ -739,7 +739,7 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
                   <IconTrendingUp className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
-                  Showing disbursement performance for the last 6 months.
+                  Showing payout performance for the last 6 months.
                 </div>
               </div>
               <Separator />
