@@ -125,7 +125,7 @@ export default function ApprovalsPage() {
             <CardDescription>Total Amount</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₦375,000</div>
+            <div className="text-2xl font-bold">₵375,000</div>
             <p className="text-xs text-muted-foreground">Pending approval</p>
           </CardContent>
         </Card>
@@ -175,7 +175,7 @@ export default function ApprovalsPage() {
                         </TableCell>
                         <TableCell>{payment.initiatedBy}</TableCell>
                         <TableCell className="font-medium">
-                          ₦{payment.amount.toLocaleString()}
+                          ₵{payment.amount.toLocaleString()}
                         </TableCell>
                         <TableCell>{payment.recipients}</TableCell>
                         <TableCell>
@@ -245,7 +245,7 @@ export default function ApprovalsPage() {
                         <TableCell>{payment.initiatedBy}</TableCell>
                         <TableCell>{payment.approvedBy}</TableCell>
                         <TableCell className="font-medium">
-                          ₦{payment.amount.toLocaleString()}
+                          ₵{payment.amount.toLocaleString()}
                         </TableCell>
                         <TableCell>
                           <Badge

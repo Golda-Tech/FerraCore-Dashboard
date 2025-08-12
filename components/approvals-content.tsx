@@ -1,13 +1,26 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { IconCheck, IconClock, IconEye, IconX } from "@tabler/icons-react"
+import { useState } from "react";
+import { IconCheck, IconClock, IconEye, IconX } from "@tabler/icons-react";
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const pendingApprovals = [
   {
@@ -40,7 +53,7 @@ const pendingApprovals = [
     dateInitiated: "2024-01-16T14:20:00Z",
     description: "Equipment purchase payment",
   },
-]
+];
 
 const approvedPayments = [
   {
@@ -65,18 +78,18 @@ const approvedPayments = [
     dateApproved: "2024-01-15T14:15:00Z",
     status: "Completed",
   },
-]
+];
 
 export function ApprovalsContent() {
-  const [selectedTab, setSelectedTab] = useState("pending")
+  const [selectedTab, setSelectedTab] = useState("pending");
 
   const handleApprove = (id: number) => {
-    alert(`Approved payment with ID: ${id}`)
-  }
+    alert(`Approved payment with ID: ${id}`);
+  };
 
   const handleReject = (id: number) => {
-    alert(`Rejected payment with ID: ${id}`)
-  }
+    alert(`Rejected payment with ID: ${id}`);
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
@@ -90,7 +103,9 @@ export function ApprovalsContent() {
             <CardDescription>Pending Approvals</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingApprovals.length}</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {pendingApprovals.length}
+            </div>
             <p className="text-xs text-muted-foreground">Requires attention</p>
           </CardContent>
         </Card>
@@ -100,7 +115,9 @@ export function ApprovalsContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">8</div>
-            <p className="text-xs text-muted-foreground">Successfully approved</p>
+            <p className="text-xs text-muted-foreground">
+              Successfully approved
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -108,7 +125,7 @@ export function ApprovalsContent() {
             <CardDescription>Total Amount</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₦375,000</div>
+            <div className="text-2xl font-bold">₵375,000</div>
             <p className="text-xs text-muted-foreground">Pending approval</p>
           </CardContent>
         </Card>
@@ -129,7 +146,9 @@ export function ApprovalsContent() {
           <Card>
             <CardHeader>
               <CardTitle>Pending Approvals</CardTitle>
-              <CardDescription>Review and approve pending disbursement requests</CardDescription>
+              <CardDescription>
+                Review and approve pending disbursement requests
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
@@ -148,14 +167,20 @@ export function ApprovalsContent() {
                   <TableBody>
                     {pendingApprovals.map((payment) => (
                       <TableRow key={payment.id}>
-                        <TableCell className="font-mono">{payment.batchId}</TableCell>
+                        <TableCell className="font-mono">
+                          {payment.batchId}
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline">{payment.type}</Badge>
                         </TableCell>
                         <TableCell>{payment.initiatedBy}</TableCell>
-                        <TableCell className="font-medium">₦{payment.amount.toLocaleString()}</TableCell>
+                        <TableCell className="font-medium">
+                          ₵{payment.amount.toLocaleString()}
+                        </TableCell>
                         <TableCell>{payment.recipients}</TableCell>
-                        <TableCell>{new Date(payment.dateInitiated).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {new Date(payment.dateInitiated).toLocaleDateString()}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Button size="sm" variant="outline">
@@ -168,7 +193,11 @@ export function ApprovalsContent() {
                             >
                               <IconCheck className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleReject(payment.id)}>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleReject(payment.id)}
+                            >
                               <IconX className="h-4 w-4" />
                             </Button>
                           </div>
@@ -186,7 +215,9 @@ export function ApprovalsContent() {
           <Card>
             <CardHeader>
               <CardTitle>Approved Payments</CardTitle>
-              <CardDescription>Recently approved disbursement requests</CardDescription>
+              <CardDescription>
+                Recently approved disbursement requests
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
@@ -205,13 +236,17 @@ export function ApprovalsContent() {
                   <TableBody>
                     {approvedPayments.map((payment) => (
                       <TableRow key={payment.id}>
-                        <TableCell className="font-mono">{payment.batchId}</TableCell>
+                        <TableCell className="font-mono">
+                          {payment.batchId}
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline">{payment.type}</Badge>
                         </TableCell>
                         <TableCell>{payment.initiatedBy}</TableCell>
                         <TableCell>{payment.approvedBy}</TableCell>
-                        <TableCell className="font-medium">₦{payment.amount.toLocaleString()}</TableCell>
+                        <TableCell className="font-medium">
+                          ₵{payment.amount.toLocaleString()}
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
@@ -229,7 +264,9 @@ export function ApprovalsContent() {
                             {payment.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{new Date(payment.dateApproved).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {new Date(payment.dateApproved).toLocaleDateString()}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -240,5 +277,5 @@ export function ApprovalsContent() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
