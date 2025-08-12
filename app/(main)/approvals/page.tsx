@@ -1,9 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { IconCheck, IconClock, IconEye, IconX } from "@tabler/icons-react";
-
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,76 +17,203 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  IconCheck,
+  IconX,
+  IconEye,
+  IconClock,
+  IconCurrencyDollar,
+} from "@tabler/icons-react";
 
-const pendingApprovals = [
-  {
-    id: 1,
-    batchId: "BATCH-001",
-    type: "Single Payment",
-    initiatedBy: "John Merchant",
-    amount: 50000,
-    recipients: 1,
-    dateInitiated: "2024-01-16T08:45:00Z",
-    description: "Farmer payment for harvest",
-  },
-  {
-    id: 2,
-    batchId: "BATCH-002",
-    type: "Bulk Upload",
-    initiatedBy: "Jane Merchant",
-    amount: 250000,
-    recipients: 15,
-    dateInitiated: "2024-01-16T10:30:00Z",
-    description: "Monthly farmer disbursements",
-  },
-  {
-    id: 3,
-    batchId: "BATCH-003",
-    type: "Single Payment",
-    initiatedBy: "Bob Merchant",
-    amount: 75000,
-    recipients: 1,
-    dateInitiated: "2024-01-16T14:20:00Z",
-    description: "Equipment purchase payment",
-  },
-];
+interface ApprovalRequest {
+  id: string;
+  type: string;
+  description: string;
+  amount: number;
+  status: "Pending" | "Approved" | "Rejected";
+  requestedBy: string;
+  requestedByEmail: string;
+  date: string;
+  priority: "Low" | "Medium" | "High";
+  category: string;
+  recipient?: string;
+  recipientName?: string;
+  recipientType?: string;
+  network?: string;
+  reference: string;
+  batchId?: string;
+  notes?: string;
+  approvedBy?: string;
+  approvedDate?: string;
+  rejectionReason?: string;
+}
 
-const approvedPayments = [
+const mockApprovalRequests: ApprovalRequest[] = [
   {
-    id: 4,
-    batchId: "BATCH-004",
+    id: "APR001",
+    type: "Single Payment",
+    description: "Payment to Vendor A for office supplies",
+    amount: 1500.0,
+    status: "Pending",
+    requestedBy: "Alice Johnson",
+    requestedByEmail: "alice.johnson@company.com",
+    date: "2024-07-20",
+    priority: "Medium",
+    category: "Vendor Payment",
+    recipient: "0244123456",
+    recipientName: "Vendor A Ltd",
+    recipientType: "Mobile Money",
+    network: "MTN Ghana",
+    reference: "REQ-2024-001",
+    notes: "Urgent payment for office supplies delivery",
+  },
+  {
+    id: "APR002",
     type: "Bulk Upload",
-    initiatedBy: "Alice Merchant",
+    description: "Payroll for July 2024",
+    amount: 25000.0,
+    status: "Pending",
+    requestedBy: "Bob Williams",
+    requestedByEmail: "bob.williams@company.com",
+    date: "2024-07-19",
+    priority: "High",
+    category: "Payroll",
+    batchId: "BATCH-PAY-202407",
+    reference: "REQ-2024-002",
+    notes: "Monthly payroll processing for all employees",
+  },
+  {
+    id: "APR003",
+    type: "Single Payment",
+    description: "Refund to Customer B",
+    amount: 250.5,
+    status: "Approved",
+    requestedBy: "Charlie Brown",
+    requestedByEmail: "charlie.brown@company.com",
+    date: "2024-07-18",
+    priority: "Low",
+    category: "Customer Refund",
+    recipient: "0201234567",
+    recipientName: "John Customer",
+    recipientType: "Mobile Money",
+    network: "Vodafone",
+    reference: "REQ-2024-003",
     approvedBy: "Sarah Admin",
-    amount: 180000,
-    recipients: 12,
-    dateApproved: "2024-01-15T16:30:00Z",
-    status: "Processing",
+    approvedDate: "2024-07-18T14:30:00Z",
   },
   {
-    id: 5,
-    batchId: "BATCH-005",
+    id: "APR004",
+    type: "Bulk Upload",
+    description: "Supplier payments Q2",
+    amount: 12000.0,
+    status: "Pending",
+    requestedBy: "Diana Prince",
+    requestedByEmail: "diana.prince@company.com",
+    date: "2024-07-17",
+    priority: "Medium",
+    category: "Supplier Payment",
+    batchId: "BATCH-SUP-Q2-2024",
+    reference: "REQ-2024-004",
+    notes: "Quarterly supplier payments for Q2 2024",
+  },
+  {
+    id: "APR005",
     type: "Single Payment",
-    initiatedBy: "David Merchant",
-    approvedBy: "Mike Admin",
-    amount: 60000,
-    recipients: 1,
-    dateApproved: "2024-01-15T14:15:00Z",
-    status: "Completed",
+    description: "Consulting fee payment",
+    amount: 750.0,
+    status: "Rejected",
+    requestedBy: "Eve Adams",
+    requestedByEmail: "eve.adams@company.com",
+    date: "2024-07-16",
+    priority: "Low",
+    category: "Professional Services",
+    recipient: "1234567890123456",
+    recipientName: "Consulting Firm Ltd",
+    recipientType: "Bank Account",
+    network: "GCB Bank",
+    reference: "REQ-2024-005",
+    rejectionReason: "Insufficient documentation provided",
   },
 ];
+
+const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case "High":
+      return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800";
+    case "Medium":
+      return "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800";
+    case "Low":
+      return "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800";
+    default:
+      return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800";
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Approved":
+      return "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800";
+    case "Rejected":
+      return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800";
+    case "Pending":
+      return "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800";
+    default:
+      return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800";
+  }
+};
 
 export default function ApprovalsPage() {
+  const [approvals, setApprovals] =
+    useState<ApprovalRequest[]>(mockApprovalRequests);
+  const [selectedApproval, setSelectedApproval] =
+    useState<ApprovalRequest | null>(null);
   const [selectedTab, setSelectedTab] = useState("pending");
 
-  const handleApprove = (id: number) => {
-    alert(`Approved payment with ID: ${id}`);
+  const handleApprove = (id: string) => {
+    setApprovals((prev) =>
+      prev.map((req) =>
+        req.id === id
+          ? {
+              ...req,
+              status: "Approved" as const,
+              approvedBy: "Current User",
+              approvedDate: new Date().toISOString(),
+            }
+          : req
+      )
+    );
+    console.log(`Approved request: ${id}`);
   };
 
-  const handleReject = (id: number) => {
-    alert(`Rejected payment with ID: ${id}`);
+  const handleReject = (id: string) => {
+    setApprovals((prev) =>
+      prev.map((req) =>
+        req.id === id
+          ? {
+              ...req,
+              status: "Rejected" as const,
+              rejectionReason: "Rejected by administrator",
+            }
+          : req
+      )
+    );
+    console.log(`Rejected request: ${id}`);
   };
+
+  const pendingApprovals = approvals.filter((a) => a.status === "Pending");
+  const approvedApprovals = approvals.filter((a) => a.status === "Approved");
+  const rejectedApprovals = approvals.filter((a) => a.status === "Rejected");
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
@@ -97,24 +221,39 @@ export default function ApprovalsPage() {
         <h1 className="text-lg font-semibold md:text-2xl">Approvals</h1>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardDescription>Pending Approvals</CardDescription>
+            <CardDescription>Total Requests</CardDescription>
+            <IconClock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{approvals.length}</div>
+            <p className="text-xs text-muted-foreground">All time</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardDescription>Pending</CardDescription>
+            <IconClock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
               {pendingApprovals.length}
             </div>
-            <p className="text-xs text-muted-foreground">Requires attention</p>
+            <p className="text-xs text-muted-foreground">Awaiting review</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardDescription>Approved Today</CardDescription>
+            <CardDescription>Approved</CardDescription>
+            <IconCheck className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">8</div>
+            <div className="text-2xl font-bold text-green-600">
+              {approvedApprovals.length}
+            </div>
             <p className="text-xs text-muted-foreground">
               Successfully approved
             </p>
@@ -122,15 +261,19 @@ export default function ApprovalsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardDescription>Total Amount</CardDescription>
+            <CardDescription>Rejected</CardDescription>
+            <IconX className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₵375,000</div>
-            <p className="text-xs text-muted-foreground">Pending approval</p>
+            <div className="text-2xl font-bold text-red-600">
+              {rejectedApprovals.length}
+            </div>
+            <p className="text-xs text-muted-foreground">Declined requests</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Tabs Section */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList>
           <TabsTrigger value="pending">
@@ -139,143 +282,484 @@ export default function ApprovalsPage() {
               {pendingApprovals.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="approved">Approved</TabsTrigger>
+          <TabsTrigger value="approved">
+            Approved
+            <Badge variant="secondary" className="ml-2">
+              {approvedApprovals.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="rejected">
+            Rejected
+            <Badge variant="secondary" className="ml-2">
+              {rejectedApprovals.length}
+            </Badge>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending Approvals</CardTitle>
-              <CardDescription>
-                Review and approve pending disbursement requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Batch ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Initiated By</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Recipients</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pendingApprovals.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell className="font-mono">
-                          {payment.batchId}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{payment.type}</Badge>
-                        </TableCell>
-                        <TableCell>{payment.initiatedBy}</TableCell>
-                        <TableCell className="font-medium">
-                          ₵{payment.amount.toLocaleString()}
-                        </TableCell>
-                        <TableCell>{payment.recipients}</TableCell>
-                        <TableCell>
-                          {new Date(payment.dateInitiated).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline">
-                              <IconEye className="h-4 w-4" />
-                            </Button>
+          <ApprovalTable
+            approvals={pendingApprovals}
+            title="Pending Approvals"
+            description="Review and approve or reject pending payment requests."
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onView={setSelectedApproval}
+          />
+        </TabsContent>
+
+        <TabsContent value="approved" className="space-y-4">
+          <ApprovalTable
+            approvals={approvedApprovals}
+            title="Approved Payments"
+            description="Recently approved payment requests."
+            onView={setSelectedApproval}
+          />
+        </TabsContent>
+
+        <TabsContent value="rejected" className="space-y-4">
+          <ApprovalTable
+            approvals={rejectedApprovals}
+            title="Rejected Payments"
+            description="Payment requests that have been rejected."
+            onView={setSelectedApproval}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Approval Details Dialog */}
+      <Dialog
+        open={!!selectedApproval}
+        onOpenChange={() => setSelectedApproval(null)}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Approval Request Details</DialogTitle>
+            <DialogDescription>
+              Reference: {selectedApproval?.reference}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedApproval && (
+            <ApprovalDetails
+              approval={selectedApproval}
+              onApprove={handleApprove}
+              onReject={handleReject}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function ApprovalTable({
+  approvals,
+  title,
+  description,
+  onApprove,
+  onReject,
+  onView,
+}: {
+  approvals: ApprovalRequest[];
+  title: string;
+  description: string;
+  onApprove?: (id: string) => void;
+  onReject?: (id: string) => void;
+  onView: (approval: ApprovalRequest) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Reference</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Requested By</TableHead>
+              <TableHead>Priority</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {approvals.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={9}
+                  className="text-center text-muted-foreground py-8"
+                >
+                  No {title.toLowerCase()} found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              approvals.map((request) => (
+                <TableRow
+                  key={request.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => onView(request)}
+                >
+                  <TableCell className="font-mono">
+                    {request.reference}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{request.type}</Badge>
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    {request.description}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                    }).format(request.amount)}
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{request.requestedBy}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {request.requestedByEmail}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={getPriorityColor(request.priority)}
+                    >
+                      {request.priority}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{request.date}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={getStatusColor(request.status)}
+                    >
+                      {request.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onView(request);
+                        }}
+                      >
+                        <IconEye className="h-4 w-4" />
+                      </Button>
+                      {request.status === "Pending" &&
+                        onApprove &&
+                        onReject && (
+                          <>
                             <Button
+                              variant="outline"
                               size="sm"
-                              onClick={() => handleApprove(payment.id)}
-                              className="bg-green-600 hover:bg-green-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onApprove(request.id);
+                              }}
+                              className="text-green-600 hover:text-green-700"
                             >
                               <IconCheck className="h-4 w-4" />
                             </Button>
                             <Button
+                              variant="outline"
                               size="sm"
-                              variant="destructive"
-                              onClick={() => handleReject(payment.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onReject(request.id);
+                              }}
+                              className="text-red-600 hover:text-red-700"
                             >
                               <IconX className="h-4 w-4" />
                             </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                          </>
+                        )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
 
-        <TabsContent value="approved" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Approved Payments</CardTitle>
-              <CardDescription>
-                Recently approved disbursement requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Batch ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Initiated By</TableHead>
-                      <TableHead>Approved By</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date Approved</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {approvedPayments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell className="font-mono">
-                          {payment.batchId}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{payment.type}</Badge>
-                        </TableCell>
-                        <TableCell>{payment.initiatedBy}</TableCell>
-                        <TableCell>{payment.approvedBy}</TableCell>
-                        <TableCell className="font-medium">
-                          ₵{payment.amount.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={
-                              payment.status === "Completed"
-                                ? "bg-green-50 text-green-700 border-green-200"
-                                : "bg-blue-50 text-blue-700 border-blue-200"
-                            }
-                          >
-                            {payment.status === "Completed" ? (
-                              <IconCheck className="h-3 w-3 mr-1" />
-                            ) : (
-                              <IconClock className="h-3 w-3 mr-1" />
-                            )}
-                            {payment.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(payment.dateApproved).toLocaleDateString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+function ApprovalDetails({
+  approval,
+  onApprove,
+  onReject,
+}: {
+  approval: ApprovalRequest;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">{approval.description}</h3>
+          <p className="text-sm text-muted-foreground">
+            Requested by {approval.requestedBy}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className={getPriorityColor(approval.priority)}
+          >
+            {approval.priority} Priority
+          </Badge>
+          <Badge variant="outline" className={getStatusColor(approval.status)}>
+            {approval.status}
+          </Badge>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Request Information */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            Request Details
+          </h4>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Reference Number
+              </Label>
+              <p className="font-mono text-sm mt-1">{approval.reference}</p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Request Type
+              </Label>
+              <p className="text-sm mt-1">{approval.type}</p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Category
+              </Label>
+              <p className="text-sm mt-1">{approval.category}</p>
+            </div>
+
+            {approval.batchId && (
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Batch ID
+                </Label>
+                <p className="font-mono text-sm mt-1">{approval.batchId}</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            Requester Information
+          </h4>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Requested By
+              </Label>
+              <p className="text-sm mt-1">{approval.requestedBy}</p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Email
+              </Label>
+              <p className="text-sm mt-1">{approval.requestedByEmail}</p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Request Date
+              </Label>
+              <p className="text-sm mt-1">
+                {new Date(approval.date).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Financial Information */}
+      <div className="space-y-4">
+        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+          Financial Details
+        </h4>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Total Amount
+                </Label>
+                <p className="text-3xl font-bold mt-1">
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  }).format(approval.amount)}
+                </p>
+              </div>
+              <IconCurrencyDollar className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recipient Information (for single payments) */}
+      {approval.recipientName && (
+        <>
+          <Separator />
+          <div className="space-y-4">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+              Recipient Information
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Recipient Name
+                </Label>
+                <p className="text-sm mt-1">{approval.recipientName}</p>
+              </div>
+
+              {approval.recipient && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Recipient Account
+                  </Label>
+                  <p className="font-mono text-sm mt-1">{approval.recipient}</p>
+                </div>
+              )}
+
+              {approval.recipientType && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Payment Method
+                  </Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline">{approval.recipientType}</Badge>
+                    {approval.network && (
+                      <span className="text-sm text-muted-foreground">
+                        via {approval.network}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Notes */}
+      {approval.notes && (
+        <>
+          <Separator />
+          <div className="space-y-4">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+              Additional Notes
+            </h4>
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm">{approval.notes}</p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Approval Information */}
+      {(approval.approvedBy || approval.rejectionReason) && (
+        <>
+          <Separator />
+          <div className="space-y-4">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+              {approval.status === "Approved" ? "Approval" : "Rejection"}{" "}
+              Details
+            </h4>
+
+            {approval.approvedBy && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Approved By
+                  </Label>
+                  <p className="text-sm mt-1">{approval.approvedBy}</p>
+                </div>
+
+                {approval.approvedDate && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Approval Date
+                    </Label>
+                    <p className="text-sm mt-1">
+                      {new Date(approval.approvedDate).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {approval.rejectionReason && (
+              <div className="p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+                <Label className="text-sm font-medium text-red-700 dark:text-red-300">
+                  Rejection Reason
+                </Label>
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  {approval.rejectionReason}
+                </p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Action Buttons */}
+      {approval.status === "Pending" && (
+        <>
+          <Separator />
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => onReject(approval.id)}
+              className="text-red-600 hover:text-red-700"
+            >
+              <IconX className="h-4 w-4 mr-2" />
+              Reject Request
+            </Button>
+            <Button
+              onClick={() => onApprove(approval.id)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <IconCheck className="h-4 w-4 mr-2" />
+              Approve Request
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
