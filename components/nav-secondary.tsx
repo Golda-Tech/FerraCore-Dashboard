@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import type * as React from "react"
-import type { Icon } from "@tabler/icons-react"
-import { useRouter } from "next/navigation" // Use next/navigation for App Router
+import type * as React from "react";
+import type { Icon } from "@tabler/icons-react";
+import { useRouter } from "next/navigation"; // Use next/navigation for App Router
 
 import {
   SidebarGroup,
@@ -10,20 +10,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-type PageName =
-  | "dashboard"
-  | "single-payment"
-  | "bulk-upload"
-  | "approvals"
-  | "analytics"
-  | "transactions"
-  | "settings"
-  | "help"
-  | "reports"
-  | "templates"
-  | "merchants"
+import type { PageName } from "@/lib/types/navigation";
 
 export function NavSecondary({
   items,
@@ -32,14 +21,14 @@ export function NavSecondary({
   ...props
 }: {
   items: {
-    title: string
-    page: PageName
-    icon: Icon
-  }[]
-  onNavigate: (page: PageName) => void
-  currentPath: string // Define prop type
+    title: string;
+    page: PageName;
+    icon: Icon;
+  }[];
+  onNavigate: (page: PageName) => void;
+  currentPath: string; // Define prop type
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <SidebarGroup {...props}>
@@ -50,7 +39,9 @@ export function NavSecondary({
               <SidebarMenuButton asChild>
                 <button
                   onClick={() => onNavigate(item.page)}
-                  className={currentPath === `/${item.page}` ? "data-[active=true]" : ""} // Use currentPath
+                  className={
+                    currentPath === `/${item.page}` ? "data-[active=true]" : ""
+                  } // Use currentPath
                 >
                   <item.icon />
                   <span>{item.title}</span>
@@ -61,5 +52,5 @@ export function NavSecondary({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

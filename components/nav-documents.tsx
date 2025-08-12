@@ -26,19 +26,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-type PageName =
-  | "dashboard"
-  | "single-payment"
-  | "bulk-upload"
-  | "approvals"
-  | "analytics"
-  | "transactions"
-  | "fund-account"
-  | "settings"
-  | "help"
-  | "reports"
-  | "templates"
-  | "merchants";
+import type { PageName } from "@/lib/types/navigation";
 
 export function NavDocuments({
   items,

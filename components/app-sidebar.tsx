@@ -30,19 +30,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { logout } from "@/lib/auth"; // Import logout from lib/auth
-
-type PageName =
-  | "dashboard"
-  | "single-payment"
-  | "bulk-upload"
-  | "approvals"
-  | "analytics"
-  | "transactions"
-  | "settings"
-  | "help"
-  | "reports"
-  | "templates"
-  | "merchants";
+import type { PageName } from "@/lib/types/navigation";
 
 const data = {
   user: {
