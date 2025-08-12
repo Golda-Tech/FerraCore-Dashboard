@@ -23,6 +23,7 @@ type PageName =
   | "approvals"
   | "analytics"
   | "transactions"
+  | "fund-account"
   | "settings"
   | "help"
   | "reports"

@@ -1,7 +1,13 @@
-"use client"
+"use client";
 
-import { IconDots, IconFolder, IconShare3, IconTrash, type Icon } from "@tabler/icons-react"
-import { useRouter } from "next/navigation" // Use next/navigation for App Router
+import {
+  IconDots,
+  IconFolder,
+  IconShare3,
+  IconTrash,
+  type Icon,
+} from "@tabler/icons-react";
+import { useRouter } from "next/navigation"; // Use next/navigation for App Router
 
 import {
   DropdownMenu,
@@ -9,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -18,7 +24,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 type PageName =
   | "dashboard"
@@ -27,11 +33,12 @@ type PageName =
   | "approvals"
   | "analytics"
   | "transactions"
+  | "fund-account"
   | "settings"
   | "help"
   | "reports"
   | "templates"
-  | "merchants"
+  | "merchants";
 
 export function NavDocuments({
   items,
@@ -39,15 +46,15 @@ export function NavDocuments({
   currentPath, // Pass currentPath as a prop
 }: {
   items: {
-    name: string
-    page: PageName
-    icon: Icon
-  }[]
-  onNavigate: (page: PageName) => void
-  currentPath: string // Define prop type
+    name: string;
+    page: PageName;
+    icon: Icon;
+  }[];
+  onNavigate: (page: PageName) => void;
+  currentPath: string; // Define prop type
 }) {
-  const { isMobile } = useSidebar()
-  const router = useRouter()
+  const { isMobile } = useSidebar();
+  const router = useRouter();
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -58,7 +65,9 @@ export function NavDocuments({
             <SidebarMenuButton asChild>
               <button
                 onClick={() => onNavigate(item.page)}
-                className={currentPath === `/${item.page}` ? "data-[active=true]" : ""} // Use currentPath
+                className={
+                  currentPath === `/${item.page}` ? "data-[active=true]" : ""
+                } // Use currentPath
               >
                 <item.icon />
                 <span>{item.name}</span>
@@ -66,7 +75,10 @@ export function NavDocuments({
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuAction showOnHover className="data-[state=open]:bg-accent rounded-sm">
+                <SidebarMenuAction
+                  showOnHover
+                  className="data-[state=open]:bg-accent rounded-sm"
+                >
                   <IconDots />
                   <span className="sr-only">More</span>
                 </SidebarMenuAction>
@@ -101,5 +113,5 @@ export function NavDocuments({
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
-  )
+  );
 }

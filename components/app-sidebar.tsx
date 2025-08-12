@@ -81,6 +81,11 @@ const data = {
       page: "transactions" as PageName,
       icon: IconHistory,
     },
+    {
+      title: "Fund Account",
+      page: "fund-account" as PageName,
+      icon: IconBuildingBank,
+    },
   ],
   navSecondary: [
     {
