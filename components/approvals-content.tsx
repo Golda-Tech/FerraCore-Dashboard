@@ -61,7 +61,7 @@ interface ApprovalRequest {
 const mockApprovalRequests: ApprovalRequest[] = [
   {
     id: "APR001",
-    type: "Single Payment",
+    type: "Single Payout",
     description: "Payment to Vendor A for office supplies",
     amount: 1500.0,
     status: "Pending",
@@ -94,7 +94,7 @@ const mockApprovalRequests: ApprovalRequest[] = [
   },
   {
     id: "APR003",
-    type: "Single Payment",
+    type: "Single Payout",
     description: "Refund to Customer B",
     amount: 250.5,
     status: "Approved",
@@ -128,7 +128,7 @@ const mockApprovalRequests: ApprovalRequest[] = [
   },
   {
     id: "APR005",
-    type: "Single Payment",
+    type: "Single Payout",
     description: "Consulting fee payment",
     amount: 750.0,
     status: "Rejected",
@@ -546,7 +546,7 @@ function ApprovalDetails({
         </Card>
       </div>
 
-      {/* Recipient Information (for single payments) */}
+      {/* Recipient Information (for Single Payouts) */}
       {approval.recipientName && (
         <>
           <Separator />

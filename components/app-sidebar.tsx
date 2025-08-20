@@ -45,7 +45,7 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Single Payment",
+      title: "Single Payout",
       page: "single-payment" as PageName,
       icon: IconCreditCard,
     },
