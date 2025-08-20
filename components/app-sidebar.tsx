@@ -50,7 +50,7 @@ const data = {
       icon: IconCreditCard,
     },
     {
-      title: "Bulk Upload",
+      title: "Bulk Payout Payout",
       page: "bulk-upload" as PageName,
       icon: IconFileUpload,
     },

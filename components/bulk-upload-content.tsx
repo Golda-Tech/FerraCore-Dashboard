@@ -137,7 +137,9 @@ export function BulkUploadContent() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold md:text-2xl">Bulk Upload</h1>
+        <h1 className="text-lg font-semibold md:text-2xl">
+          Bulk Payout Payout
+        </h1>
         <Button
           variant="outline"
           className="flex items-center gap-2 bg-transparent"

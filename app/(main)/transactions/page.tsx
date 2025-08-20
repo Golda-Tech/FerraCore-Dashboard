@@ -47,7 +47,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 
-// Extended transaction data
+// Enhanced transaction data with all required fields
 const allTransactions = [
   {
     id: 1,
@@ -67,6 +67,15 @@ const allTransactions = [
     dateCompleted: "2024-01-16T10:35:00Z",
     description: "Farmer payment for harvest",
     transactionId: "MTN240116103500001",
+    // New fields for enhanced details
+    paymentAmount: 500,
+    charge: 2.5,
+    paidBy: "First Bank Limited",
+    requestType: "Bulk Payment",
+    balanceBefore: 10000.0,
+    balanceAfter: 9497.5,
+    externalTransactionId: "EXT-MTN-240116-001",
+    narration: "Monthly farmer payment for maize harvest delivery",
   },
   {
     id: 2,
@@ -86,6 +95,15 @@ const allTransactions = [
     dateCompleted: null,
     description: "Salary payment",
     transactionId: "GCB240116142000002",
+    // New fields
+    paymentAmount: 750,
+    charge: 3.75,
+    paidBy: "First Bank Limited",
+    requestType: "Salary Transfer",
+    balanceBefore: 9497.5,
+    balanceAfter: 8743.75,
+    externalTransactionId: "EXT-GCB-240116-002",
+    narration: "Monthly salary payment for employee Jane Smith",
   },
   {
     id: 3,
@@ -106,6 +124,15 @@ const allTransactions = [
     description: "Equipment purchase",
     transactionId: null,
     failureReason: "Insufficient balance in recipient account",
+    // New fields
+    paymentAmount: 250,
+    charge: 1.25,
+    paidBy: "First Bank Limited",
+    requestType: "Vendor Payment",
+    balanceBefore: 8743.75,
+    balanceAfter: 8743.75, // No change due to failure
+    externalTransactionId: null,
+    narration: "Payment for farming equipment purchase - FAILED",
   },
   {
     id: 4,
@@ -125,6 +152,15 @@ const allTransactions = [
     dateCompleted: null,
     description: "Contractor payment",
     transactionId: null,
+    // New fields
+    paymentAmount: 1000,
+    charge: 5.0,
+    paidBy: "First Bank Limited",
+    requestType: "Contractor Payment",
+    balanceBefore: 8743.75,
+    balanceAfter: null, // Pending
+    externalTransactionId: null,
+    narration: "Payment to contractor Alice Brown for construction work",
   },
   {
     id: 5,
@@ -144,6 +180,15 @@ const allTransactions = [
     dateCompleted: "2024-01-15T11:45:00Z",
     description: "Vendor payment",
     transactionId: "ECO240115114500005",
+    // New fields
+    paymentAmount: 300,
+    charge: 1.5,
+    paidBy: "First Bank Limited",
+    requestType: "Vendor Payment",
+    balanceBefore: 10301.5,
+    balanceAfter: 10000.0,
+    externalTransactionId: "EXT-ECO-240115-005",
+    narration: "Payment to vendor David Wilson for supplies",
   },
   {
     id: 6,
@@ -164,6 +209,15 @@ const allTransactions = [
     description: "Refund payment",
     transactionId: null,
     rejectionReason: "Invalid recipient details",
+    // New fields
+    paymentAmount: 600,
+    charge: 3.0,
+    paidBy: "First Bank Limited",
+    requestType: "Refund",
+    balanceBefore: 10904.5,
+    balanceAfter: 10904.5, // No change due to rejection
+    externalTransactionId: null,
+    narration: "Refund payment to customer Emma Davis - REJECTED",
   },
 ];
 
@@ -446,7 +500,7 @@ export default function TransactionsPage() {
         open={!!selectedTransaction}
         onOpenChange={() => setSelectedTransaction(null)}
       >
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Transaction Details</DialogTitle>
             <DialogDescription>
@@ -585,11 +639,55 @@ function TransactionDetails({
 
       <Separator />
 
-      {/* Transaction Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Enhanced Transaction Information */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Payment Details */}
         <div className="space-y-4">
           <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-            Transaction Details
+            Payment Details
+          </h4>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Payment Amount
+              </Label>
+              <p className="text-lg font-semibold text-primary mt-1">
+                ₵{transaction.paymentAmount?.toFixed(2) || "N/A"}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Charge
+              </Label>
+              <p className="text-sm mt-1">
+                ₵{transaction.charge?.toFixed(2) || "N/A"}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Total Amount
+              </Label>
+              <p className="text-lg font-bold mt-1">
+                ₵{transaction.totalAmount.toFixed(2)}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Paid By
+              </Label>
+              <p className="text-sm mt-1">{transaction.paidBy || "N/A"}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Transaction IDs and References */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            Transaction References
           </h4>
 
           <div className="space-y-3">
@@ -602,24 +700,121 @@ function TransactionDetails({
 
             <div>
               <Label className="text-sm font-medium text-muted-foreground">
+                Transaction ID
+              </Label>
+              <p className="font-mono text-sm mt-1">
+                {transaction.transactionId || "Pending"}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                External Transaction ID
+              </Label>
+              <p className="font-mono text-sm mt-1">
+                {transaction.externalTransactionId || "N/A"}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
                 Batch ID
               </Label>
               <p className="font-mono text-sm mt-1">{transaction.batchId}</p>
             </div>
 
-            {transaction.transactionId && (
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Transaction ID
-                </Label>
-                <p className="font-mono text-sm mt-1">
-                  {transaction.transactionId}
-                </p>
-              </div>
-            )}
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Request Type
+              </Label>
+              <Badge variant="outline" className="mt-1">
+                {transaction.requestType || "N/A"}
+              </Badge>
+            </div>
           </div>
         </div>
 
+        {/* Network and Balance Information */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            Network & Balance
+          </h4>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Network
+              </Label>
+              <p className="text-sm mt-1">{transaction.network}</p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Balance Before
+              </Label>
+              <p className="text-sm font-medium text-gray-600 mt-1">
+                ₵{transaction.balanceBefore?.toFixed(2) || "N/A"}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Balance After
+              </Label>
+              <p className="text-sm font-medium text-gray-600 mt-1">
+                {transaction.balanceAfter !== null
+                  ? `₵${transaction.balanceAfter.toFixed(2)}`
+                  : "Pending"}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Date
+              </Label>
+              <p className="text-sm mt-1">
+                {new Date(transaction.dateInitiated).toLocaleString()}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">
+                Status
+              </Label>
+              <Badge
+                variant="outline"
+                className={`mt-1 ${getStatusColor(transaction.status)}`}
+              >
+                {getStatusIcon(transaction.status)}
+                <span className="ml-1">{transaction.status}</span>
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Narration Section */}
+      <div className="space-y-4">
+        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+          Narration
+        </h4>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              {transaction.narration ||
+                transaction.description ||
+                "No additional notes available"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Separator />
+
+      {/* Recipient Information */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
             Recipient Information
@@ -653,56 +848,7 @@ function TransactionDetails({
             </div>
           </div>
         </div>
-      </div>
 
-      <Separator />
-
-      {/* Financial Information */}
-      <div className="space-y-4">
-        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-          Financial Details
-        </h4>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <Label className="text-sm font-medium text-muted-foreground">
-                Amount
-              </Label>
-              <p className="text-2xl font-bold mt-1">
-                ₵{transaction.amount.toFixed(2)}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <Label className="text-sm font-medium text-muted-foreground">
-                Transaction Fees
-              </Label>
-              <p className="text-2xl font-bold mt-1">
-                ₵{transaction.fees.toFixed(2)}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <Label className="text-sm font-medium text-muted-foreground">
-                Total Amount
-              </Label>
-              <p className="text-2xl font-bold mt-1 text-primary">
-                ₵{transaction.totalAmount.toFixed(2)}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Processing Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
             Processing Details
@@ -724,15 +870,7 @@ function TransactionDetails({
                 {transaction.approvedBy || "Pending approval"}
               </p>
             </div>
-          </div>
-        </div>
 
-        <div className="space-y-4">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-            Timeline
-          </h4>
-
-          <div className="space-y-3">
             <div>
               <Label className="text-sm font-medium text-muted-foreground">
                 Date Initiated
@@ -789,6 +927,38 @@ function TransactionDetails({
           </div>
         </>
       )}
+
+      {/* Summary Section */}
+      <Separator />
+      <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-3">
+          Transaction Summary
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <span className="text-muted-foreground">Amount:</span>
+            <span className="ml-2 font-medium">
+              ₵{transaction.paymentAmount?.toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Charges:</span>
+            <span className="ml-2 font-medium">
+              ₵{transaction.charge?.toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Total:</span>
+            <span className="ml-2 font-bold text-primary">
+              ₵{transaction.totalAmount.toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Status:</span>
+            <span className="ml-2 font-medium">{transaction.status}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
