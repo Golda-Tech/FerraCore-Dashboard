@@ -79,7 +79,7 @@ const mockApprovalRequests: ApprovalRequest[] = [
   },
   {
     id: "APR002",
-    type: "Bulk Payout Payout",
+    type: "Bulk Upload Payout",
     description: "Payroll for July 2024",
     amount: 25000.0,
     status: "Pending",
@@ -113,7 +113,7 @@ const mockApprovalRequests: ApprovalRequest[] = [
   },
   {
     id: "APR004",
-    type: "Bulk Payout Payout",
+    type: "Bulk Upload Payout",
     description: "Supplier payments Q2",
     amount: 12000.0,
     status: "Pending",

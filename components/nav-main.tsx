@@ -56,7 +56,7 @@ export function NavMain({
             >
               <button onClick={() => onNavigate("bulk-upload")}>
                 <IconFileUpload />
-                <span className="sr-only">Bulk Payout Payout</span>
+                <span className="sr-only">Bulk Upload Payout</span>
               </button>
             </Button>
           </SidebarMenuItem>
