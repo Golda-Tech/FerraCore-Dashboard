@@ -644,7 +644,7 @@ function TransactionDetails({
         {/* Payment Details */}
         <div className="space-y-4">
           <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-            Payment Details
+            Payment Detail
           </h4>
 
           <div className="space-y-3">
