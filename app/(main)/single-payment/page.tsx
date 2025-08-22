@@ -8,6 +8,7 @@ import {
   IconLoader,
   IconPhone,
   IconWallet,
+  IconCheck,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,9 +30,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function SinglePaymentPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
   const [formData, setFormData] = useState({
     recipientType: "mobile-money",
     recipient: "",
@@ -46,7 +55,8 @@ export default function SinglePaymentPage() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 2000));
     setIsLoading(false);
-    alert("Payment initiated successfully!");
+    // alert("Payment initiated successfully!");
+    setShowDialog(true);
   };
 
   const calculateFees = (amount: number) => {
@@ -275,6 +285,43 @@ export default function SinglePaymentPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ✅ Payment Confirmation Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-yellow-600">
+              <IconCheck className="h-5 w-5" />
+              Payment Pending Approval
+            </DialogTitle>
+            <DialogDescription>
+              Your payment has been initiated and is <b>pending approval</b>.
+              You’ll be notified once it’s processed.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-2 text-sm">
+            <p>
+              <span className="font-medium">Recipient:</span>{" "}
+              {formData.recipient}
+            </p>
+            <p>
+              <span className="font-medium">Amount:</span> ₵{amount.toFixed(2)}
+            </p>
+            <p>
+              <span className="font-medium">Processing Fee:</span> ₵
+              {fees.toFixed(2)}
+            </p>
+            <p>
+              <span className="font-medium">Total:</span> ₵{total.toFixed(2)}
+            </p>
+          </div>
+
+          <div className="flex justify-end mt-6">
+            <Button onClick={() => setShowDialog(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
