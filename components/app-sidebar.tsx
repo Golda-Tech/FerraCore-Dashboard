@@ -88,11 +88,11 @@ const data = {
     },
   ],
   documents: [
-    {
-      name: "Reports",
-      page: "reports" as PageName,
-      icon: IconReport,
-    },
+    // {
+    //   name: "Reports",
+    //   page: "reports" as PageName,
+    //   icon: IconReport,
+    // },
     {
       name: "Archives",
       page: "archives" as PageName,
