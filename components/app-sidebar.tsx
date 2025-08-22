@@ -88,16 +88,16 @@ const data = {
     },
   ],
   documents: [
-    // {
-    //   name: "Reports",
-    //   page: "reports" as PageName,
-    //   icon: IconReport,
-    // },
-    // {
-    //   name: "Templates",
-    //   page: "templates" as PageName,
-    //   icon: IconFileUpload,
-    // },
+    {
+      name: "Reports",
+      page: "reports" as PageName,
+      icon: IconReport,
+    },
+    {
+      name: "Archives",
+      page: "archives" as PageName,
+      icon: IconHistory,
+    },
   ],
 };
 
