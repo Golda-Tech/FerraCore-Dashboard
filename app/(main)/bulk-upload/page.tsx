@@ -9,6 +9,7 @@ import {
   IconFileSpreadsheet,
   IconLoader,
   IconX,
+  IconCheck,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const sampleData = [
   {
@@ -79,6 +87,7 @@ export default function BulkUploadPage() {
   const [validationResults, setValidationResults] = useState<
     typeof sampleData | null
   >(null);
+  const [showDialog, setShowDialog] = useState(false);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -365,7 +374,12 @@ export default function BulkUploadPage() {
                 </div>
 
                 <div className="flex gap-2 mt-4">
-                  <Button className="flex-1">Submit for Approval</Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => setShowDialog(true)}
+                  >
+                    Submit for Approval
+                  </Button>
                   <Button variant="outline">Save as Draft</Button>
                 </div>
               </CardContent>
@@ -373,6 +387,49 @@ export default function BulkUploadPage() {
           </>
         )}
       </div>
+
+      {/* Bulk Upload Confirmation Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-yellow-600">
+              <IconCheck className="h-5 w-5" />
+              Bulk Payout Submitted
+            </DialogTitle>
+            <DialogDescription>
+              Your bulk payout has been submitted and is <b>pending approval</b>
+              . You’ll be notified once it’s processed.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-2 text-sm">
+            <p>
+              <span className="font-medium">Valid Records:</span>{" "}
+              {validRecords.length}
+            </p>
+            <p>
+              <span className="font-medium">Invalid Records:</span>{" "}
+              {invalidRecords.length}
+            </p>
+            <p>
+              <span className="font-medium">Total Amount:</span> ₵
+              {totalAmount.toFixed(2)}
+            </p>
+            <p>
+              <span className="font-medium">Processing Fees:</span> ₵
+              {totalFees.toFixed(2)}
+            </p>
+            <p>
+              <span className="font-medium">Grand Total:</span> ₵
+              {(totalAmount + totalFees).toFixed(2)}
+            </p>
+          </div>
+
+          <div className="flex justify-end mt-6">
+            <Button onClick={() => setShowDialog(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
