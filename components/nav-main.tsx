@@ -40,12 +40,12 @@ export function NavMain({
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
               asChild
-              tooltip="New Payout"
+              tooltip="New Bulk Payout"
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
-              <button onClick={() => onNavigate("single-payment")}>
-                <IconCirclePlusFilled />
-                <span>New Payout</span>
+              <button onClick={() => onNavigate("bulk-upload")}>
+                <IconFileUpload />
+                <span>New Bulk Payout</span>
               </button>
             </SidebarMenuButton>
             <Button
@@ -54,9 +54,9 @@ export function NavMain({
               className="size-8 group-data-[collapsible=icon]:opacity-0 bg-transparent"
               variant="outline"
             >
-              <button onClick={() => onNavigate("bulk-upload")}>
-                <IconFileUpload />
-                <span className="sr-only">Bulk Upload Payout</span>
+              <button onClick={() => onNavigate("single-payment")}>
+                <IconCirclePlusFilled />
+                <span className="sr-only">Single Payout</span>
               </button>
             </Button>
           </SidebarMenuItem>
