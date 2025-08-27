@@ -71,11 +71,11 @@ const data = {
       page: "collections" as PageName,
       icon: IconMoneybag,
     },
-    {
-      title: "Transactions",
-      page: "transactions" as PageName,
-      icon: IconHistory,
-    },
+    // {
+    //   title: "Transactions",
+    //   page: "transactions" as PageName,
+    //   icon: IconHistory,
+    // },
     // {
     //   title: "Fund Account",
     //   page: "fund-account" as PageName,

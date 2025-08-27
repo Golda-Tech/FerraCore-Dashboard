@@ -10,4 +10,6 @@ export type PageName =
   | "help"
   | "reports"
   | "templates"
-  | "merchants";
+  | "merchants"
+  | "collections"
+  | "new-collection";

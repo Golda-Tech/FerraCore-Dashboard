@@ -3,6 +3,7 @@
 import {
   IconCirclePlusFilled,
   IconFileUpload,
+  IconMoneybagMove,
   type Icon,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation"; // Use next/navigation for App Router
@@ -38,17 +39,17 @@ export function NavMain({
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
-            {/* <SidebarMenuButton
+            <SidebarMenuButton
               asChild
-              tooltip="New Bulk Payout"
+              tooltip="New Collection"
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
-              <button onClick={() => onNavigate("bulk-upload")}>
-                <IconFileUpload />
-                <span>New Bulk Payout</span>
+              <button onClick={() => onNavigate("new-collection")}>
+                <IconMoneybagMove />
+                <span>New Collection</span>
               </button>
             </SidebarMenuButton>
-            <Button
+            {/* <Button
               asChild
               size="icon"
               className="size-8 group-data-[collapsible=icon]:opacity-0 bg-transparent"
@@ -75,10 +76,10 @@ export function NavMain({
                   //   currentPath === `/${item.page}` ? "data-[active=true]" : ""
                   // }
                   className="
-            data-[active=true]:bg-black 
-            data-[active=true]:text-white 
-            dark:data-[active=true]:bg-white 
-            dark:data-[active=true]:text-black
+            data-[active=true]:bg-gray-400 
+            data-[active=true]:text-gray-900 
+            dark:data-[active=true]:bg-gray-800 
+            dark:data-[active=true]:text-gray-100
             transition-colors
           "
                 >

@@ -1,26 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import {
-  CalendarIcon,
-  Download,
-  Eye,
-  Filter,
-  Plus,
-  Search,
-  X,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Eye, Search, X, Download, Calendar, Plus } from "lucide-react";
 import {
   IconBuildingBank,
   IconCash,
   IconClock,
   IconDeviceMobile,
-  IconInfoCircle,
-  IconShield,
   IconCheck,
-  IconX,
+  IconX as IconClose,
   IconLoader,
   IconRefresh,
+  IconFileExport,
+  IconUser,
+  IconReceipt,
+  IconCalendar,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -38,11 +34,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -58,15 +52,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Mock data for collections
 const mockCollections = [
   {
     id: "COL-001",
     customerName: "Acme Corporation",
+    customerEmail: "finance@acme.com",
     customerContact: "+233 24 123 4567",
     amount: 5000.0,
     currency: "GHS",
@@ -74,14 +83,17 @@ const mockCollections = [
     provider: "MTN",
     status: "completed",
     reference: "REF-COL-001",
-    description: "Invoice payment for services",
+    description: "Invoice payment for services rendered in December 2023",
     createdAt: "2024-01-15T10:30:00Z",
     completedAt: "2024-01-15T10:32:15Z",
     fees: 25.0,
+    netAmount: 4975.0,
+    processingTime: "2 minutes 15 seconds",
   },
   {
     id: "COL-002",
     customerName: "Tech Solutions Ltd",
+    customerEmail: "accounts@techsolutions.com",
     customerContact: "0201234567",
     amount: 2500.0,
     currency: "GHS",
@@ -89,14 +101,19 @@ const mockCollections = [
     provider: "First Bank",
     status: "pending",
     reference: "REF-COL-002",
-    description: "Monthly subscription payment",
+    description: "Monthly subscription payment for January 2024",
     createdAt: "2024-01-15T14:20:00Z",
     completedAt: null,
     fees: 12.5,
+    netAmount: 2487.5,
+    processingTime: "Processing...",
+    bankName: "First National Bank",
+    accountNumber: "ACC-123456789",
   },
   {
     id: "COL-003",
     customerName: "Global Enterprises",
+    customerEmail: "billing@global.com",
     customerContact: "+233 20 987 6543",
     amount: 1200.0,
     currency: "GHS",
@@ -108,11 +125,17 @@ const mockCollections = [
     createdAt: "2024-01-15T16:45:00Z",
     completedAt: null,
     fees: 6.0,
-    failureReason: "Insufficient funds",
+    netAmount: 1194.0,
+    failureReason: "Insufficient funds in customer account",
+    processingTime: "Failed after 1 minute 30 seconds",
+    errorCode: "INSUFFICIENT_FUNDS",
+    errorMessage:
+      "Customer does not have sufficient balance to complete this transaction",
   },
   {
     id: "COL-004",
     customerName: "StartUp Inc",
+    customerEmail: "finance@startup.com",
     customerContact: "0244567890",
     amount: 750.0,
     currency: "GHS",
@@ -120,25 +143,67 @@ const mockCollections = [
     provider: "AirtelTigo",
     status: "awaiting_approval",
     reference: "REF-COL-004",
-    description: "Service fee collection",
+    description: "Service fee collection for Q4 2023",
     createdAt: "2024-01-15T18:10:00Z",
     completedAt: null,
     fees: 3.75,
+    netAmount: 746.25,
+    processingTime: "Awaiting customer approval...",
+  },
+  {
+    id: "COL-005",
+    customerName: "Manufacturing Co",
+    customerEmail: "payments@manufacturing.com",
+    customerContact: "+233 26 555 0123",
+    amount: 8500.0,
+    currency: "GHS",
+    method: "Bank Transfer",
+    provider: "GCB Bank",
+    status: "completed",
+    reference: "REF-COL-005",
+    description: "Equipment purchase payment",
+    createdAt: "2024-01-14T09:15:00Z",
+    completedAt: "2024-01-16T11:30:00Z",
+    fees: 42.5,
+    netAmount: 8457.5,
+    processingTime: "2 days 2 hours 15 minutes",
+    bankName: "GCB Bank",
+    accountNumber: "ACC-987654321",
+  },
+  {
+    id: "COL-006",
+    customerName: "Retail Store Ltd",
+    customerEmail: "admin@retailstore.com",
+    customerContact: "0277890123",
+    amount: 3200.0,
+    currency: "GHS",
+    method: "Mobile Money",
+    provider: "MTN",
+    status: "expired",
+    reference: "REF-COL-006",
+    description: "Inventory payment - expired after 24 hours",
+    createdAt: "2024-01-13T15:45:00Z",
+    completedAt: null,
+    fees: 16.0,
+    netAmount: 3184.0,
+    processingTime: "Expired after 24 hours",
   },
 ];
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case "completed":
-      return "bg-green-100 text-green-800 border-green-200";
+      return "default";
     case "pending":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      return "secondary";
     case "failed":
-      return "bg-red-100 text-red-800 border-red-200";
+      return "destructive";
     case "awaiting_approval":
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return "secondary";
+    case "expired":
+      return "outline";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
+      return "outline";
   }
 };
 
@@ -149,21 +214,36 @@ const getStatusIcon = (status: string) => {
     case "pending":
       return <IconLoader className="h-3 w-3 animate-spin" />;
     case "failed":
-      return <IconX className="h-3 w-3" />;
+      return <IconClose className="h-3 w-3" />;
     case "awaiting_approval":
       return <IconClock className="h-3 w-3" />;
+    case "expired":
+      return <IconClose className="h-3 w-3" />;
     default:
       return <IconClock className="h-3 w-3" />;
   }
 };
 
+const getMethodIcon = (method: string) => {
+  switch (method) {
+    case "Mobile Money":
+      return <IconDeviceMobile className="h-4 w-4" />;
+    case "Bank Transfer":
+      return <IconBuildingBank className="h-4 w-4" />;
+    default:
+      return <IconCash className="h-4 w-4" />;
+  }
+};
+
 export function CollectionsContent() {
-  const [selectedMethod, setSelectedMethod] = useState("mobile_money");
-  const [isCollecting, setIsCollecting] = useState(false);
+  const router = useRouter();
   const [selectedCollection, setSelectedCollection] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [methodFilter, setMethodFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date>();
+  const [dateTo, setDateTo] = useState<Date>();
+  const [isExporting, setIsExporting] = useState(false);
 
   // Filter collections based on search and filters
   const filteredCollections = mockCollections.filter((collection) => {
@@ -172,7 +252,8 @@ export function CollectionsContent() {
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       collection.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      collection.description.toLowerCase().includes(searchTerm.toLowerCase());
+      collection.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      collection.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" || collection.status === statusFilter;
@@ -180,7 +261,17 @@ export function CollectionsContent() {
       methodFilter === "all" ||
       collection.method.toLowerCase().replace(" ", "_") === methodFilter;
 
-    return matchesSearch && matchesStatus && matchesMethod;
+    const collectionDate = new Date(collection.createdAt);
+    const matchesDateFrom = !dateFrom || collectionDate >= dateFrom;
+    const matchesDateTo = !dateTo || collectionDate <= dateTo;
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesMethod &&
+      matchesDateFrom &&
+      matchesDateTo
+    );
   });
 
   // Calculate statistics
@@ -191,25 +282,52 @@ export function CollectionsContent() {
   const pendingCollections = filteredCollections.filter(
     (c) => c.status === "pending" || c.status === "awaiting_approval"
   ).length;
+  const failedCollections = filteredCollections.filter(
+    (c) => c.status === "failed"
+  ).length;
   const totalAmount = filteredCollections
     .filter((c) => c.status === "completed")
     .reduce((sum, c) => sum + c.amount, 0);
-
-  const handleCollectionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsCollecting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsCollecting(false);
-      // Show success message or handle response
-    }, 3000);
-  };
+  const totalNetAmount = filteredCollections
+    .filter((c) => c.status === "completed")
+    .reduce((sum, c) => sum + c.netAmount, 0);
 
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
     setMethodFilter("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
+
+  const handleExport = async (format: string) => {
+    setIsExporting(true);
+
+    // Simulate export process
+    setTimeout(() => {
+      setIsExporting(false);
+      // In real implementation, trigger download
+      console.log(
+        `Exporting ${filteredCollections.length} collections as ${format}`
+      );
+    }, 2000);
+  };
+
+  const formatCurrency = (amount: number, currency = "GHS") => {
+    return new Intl.NumberFormat("en-GH", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
@@ -219,208 +337,13 @@ export function CollectionsContent() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Collections</h1>
           <p className="text-muted-foreground">
-            Collect payments from customers into your Rexpay account
+            View and manage all your collection requests
           </p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Collection
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create New Collection</DialogTitle>
-              <DialogDescription>
-                Collect payment from a customer into your Rexpay account
-              </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleCollectionSubmit} className="space-y-6">
-              {/* Collection Method Selection */}
-              <div className="space-y-3">
-                <Label>Collection Method</Label>
-                <RadioGroup
-                  value={selectedMethod}
-                  onValueChange={setSelectedMethod}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="mobile_money" id="mobile_money" />
-                    <Label
-                      htmlFor="mobile_money"
-                      className="flex items-center gap-2"
-                    >
-                      <IconDeviceMobile className="h-4 w-4" />
-                      Mobile Money
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="bank_transfer" id="bank_transfer" />
-                    <Label
-                      htmlFor="bank_transfer"
-                      className="flex items-center gap-2"
-                    >
-                      <IconBuildingBank className="h-4 w-4" />
-                      Bank Transfer
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {/* Customer Information */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="customerName">Customer Name</Label>
-                  <Input
-                    id="customerName"
-                    placeholder="Enter customer name"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customerEmail">Customer Email</Label>
-                  <Input
-                    id="customerEmail"
-                    type="email"
-                    placeholder="customer@example.com"
-                  />
-                </div>
-              </div>
-
-              {/* Collection Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount (GHS)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reference">Reference</Label>
-                  <Input id="reference" placeholder="Optional reference" />
-                </div>
-              </div>
-
-              {/* Method-specific fields */}
-              {selectedMethod === "mobile_money" && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phoneNumber">Phone Number</Label>
-                      <Input
-                        id="phoneNumber"
-                        placeholder="+233 XX XXX XXXX"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="provider">Network Provider</Label>
-                      <Select required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select provider" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="mtn">MTN</SelectItem>
-                          <SelectItem value="vodafone">Vodafone</SelectItem>
-                          <SelectItem value="airteltigo">AirtelTigo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <IconInfoCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div className="text-sm text-blue-800">
-                        <p className="font-medium">
-                          Mobile Money Collection Process:
-                        </p>
-                        <ul className="mt-2 space-y-1 list-disc list-inside">
-                          <li>Customer will receive a prompt on their phone</li>
-                          <li>
-                            They need to enter their PIN to approve the payment
-                          </li>
-                          <li>You'll receive a status update once completed</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedMethod === "bank_transfer" && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="accountNumber">Account Number</Label>
-                      <Input
-                        id="accountNumber"
-                        placeholder="Enter account number"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bankName">Bank Name</Label>
-                      <Select required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select bank" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="first_bank">First Bank</SelectItem>
-                          <SelectItem value="gcb">GCB Bank</SelectItem>
-                          <SelectItem value="ecobank">Ecobank</SelectItem>
-                          <SelectItem value="absa">Absa Bank</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Payment description (optional)"
-                />
-              </div>
-
-              {/* Fee Information */}
-              <div className="bg-gray-50 border rounded-lg p-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Collection Fee:</span>
-                  <span className="font-medium">0.5% (Min: GHS 1.00)</span>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3">
-                <DialogTrigger asChild>
-                  <Button type="button" variant="outline">
-                    Cancel
-                  </Button>
-                </DialogTrigger>
-                <Button type="submit" disabled={isCollecting}>
-                  {isCollecting ? (
-                    <>
-                      <IconLoader className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <IconCash className="mr-2 h-4 w-4" />
-                      Initiate Collection
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => router.push("/new-collection")}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Collection
+        </Button>
       </div>
 
       {/* Statistics Cards */}
@@ -449,10 +372,10 @@ export function CollectionsContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              GHS {totalAmount.toLocaleString()}
+              {formatCurrency(totalAmount)}
             </div>
             <p className="text-xs text-muted-foreground">
-              From completed collections
+              Net: {formatCurrency(totalNetAmount)}
             </p>
           </CardContent>
         </Card>
@@ -481,22 +404,60 @@ export function CollectionsContent() {
               %
             </div>
             <p className="text-xs text-muted-foreground">
-              Collection success rate
+              {failedCollections} failed
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters and Search */}
+      {/* Main Collections Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Collection History</CardTitle>
-          <CardDescription>
-            View and manage your collection requests
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Collection History</CardTitle>
+              <CardDescription>
+                View and manage your collection requests
+              </CardDescription>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={isExporting}>
+                  {isExporting ? (
+                    <>
+                      <IconLoader className="mr-2 h-4 w-4 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <IconFileExport className="mr-2 h-4 w-4" />
+                      Export
+                    </>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleExport("csv")}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("excel")}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export as PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          {/* Filters */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
             <div className="flex flex-1 items-center gap-2">
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -518,6 +479,7 @@ export function CollectionsContent() {
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="awaiting_approval">Awaiting</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -532,9 +494,74 @@ export function CollectionsContent() {
                 </SelectContent>
               </Select>
 
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Date Range
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label>From Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !dateFrom && "text-muted-foreground"
+                            )}
+                          >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {dateFrom ? format(dateFrom, "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <CalendarComponent
+                            mode="single"
+                            selected={dateFrom}
+                            onSelect={setDateFrom}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>To Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !dateTo && "text-muted-foreground"
+                            )}
+                          >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {dateTo ? format(dateTo, "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <CalendarComponent
+                            mode="single"
+                            selected={dateTo}
+                            onSelect={setDateTo}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
               {(searchTerm ||
                 statusFilter !== "all" ||
-                methodFilter !== "all") && (
+                methodFilter !== "all" ||
+                dateFrom ||
+                dateTo) && (
                 <Button variant="outline" size="sm" onClick={clearFilters}>
                   <X className="h-4 w-4 mr-1" />
                   Clear
@@ -543,7 +570,7 @@ export function CollectionsContent() {
             </div>
           </div>
 
-          <Separator className="my-4" />
+          <Separator className="mb-4" />
 
           {/* Collections Table */}
           <div className="rounded-md border">
@@ -582,25 +609,28 @@ export function CollectionsContent() {
                             {collection.customerName}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {collection.customerContact}
+                            {collection.customerEmail}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">
-                          GHS {collection.amount.toLocaleString()}
+                          {formatCurrency(
+                            collection.amount,
+                            collection.currency
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Fee: GHS {collection.fees}
+                          Net:{" "}
+                          {formatCurrency(
+                            collection.netAmount,
+                            collection.currency
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {collection.method === "Mobile Money" ? (
-                            <IconDeviceMobile className="h-4 w-4" />
-                          ) : (
-                            <IconBuildingBank className="h-4 w-4" />
-                          )}
+                          {getMethodIcon(collection.method)}
                           <div>
                             <div className="font-medium">
                               {collection.method}
@@ -612,9 +642,12 @@ export function CollectionsContent() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(collection.status)}>
+                        <Badge
+                          variant={getStatusColor(collection.status)}
+                          className="flex items-center space-x-1 w-fit"
+                        >
                           {getStatusIcon(collection.status)}
-                          <span className="ml-1 capitalize">
+                          <span className="capitalize">
                             {collection.status.replace("_", " ")}
                           </span>
                         </Badge>
@@ -624,11 +657,13 @@ export function CollectionsContent() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {new Date(collection.createdAt).toLocaleDateString()}
+                          {formatDate(collection.createdAt)}
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(collection.createdAt).toLocaleTimeString()}
-                        </div>
+                        {collection.completedAt && (
+                          <div className="text-xs text-muted-foreground">
+                            Completed: {formatDate(collection.completedAt)}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm">
@@ -641,166 +676,242 @@ export function CollectionsContent() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Results Summary */}
+          {filteredCollections.length > 0 && (
+            <div className="flex items-center justify-between text-sm text-muted-foreground mt-4">
+              <div>
+                Showing {filteredCollections.length} of {mockCollections.length}{" "}
+                collections
+              </div>
+              <div>
+                Total: {formatCurrency(totalAmount)} • Net:{" "}
+                {formatCurrency(totalNetAmount)}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Collection Details Dialog */}
+      {/* Collection Details Dialog - Matching Transaction Screen Format */}
       <Dialog
         open={!!selectedCollection}
         onOpenChange={() => setSelectedCollection(null)}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Collection Details</DialogTitle>
             <DialogDescription>
-              View detailed information about this collection request
+              Complete information about this collection request
             </DialogDescription>
           </DialogHeader>
 
           {selectedCollection && (
             <div className="space-y-6">
-              {/* Status and Basic Info */}
-              <div className="flex items-center justify-between">
+              {/* Collection Overview */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-lg font-semibold">
-                    {selectedCollection.customerName}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedCollection.reference}
-                  </p>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Collection ID
+                  </Label>
+                  <p className="font-mono">{selectedCollection.id}</p>
                 </div>
-                <Badge className={getStatusColor(selectedCollection.status)}>
-                  {getStatusIcon(selectedCollection.status)}
-                  <span className="ml-1 capitalize">
-                    {selectedCollection.status.replace("_", " ")}
-                  </span>
-                </Badge>
-              </div>
-
-              <Separator />
-
-              {/* Collection Information */}
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Customer Information
-                    </Label>
-                    <div className="mt-1">
-                      <p className="font-medium">
-                        {selectedCollection.customerName}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedCollection.customerContact}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Collection Method
-                    </Label>
-                    <div className="mt-1 flex items-center gap-2">
-                      {selectedCollection.method === "Mobile Money" ? (
-                        <IconDeviceMobile className="h-4 w-4" />
-                      ) : (
-                        <IconBuildingBank className="h-4 w-4" />
-                      )}
-                      <span className="font-medium">
-                        {selectedCollection.method}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        ({selectedCollection.provider})
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Description
-                    </Label>
-                    <p className="mt-1">{selectedCollection.description}</p>
-                  </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Reference
+                  </Label>
+                  <p className="font-mono">{selectedCollection.reference}</p>
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Financial Information
-                    </Label>
-                    <div className="mt-1 space-y-2">
-                      <div className="flex justify-between">
-                        <span>Amount:</span>
-                        <span className="font-medium">
-                          GHS {selectedCollection.amount.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Collection Fee:</span>
-                        <span className="font-medium">
-                          GHS {selectedCollection.fees}
-                        </span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between font-medium">
-                        <span>Net Amount:</span>
-                        <span>
-                          GHS{" "}
-                          {(
-                            selectedCollection.amount - selectedCollection.fees
-                          ).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Timeline
-                    </Label>
-                    <div className="mt-1 space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span>Created:</span>
-                        <span>
-                          {new Date(
-                            selectedCollection.createdAt
-                          ).toLocaleString()}
-                        </span>
-                      </div>
-                      {selectedCollection.completedAt && (
-                        <div className="flex justify-between text-sm">
-                          <span>Completed:</span>
-                          <span>
-                            {new Date(
-                              selectedCollection.completedAt
-                            ).toLocaleString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Status
+                  </Label>
+                  <Badge
+                    variant={getStatusColor(selectedCollection.status)}
+                    className="flex items-center space-x-1 w-fit"
+                  >
+                    {getStatusIcon(selectedCollection.status)}
+                    <span className="capitalize">
+                      {selectedCollection.status.replace("_", " ")}
+                    </span>
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Method
+                  </Label>
+                  <div className="flex items-center space-x-2">
+                    {getMethodIcon(selectedCollection.method)}
+                    <span>{selectedCollection.method}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Failure Reason */}
-              {selectedCollection.status === "failed" &&
-                selectedCollection.failureReason && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <IconX className="h-5 w-5 text-red-600 mt-0.5" />
+              {/* Customer Information */}
+              <div>
+                <h4 className="font-medium mb-2 flex items-center">
+                  <IconUser className="h-4 w-4 mr-2" />
+                  Customer Information
+                </h4>
+                <div className="grid grid-cols-2 gap-4 bg-muted/50 p-3 rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Name
+                    </Label>
+                    <p>{selectedCollection.customerName}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Email
+                    </Label>
+                    <p>{selectedCollection.customerEmail}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      {selectedCollection.method === "Mobile Money"
+                        ? "Phone Number"
+                        : "Account Number"}
+                    </Label>
+                    <p className="font-mono">
+                      {selectedCollection.method === "Mobile Money"
+                        ? selectedCollection.customerContact
+                        : selectedCollection.accountNumber ||
+                          selectedCollection.customerContact}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      {selectedCollection.method === "Mobile Money"
+                        ? "Network Provider"
+                        : "Bank"}
+                    </Label>
+                    <p>{selectedCollection.provider}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Breakdown */}
+              <div>
+                <h4 className="font-medium mb-2 flex items-center">
+                  <IconReceipt className="h-4 w-4 mr-2" />
+                  Financial Breakdown
+                </h4>
+                <div className="bg-muted/50 p-3 rounded-lg space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Collection Amount
+                    </span>
+                    <span className="font-medium">
+                      {formatCurrency(
+                        selectedCollection.amount,
+                        selectedCollection.currency
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Collection Fee
+                    </span>
+                    <span>
+                      {formatCurrency(
+                        selectedCollection.fees,
+                        selectedCollection.currency
+                      )}
+                    </span>
+                  </div>
+                  <hr />
+                  <div className="flex justify-between font-medium text-green-600">
+                    <span>Net Amount (You Receive)</span>
+                    <span>
+                      {formatCurrency(
+                        selectedCollection.netAmount,
+                        selectedCollection.currency
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Processing Details */}
+              <div>
+                <h4 className="font-medium mb-2 flex items-center">
+                  <IconCalendar className="h-4 w-4 mr-2" />
+                  Processing Details
+                </h4>
+                <div className="grid grid-cols-2 gap-4 bg-muted/50 p-3 rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Created Date & Time
+                    </Label>
+                    <p>{formatDate(selectedCollection.createdAt)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Processing Time
+                    </Label>
+                    <p>{selectedCollection.processingTime}</p>
+                  </div>
+                  {selectedCollection.completedAt && (
+                    <>
                       <div>
-                        <p className="font-medium text-red-800">
-                          Collection Failed
-                        </p>
-                        <p className="text-sm text-red-700 mt-1">
-                          {selectedCollection.failureReason}
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          Completed Date & Time
+                        </Label>
+                        <p>{formatDate(selectedCollection.completedAt)}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          Total Duration
+                        </Label>
+                        <p>{selectedCollection.processingTime}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Description
+                </Label>
+                <p className="bg-muted/50 p-3 rounded-lg">
+                  {selectedCollection.description}
+                </p>
+              </div>
+
+              {/* Error Details (if failed) */}
+              {selectedCollection.status === "failed" && (
+                <div>
+                  <h4 className="font-medium mb-2 flex items-center text-destructive">
+                    <IconAlertTriangle className="h-4 w-4 mr-2" />
+                    Error Details
+                  </h4>
+                  <div className="bg-destructive/10 p-3 rounded-lg space-y-2">
+                    {selectedCollection.errorCode && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          Error Code
+                        </Label>
+                        <p className="font-mono text-destructive">
+                          {selectedCollection.errorCode}
                         </p>
                       </div>
+                    )}
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        Error Message
+                      </Label>
+                      <p className="text-destructive">
+                        {selectedCollection.errorMessage ||
+                          selectedCollection.failureReason}
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-              {/* Awaiting Approval Info */}
+              {/* Status-specific Information */}
               {selectedCollection.status === "awaiting_approval" && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
@@ -811,24 +922,50 @@ export function CollectionsContent() {
                       </p>
                       <p className="text-sm text-blue-700 mt-1">
                         The customer has received a prompt on their device and
-                        needs to enter their PIN to complete the payment.
+                        needs to enter their PIN to complete the payment. This
+                        request will expire in 24 hours if not approved.
                       </p>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedCollection(null)}
-                >
-                  Close
+              {selectedCollection.status === "expired" && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <IconClose className="h-5 w-5 text-gray-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-800">
+                        Collection Request Expired
+                      </p>
+                      <p className="text-sm text-gray-700 mt-1">
+                        This collection request has expired after 24 hours
+                        without customer approval. You can create a new
+                        collection request for this customer.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex space-x-2">
+                <Button variant="outline" className="flex-1 bg-transparent">
+                  Download Receipt
                 </Button>
-                {selectedCollection.status === "failed" && (
-                  <Button>
+                {(selectedCollection.status === "failed" ||
+                  selectedCollection.status === "expired") && (
+                  <Button
+                    className="flex-1"
+                    onClick={() => router.push("/new-collection")}
+                  >
+                    Create New Collection
+                  </Button>
+                )}
+                {selectedCollection.status === "awaiting_approval" && (
+                  <Button variant="outline" className="flex-1 bg-transparent">
                     <IconRefresh className="mr-2 h-4 w-4" />
-                    Retry Collection
+                    Resend Request
                   </Button>
                 )}
               </div>
@@ -836,39 +973,6 @@ export function CollectionsContent() {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Information Cards */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconShield className="h-5 w-5" />
-              Security & Compliance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p>• All collection requests are encrypted and secure</p>
-            <p>• PCI DSS compliant payment processing</p>
-            <p>• Real-time fraud monitoring and detection</p>
-            <p>• Customer data protection and privacy</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconInfoCircle className="h-5 w-5" />
-              Collection Process
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p>• Mobile Money: Customer receives prompt to approve</p>
-            <p>• Bank Transfer: Direct debit from customer account</p>
-            <p>• Real-time status updates and notifications</p>
-            <p>• Automatic retry for failed transactions</p>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
