@@ -11,6 +11,8 @@ import {
   IconHelp,
   IconHistory,
   IconInnerShadowTop,
+  IconMoneybag,
+  IconPaywall,
   IconReport,
   IconSettings,
   IconUsers,
@@ -44,36 +46,41 @@ const data = {
       page: "dashboard" as PageName,
       icon: IconDashboard,
     },
+    // {
+    //   title: "Single Payout",
+    //   page: "single-payment" as PageName,
+    //   icon: IconCreditCard,
+    // },
+    // {
+    //   title: "Bulk Upload Payout",
+    //   page: "bulk-upload" as PageName,
+    //   icon: IconFileUpload,
+    // },
+    // {
+    //   title: "Approvals",
+    //   page: "approvals" as PageName,
+    //   icon: IconUsers,
+    // },
+    // {
+    //   title: "Analytics",
+    //   page: "analytics" as PageName,
+    //   icon: IconChartBar,
+    // },
     {
-      title: "Single Payout",
-      page: "single-payment" as PageName,
-      icon: IconCreditCard,
-    },
-    {
-      title: "Bulk Upload Payout",
-      page: "bulk-upload" as PageName,
-      icon: IconFileUpload,
-    },
-    {
-      title: "Approvals",
-      page: "approvals" as PageName,
-      icon: IconUsers,
-    },
-    {
-      title: "Analytics",
-      page: "analytics" as PageName,
-      icon: IconChartBar,
+      title: "Collections",
+      page: "collections" as PageName,
+      icon: IconMoneybag,
     },
     {
       title: "Transactions",
       page: "transactions" as PageName,
       icon: IconHistory,
     },
-    {
-      title: "Fund Account",
-      page: "fund-account" as PageName,
-      icon: IconBuildingBank,
-    },
+    // {
+    //   title: "Fund Account",
+    //   page: "fund-account" as PageName,
+    //   icon: IconBuildingBank,
+    // },
   ],
   navSecondary: [
     {
