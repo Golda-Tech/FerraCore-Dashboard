@@ -64,12 +64,23 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild tooltip={item.title}>
+              <SidebarMenuButton
+                asChild
+                tooltip={item.title}
+                data-active={currentPath === `/${item.page}`}
+              >
                 <button
                   onClick={() => onNavigate(item.page)}
-                  className={
-                    currentPath === `/${item.page}` ? "data-[active=true]" : ""
-                  } // Use currentPath
+                  // className={
+                  //   currentPath === `/${item.page}` ? "data-[active=true]" : ""
+                  // }
+                  className="
+            data-[active=true]:bg-black 
+            data-[active=true]:text-white 
+            dark:data-[active=true]:bg-white 
+            dark:data-[active=true]:text-black
+            transition-colors
+          "
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
