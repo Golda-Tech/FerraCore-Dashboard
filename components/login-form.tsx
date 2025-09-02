@@ -2,16 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { login, isAuthenticated } from "@/lib/auth";
+import { isAuthenticated, saveAuth } from "@/lib/auth";
+import { loginApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LoginRequest } from "@/types/auth";
 
 export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -19,16 +22,20 @@ export function LoginForm() {
     }
   }, [router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
-    const success = login(password);
-
-    if (success) {
+    try {
+      const request: LoginRequest = { email, password };
+      const res = await loginApi(request);
+      saveAuth(res); // save token + user in localStorage
       router.push("/dashboard");
-    } else {
-      setError("Invalid credentials");
+    } catch (err: any) {
+      setError(err.message || "Invalid credentials");
+    } finally {
+      setLoading(false);
     }
   };
 

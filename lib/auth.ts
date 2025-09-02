@@ -1,21 +1,24 @@
 "use client";
+
 import { redirect } from "next/navigation";
+import { AuthResponse } from "@/types/auth";
 
-const AUTH_KEY = "isAuthenticated";
+const AUTH_KEY = "auth";
 
-export function isAuthenticated(): boolean {
+export function getAuth(): AuthResponse | null {
   if (typeof window !== "undefined") {
-    return localStorage.getItem(AUTH_KEY) === "true";
+    const data = localStorage.getItem(AUTH_KEY);
+    return data ? JSON.parse(data) : null;
   }
-  return false;
+  return null;
 }
 
-export function login(password: string): boolean {
-  if (password.length > 0) {
-    localStorage.setItem(AUTH_KEY, "true");
-    return true;
-  }
-  return false;
+export function isAuthenticated(): boolean {
+  return !!getAuth();
+}
+
+export function saveAuth(user: AuthResponse): void {
+  localStorage.setItem(AUTH_KEY, JSON.stringify(user));
 }
 
 export function logout(): void {
