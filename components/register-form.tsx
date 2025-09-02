@@ -2,33 +2,62 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { login } from "@/lib/auth";
+import { register } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RegisterRequest } from "@/types/auth";
 
 export function RegisterForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
-    if (password !== confirm) {
-      setError("Passwords do not match");
-      return;
+    try {
+      await register({ firstname, lastname, email, password } as RegisterRequest);
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Registration failed");
+    } finally {
+      setLoading(false);
     }
-
-    login(password); // auto-login after register
-    router.push("/dashboard");
   };
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
+
+      <div className="grid gap-2">
+        <Label htmlFor="firstname">First Name</Label>
+        <Input
+          id="firstname"
+          type="text"
+          placeholder="John"
+          value={firstname}
+          onChange={(e) => setFirstname(e.target.value)}
+          required
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="lastname">Last Name</Label>
+        <Input
+          id="lastname"
+          type="text"
+          placeholder="Doe"
+          value={lastname}
+          onChange={(e) => setLastname(e.target.value)}
+          required
+        />
+      </div>
       <div className="grid gap-2">
         <Label htmlFor="email">Email</Label>
         <Input

@@ -2,8 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isAuthenticated, saveAuth } from "@/lib/auth";
-import { loginApi } from "@/lib/api";
+import { isAuthenticated, login } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,12 +27,10 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const request: LoginRequest = { email, password };
-      const res = await loginApi(request);
-      saveAuth(res); // save token + user in localStorage
+      const data = await login({ email, password } as LoginRequest);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Invalid credentials");
+      setError(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
