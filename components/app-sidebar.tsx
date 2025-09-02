@@ -32,7 +32,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { logout } from "@/lib/auth"; // Import logout from lib/auth
-import type { PageName } from "@/lib/types/navigation";
+import type { PageName } from "@/types/navigation";
 
 const data = {
   user: {

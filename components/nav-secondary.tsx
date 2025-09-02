@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-import type { PageName } from "@/lib/types/navigation";
+import type { PageName } from "@/types/navigation";
 
 export function NavSecondary({
   items,
