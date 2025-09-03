@@ -1,6 +1,6 @@
 "use client";
 import api from "./api";
-import { Collection, CollectionsStatusSummary, CollectionsTrends } from "@/types/collections";
+import { Collection, StatusSummary, CollectionTrend } from "@/types/collections";
 
 // Fetch all collections, optional date range and pagination
 export async function getCollections(
@@ -24,8 +24,8 @@ export async function getCollection(collectionRef: string): Promise<Collection> 
 }
 
 // Get collections status summary
-export async function getCollectionsStatusSummary(): Promise<CollectionsStatusSummary> {
-  const response = await api.get<CollectionsStatusSummary>("/api/v1/collections/status-summary");
+export async function getCollectionsStatusSummary(): Promise<StatusSummary> {
+  const response = await api.get<StatusSummary>("/api/v1/collections/status-summary");
   return response.data;
 }
 
@@ -34,8 +34,8 @@ export async function getCollectionsTrends(
   startDate: string,
   endDate: string,
   interval: "DAILY" | "WEEKLY" | "MONTHLY" = "DAILY"
-): Promise<CollectionsTrends[]> {
-  const response = await api.get<CollectionsTrends[]>("/api/v1/collections/trends", {
+): Promise<CollectionTrend[]> {
+  const response = await api.get<CollectionTrend[]>("/api/v1/collections/trends", {
     params: { startDate, endDate, interval },
   });
   return response.data;
