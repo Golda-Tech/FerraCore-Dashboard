@@ -93,7 +93,7 @@ export function AnalyticsContent() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <ChartAreaInteractive />
+        {/* <ChartAreaInteractive /> */}
 
         <Card>
           <CardHeader>
