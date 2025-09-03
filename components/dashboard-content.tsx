@@ -86,16 +86,16 @@ const interval = React.useMemo(() => {
         />
 
         {/* Main Transaction Chart */}
-        <div className="px-4 lg:px-6">
+     
           <ChartAreaInteractive 
             data={trends} 
             period={period}
             loading={loading}
           />
-        </div>
+       
 
         {/* Additional Charts Grid */}
-        <div className="grid gap-6 px-4 lg:px-6 md:grid-cols-2">
+      
           <StatusDistributionChart 
             statusSummary={statusSummary} 
             trends={trends}
@@ -105,14 +105,13 @@ const interval = React.useMemo(() => {
             trends={trends}
             loading={loading}
           />
-          <div className="md:col-span-2">
+   
             <AmountTrendChart 
               trends={trends}
               loading={loading}
             />
-          </div>
+     
         </div>
-      </div>
     </div>
   );
 }

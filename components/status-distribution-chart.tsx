@@ -29,14 +29,15 @@ interface StatusDistributionChartProps {
 }
 
 const statusColors: Record<string, string> = {
-  SUCCESS: "#4b5563",       // slate-600
-  FAILED: "#9ca3af",        // gray-400
-  ONGOING: "#6b7280",       // gray-500
-  CANCELLED: "#d1d5db",     // gray-300
-  PENDING_EXTERNAL: "#e5e7eb", // gray-200
-  REFUNDED: "#374151",      // gray-700
-  INITIATED: "#111827",     // gray-900
+  SUCCESS: "#10b981",       // Green (Tailwind emerald-500)
+  FAILED: "#ef4444",        // Red (Tailwind red-500)
+  ONGOING: "#f59e0b",       // Yellow/Amber (Tailwind amber-500)
+  CANCELLED: "#6b7280",     // Gray (Tailwind gray-500)
+  PENDING_EXTERNAL: "#8b5cf6", // Purple (Tailwind violet-500)
+  REFUNDED: "#3b82f6",      // Blue (Tailwind blue-500)
+  INITIATED: "#f97316",     // Orange (Tailwind orange-500)
 };
+
 
 
 export function StatusDistributionChart({
