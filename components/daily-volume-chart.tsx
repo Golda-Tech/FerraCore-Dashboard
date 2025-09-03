@@ -1,16 +1,23 @@
 "use client";
 
 import * as React from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+
+import { TrendingUp } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import {
+  ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -22,25 +29,33 @@ interface DailyVolumeChartProps {
   loading: boolean;
 }
 
-const statusColors = {
-  SUCCESS: "#10b981",
-  FAILED: "#ef4444",
-  ONGOING: "#f59e0b",
-  CANCELLED: "#6b7280",
-  PENDING_EXTERNAL: "#8b5cf6",
-  REFUNDED: "#06b6d4",
-  INITIATED: "#f97316",
-};
+const chartConfig = {
+  success: {
+    label: "Success",
+    color: "var(--chart-1)",
+  },
+  failed: {
+    label: "Failed",
+    color: "var(--chart-2)",
+  },
+  ongoing: {
+    label: "Ongoing",
+    color: "var(--chart-3)",
+  },
+  pending: {
+    label: "Pending",
+    color: "var(--chart-4)",
+  },
+} satisfies ChartConfig;
 
 export function DailyVolumeChart({ trends, loading }: DailyVolumeChartProps) {
   const chartData = React.useMemo(() => {
-    return trends.map(trend => ({
+    return trends.map((trend) => ({
       date: trend.date,
       success: trend.statusCounts?.SUCCESS || 0,
       failed: trend.statusCounts?.FAILED || 0,
       ongoing: trend.statusCounts?.ONGOING || 0,
       pending: trend.statusCounts?.PENDING_EXTERNAL || 0,
-      total: trend.totalCount,
     }));
   }, [trends]);
 
@@ -67,7 +82,9 @@ export function DailyVolumeChart({ trends, loading }: DailyVolumeChartProps) {
       <Card>
         <CardHeader>
           <CardTitle>Daily Transaction Volume</CardTitle>
-          <CardDescription>Transaction count breakdown by status</CardDescription>
+          <CardDescription>
+            Transaction count breakdown by status
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-[300px]">
           <p className="text-muted-foreground">No data available</p>
@@ -83,90 +100,77 @@ export function DailyVolumeChart({ trends, loading }: DailyVolumeChartProps) {
         <CardDescription>Transaction count breakdown by status</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={{}} className="h-[300px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={(value) => {
-                  const date = new Date(value);
-                  return date.toLocaleDateString("en-US", { 
-                    month: "short", 
-                    day: "numeric" 
-                  });
-                }}
-              />
-              <YAxis />
-              <ChartTooltip 
-                content={
-                  <ChartTooltipContent
-                    labelFormatter={(value) => {
-                      return new Date(value as string).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      });
-                    }}
-                    formatter={(value, name) => [
-                      `${value} transactions`,
-                      name as string
-                    ]}
-                  />
-                }
-              />
-              <Bar 
-                dataKey="success" 
-                stackId="a" 
-                fill={statusColors.SUCCESS} 
-                name="Success" 
-                radius={[0, 0, 0, 0]}
-              />
-              <Bar 
-                dataKey="failed" 
-                stackId="a" 
-                fill={statusColors.FAILED} 
-                name="Failed" 
-                radius={[0, 0, 0, 0]}
-              />
-              <Bar 
-                dataKey="ongoing" 
-                stackId="a" 
-                fill={statusColors.ONGOING} 
-                name="Ongoing" 
-                radius={[0, 0, 0, 0]}
-              />
-              <Bar 
-                dataKey="pending" 
-                stackId="a" 
-                fill={statusColors.PENDING_EXTERNAL} 
-                name="Pending" 
-                radius={[2, 2, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+        <ChartContainer config={chartConfig}>
+          <BarChart accessibilityLayer data={chartData}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              tickMargin={10}
+              axisLine={false}
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                return date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                });
+              }}
+            />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  hideLabel
+                  labelFormatter={(value) =>
+                    new Date(value as string).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  }
+                  formatter={(value, name) => [
+                    `${value} transactions`,
+                    chartConfig[name as keyof typeof chartConfig]?.label ??
+                      name,
+                  ]}
+                />
+              }
+            />
+            <ChartLegend content={<ChartLegendContent />} />
+            <Bar
+              dataKey="success"
+              stackId="a"
+              fill="var(--color-success)"
+              radius={[0, 0, 4, 4]}
+            />
+            <Bar
+              dataKey="failed"
+              stackId="a"
+              fill="var(--color-failed)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="ongoing"
+              stackId="a"
+              fill="var(--color-ongoing)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="pending"
+              stackId="a"
+              fill="var(--color-pending)"
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
         </ChartContainer>
-        
-        {/* Legend */}
-        <div className="mt-4 flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span className="text-sm text-muted-foreground">Success</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500" />
-            <span className="text-sm text-muted-foreground">Failed</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500" />
-            <span className="text-sm text-muted-foreground">Ongoing</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-purple-500" />
-            <span className="text-sm text-muted-foreground">Pending</span>
-          </div>
-        </div>
       </CardContent>
+      <CardFooter className="flex-col items-start gap-2 text-sm">
+        <div className="flex gap-2 leading-none font-medium">
+          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+        </div>
+        <div className="text-muted-foreground leading-none">
+          Showing transaction volumes by status
+        </div>
+      </CardFooter>
     </Card>
   );
 }
