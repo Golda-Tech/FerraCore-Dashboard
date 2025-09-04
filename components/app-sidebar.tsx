@@ -100,11 +100,11 @@ const data = {
     //   page: "reports" as PageName,
     //   icon: IconReport,
     // },
-    {
-      name: "Archives",
-      page: "archives" as PageName,
-      icon: IconHistory,
-    },
+    // {
+    //   name: "Archives",
+    //   page: "archives" as PageName,
+    //   icon: IconHistory,
+    // },
   ],
 };
 
@@ -148,11 +148,11 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
           onNavigate={handleNavigation}
           currentPath={pathname}
         />
-        <NavDocuments
+        {/* <NavDocuments
           items={data.documents}
           onNavigate={handleNavigation}
           currentPath={pathname}
-        />
+        /> */}
         <NavSecondary
           items={data.navSecondary}
           onNavigate={handleNavigation}
