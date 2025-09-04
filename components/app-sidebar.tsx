@@ -173,16 +173,14 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       </SidebarFooter> */}
 
       <SidebarFooter>
-        {user && (
-          <NavUser
-            user={{
-              name: `${user.firstname} ${user.lastname}`,
-              email: user.email,
-              avatar: "/placeholder.svg?height=32&width=32",
-            }}
-            onLogout={handleLogout}
-          />
-        )}
+        <NavUser
+          user={{
+            name: user ? `${user.firstname} ${user.lastname}` : "Guest User",
+            email: user?.email ?? "guest@example.com",
+            avatar: "/placeholder.svg?height=32&width=32",
+          }}
+          onLogout={handleLogout}
+        />
       </SidebarFooter>
     </Sidebar>
   );
