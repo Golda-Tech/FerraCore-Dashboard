@@ -659,7 +659,7 @@ export function CollectionsContent() {
                           <div>
                             <div className="font-medium">Mobile Money</div>
                             <div className="text-sm text-muted-foreground">
-                              Network Provider
+                              MTN
                             </div>
                           </div>
                         </div>
