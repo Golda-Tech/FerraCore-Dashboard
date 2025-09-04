@@ -31,8 +31,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { logout } from "@/lib/auth"; // Import logout from lib/auth
+import { getUser, logout } from "@/lib/auth"; // Import logout from lib/auth
 import type { PageName } from "@/types/navigation";
+import { useEffect, useState } from "react";
+import { LoginResponse } from "@/types/auth";
 
 const data = {
   user: {
@@ -114,6 +116,12 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
   const router = useRouter();
   const pathname = usePathname(); // Use usePathname for current path
 
+  const [user, setUser] = useState<LoginResponse | null>(null);
+
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
+
   const handleNavigation = (page: PageName) => {
     router.push(`/${page}`);
   };
@@ -160,8 +168,21 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
           className="mt-auto"
         />
       </SidebarContent>
-      <SidebarFooter>
+      {/* <SidebarFooter>
         <NavUser user={data.user} onLogout={handleLogout} />
+      </SidebarFooter> */}
+
+      <SidebarFooter>
+        {user && (
+          <NavUser
+            user={{
+              name: `${user.firstname} ${user.lastname}`,
+              email: user.email,
+              avatar: "/placeholder.svg?height=32&width=32",
+            }}
+            onLogout={handleLogout}
+          />
+        )}
       </SidebarFooter>
     </Sidebar>
   );
