@@ -77,8 +77,9 @@ export function ChartAreaInteractive({
       totalAmount: item.totalAmount,
       totalCount: item.totalCount,
       // Scale amount for better visualization alongside count
-      
       scaledAmount: item.totalAmount / 100, // Adjust this scale factor as needed
+
+      
     }));
   }, [data]);
 
