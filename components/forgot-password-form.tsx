@@ -12,6 +12,8 @@ export function ForgotPasswordForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // You'd send a reset email here
+
+    
     setSubmitted(true);
   };
 
