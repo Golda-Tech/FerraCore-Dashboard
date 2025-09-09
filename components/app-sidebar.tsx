@@ -35,6 +35,7 @@ import { getUser, logout } from "@/lib/auth"; // Import logout from lib/auth
 import type { PageName } from "@/types/navigation";
 import { useEffect, useState } from "react";
 import { LoginResponse } from "@/types/auth";
+import { UserCog } from "lucide-react";
 
 const data = {
   user: {
@@ -83,6 +84,12 @@ const data = {
     //   page: "fund-account" as PageName,
     //   icon: IconBuildingBank,
     // },
+
+    {
+      title: "User Management",
+      page: "user-management" as PageName,
+      icon: IconUsers,
+    }
   ],
   navSecondary: [
     {

@@ -12,4 +12,5 @@ export type PageName =
   | "templates"
   | "merchants"
   | "collections"
-  | "new-collection";
+  | "new-collection"
+  | "user-management";
