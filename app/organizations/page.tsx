@@ -15,8 +15,14 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
@@ -56,6 +62,26 @@ export default function OrganizationSignupPage() {
     adminPhone: "",
     adminPosition: "",
   })
+
+  const regions = [
+  "Greater Accra",
+  "Ashanti",
+  "Northern",
+  "Volta",
+  "Eastern",
+  "Western",
+];
+
+const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
+
+  const toggleRegion = (region: string) => {
+    setSelectedRegions(prev =>
+      prev.includes(region)
+        ? prev.filter(r => r !== region)
+        : [...prev, region]
+    );
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -410,15 +436,40 @@ export default function OrganizationSignupPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="operationalBranches">Operational Regions</Label>
-                      <Input
-                        id="operationalBranches"
-                        type="text"
-                        placeholder="e.g., Greater Accra, Ashanti, Northern"
-                        value={formData.operationalBranches}
-                        onChange={(e) => handleInputChange("operationalBranches", e.target.value)}
-                      />
-                    </div>
+      <Label htmlFor="operationalBranches">Operational Regions</Label>
+
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <div
+            id="operationalBranches"
+            className="border rounded-md px-3 py-2 w-full cursor-pointer"
+          >
+            {selectedRegions.length > 0 ? selectedRegions.join(", ") : "Select regions..."}
+          </div>
+        </PopoverTrigger>
+
+        <PopoverContent className="w-[200px] p-0">
+          <Command>
+            <CommandInput placeholder="Search regions..." />
+            <CommandEmpty>No regions found.</CommandEmpty>
+            <CommandGroup>
+              {regions.map(region => (
+                <CommandItem
+                  key={region}
+                  onSelect={() => toggleRegion(region)}
+                  className="flex items-center justify-between"
+                >
+                  {region}
+                  {selectedRegions.includes(region) && (
+                    <span>✓</span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
                   </div>
 
                   <div className="space-y-2">
