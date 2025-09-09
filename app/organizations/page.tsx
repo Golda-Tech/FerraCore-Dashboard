@@ -119,43 +119,57 @@ export default function OrganizationSignupPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <div className="flex justify-center">
             <IconInnerShadowTop className="h-12 w-12 text-primary" />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">Join Rexpay</h2>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">Join Rexpay Collections</h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Register your organization to start processing payments
           </p>
         </div>
 
         {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center space-x-8">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                    currentStep >= step
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "border-gray-300 text-gray-500"
-                  }`}
-                >
-                  {step === 1 && <IconBuilding className="w-4 h-4" />}
-                  {step === 2 && <IconCreditCard className="w-4 h-4" />}
-                  {step === 3 && <IconUsers className="w-4 h-4" />}
-                </div>
-                <span className={`ml-2 text-sm ${currentStep >= step ? "text-primary font-medium" : "text-gray-500"}`}>
-                  {step === 1 && "Organization"}
-                  {step === 2 && "Business Details"}
-                  {step === 3 && "Admin User"}
-                </span>
-                {step < 3 && <div className={`ml-8 w-16 h-0.5 ${currentStep > step ? "bg-primary" : "bg-gray-300"}`} />}
-              </div>
-            ))}
-          </div>
+        {/* Progress Steps */}
+<div className="mb-8">
+  <div className="flex flex-col items-start space-y-6 sm:flex-row sm:items-center sm:justify-center sm:space-y-0 sm:space-x-8">
+    {[1, 2, 3].map((step) => (
+      <div key={step} className="flex items-center">
+        <div
+          className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+            currentStep >= step
+              ? "bg-primary border-primary text-primary-foreground"
+              : "border-gray-300 text-gray-500"
+          }`}
+        >
+          {step === 1 && <IconBuilding className="w-4 h-4" />}
+          {step === 2 && <IconCreditCard className="w-4 h-4" />}
+          {step === 3 && <IconUsers className="w-4 h-4" />}
         </div>
+        <span
+          className={`ml-2 text-sm ${
+            currentStep >= step ? "text-primary font-medium" : "text-gray-500"
+          }`}
+        >
+          {step === 1 && "Organization"}
+          {step === 2 && "Business Details"}
+          {step === 3 && "Admin User"}
+        </span>
+
+        {/* Connector line — hidden on mobile, visible on larger screens */}
+        {step < 3 && (
+          <div
+            className={`hidden sm:block ml-8 w-16 h-0.5 ${
+              currentStep > step ? "bg-primary" : "bg-gray-300"
+            }`}
+          />
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+
 
         <Card>
           <CardHeader>
