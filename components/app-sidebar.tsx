@@ -86,6 +86,12 @@ const data = {
     // },
 
     {
+      title: "Payments",
+      page: "payments" as PageName,
+      icon: IconPaywall,
+    },  
+
+    {
       title: "User Management",
       page: "user-management" as PageName,
       icon: IconUsers,
