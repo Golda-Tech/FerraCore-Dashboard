@@ -13,4 +13,6 @@ export type PageName =
   | "merchants"
   | "collections"
   | "new-collection"
-  | "user-management";
+  | "user-management"
+  | "payments"
+  | "request-payment";

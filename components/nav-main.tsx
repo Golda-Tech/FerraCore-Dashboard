@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  IconCash,
   IconCirclePlusFilled,
   IconFileUpload,
   IconMoneybagMove,
@@ -39,7 +40,7 @@ export function NavMain({
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
+            {/* <SidebarMenuButton
               asChild
               tooltip="New Collection"
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
@@ -48,18 +49,17 @@ export function NavMain({
                 <IconMoneybagMove />
                 <span>New Collection</span>
               </button>
-            </SidebarMenuButton>
-            {/* <Button
+            </SidebarMenuButton> */}
+            <SidebarMenuButton
               asChild
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0 bg-transparent"
-              variant="outline"
+              tooltip="Request Payment"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
-              <button onClick={() => onNavigate("single-payment")}>
-                <IconCirclePlusFilled />
-                <span className="sr-only">Single Payout</span>
+              <button onClick={() => onNavigate("request-payment")}>
+                <IconCash />
+                <span>Request Payment</span>
               </button>
-            </Button> */}
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
