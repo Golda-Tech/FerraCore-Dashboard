@@ -169,19 +169,20 @@ export function PaymentsContent() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Payment Requests</h2>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button size="sm" onClick={() => router.push("/request-payment")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Request Payment
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Payment Requests</h2>
+            <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+                </Button>
+                <Button size="sm" onClick={() => router.push("/request-payment")}>
+                <Plus className="h-4 w-4 mr-2" />
+                Request Payment
+                </Button>
+            </div>
         </div>
-      </div>
+
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -254,39 +255,40 @@ export function PaymentsContent() {
           <CardDescription>Manage and track all your payment requests</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between space-x-2 mb-4">
-            <div className="flex items-center space-x-2">
-              <div className="relative">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                <div className="relative flex-1 sm:flex-initial">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search requests..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 w-[300px]"
+                    placeholder="Search requests..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 w-full sm:w-[300px]"
                 />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[150px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
                 </SelectContent>
-              </Select>
+                </Select>
             </div>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                <Download className="h-4 w-4 mr-2" />
+                Export
             </Button>
-          </div>
+            </div>
 
-          <div className="rounded-md border">
-            <Table>
+
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Customer</TableHead>
