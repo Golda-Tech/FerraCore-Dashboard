@@ -21,4 +21,20 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+
+// Response interceptor to handle 401
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      // Clear token
+      localStorage.removeItem("token");
+      // Redirect to login
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
+
 export default api;
