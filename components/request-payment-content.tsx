@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader, User } from "lucide-react"
+import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader, User, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getUserInfo } from "@/lib/payment"
+import { getUserInfo, createPayment} from "@/lib/payment"
 import { UserInfo } from "@/types/payment"
 
 
@@ -24,6 +24,8 @@ export function RequestPaymentContent() {
   const [selectedMethod, setSelectedMethod] = useState("mobile_money")
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showError, setShowError] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
   const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
@@ -41,15 +43,39 @@ export function RequestPaymentContent() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsProcessing(true)
+    e.preventDefault();
+    setIsProcessing(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsProcessing(false)
-      setShowSuccess(true)
-    }, 3000)
-  }
+    try {
+      const fullMobileNumber = `${formData.countryCode.replace("+", "")}${formData.phoneNumber}`;
+
+      // Prepare payment request payload
+      const paymentRequest = {
+        provider: formData.network.toUpperCase(),      // e.g., "MTN"
+        collectionRef: formData.reference || `INV-${Date.now()}`,
+        mobileNumber: fullMobileNumber,
+        amount: Number(formData.amount),
+        currency: "EUR",                               // or "EUR" if applicable
+        partyIdType: "MSISDN",
+        payerMessage: formData.description,
+        payeeNote: "Thank you for your payment",
+      };
+
+      // Call the payment API
+      const paymentResponse = await createPayment(paymentRequest);
+
+      // Optionally store or show the transactionRef
+      console.log("Payment response:", paymentResponse);
+
+      setShowSuccess(true);
+    } catch (err: any) {
+      console.error("Payment failed:", err);
+      setErrorMessage(err?.response?.data?.message || err.message || "An unexpected error occurred");
+      setShowError(true);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const amount = Number.parseFloat(formData.amount) || 0
   const fee = amount * 0.015 // 1.5% fee
@@ -444,6 +470,70 @@ export function RequestPaymentContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* // Error dialog    */}
+      <Dialog open={showError} onOpenChange={setShowError}>
+        <DialogContent className="max-w-md mx-4 sm:mx-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                <XCircle className="h-4 w-4 text-red-600" />
+              </div>
+              Payment Request Failed
+            </DialogTitle>
+            <DialogDescription className="text-sm">There was an error sending your payment request. Please try again.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Error Message:</span>
+                  <span className="font-medium">{errorMessage}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 bg-transparent order-2 sm:order-1"
+                onClick={() => {
+                  setShowError(false)
+                  // Reset form
+                  setFormData({
+                    customerName: "",
+                    customerEmail: "",
+                    phoneNumber: "",
+                    countryCode: "+233",
+                    amount: "",
+                    reference: "",
+                    description: "",
+                    dueDate: "",
+                    network: "",
+                  })
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Send Another
+              </Button>
+
+              <Button
+                className="flex-1 order-1 sm:order-2"
+                onClick={() => {
+                  setShowError(false)
+                  router.push("/payments")
+                }}
+              >
+                View Payments
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
+
+             
   )
 }
