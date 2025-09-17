@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -35,9 +35,10 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { getPayment, getPayments, getTransactionStatus } from "@/lib/payment"
 
 // Mock data for payment requests
-const paymentRequests = [
+const payments = [
   {
     id: "PAY-001",
     customerName: "John Doe",
@@ -98,13 +99,13 @@ const paymentRequests = [
 
 const getStatusIcon = (status: string) => {
   switch (status) {
-    case "completed":
+    case "SUCCESSFUL":
       return <CheckCircle className="h-4 w-4 text-green-500" />
-    case "pending":
+    case "PENDING":
       return <Clock className="h-4 w-4 text-yellow-500" />
-    case "failed":
+    case "FAILED":
       return <XCircle className="h-4 w-4 text-red-500" />
-    case "expired":
+    case "EXPIRED":
       return <AlertCircle className="h-4 w-4 text-gray-500" />
     default:
       return <Clock className="h-4 w-4" />
@@ -113,13 +114,13 @@ const getStatusIcon = (status: string) => {
 
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case "completed":
-      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Completed</Badge>
-    case "pending":
+    case "SUCCESSFUL":
+      return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Successful</Badge>
+    case "PENDING":
       return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>
-    case "failed":
+    case "FAILED":
       return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Failed</Badge>
-    case "expired":
+    case "EXPIRED":
       return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Expired</Badge>
     default:
       return <Badge variant="secondary">{status}</Badge>
@@ -130,25 +131,82 @@ export function PaymentsContent() {
   const [selectedPayment, setSelectedPayment] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [payments, setPayments] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+
   const router = useRouter()
 
-  const filteredPayments = paymentRequests.filter((payment) => {
+  const fetchPayments = async () => {
+    setLoading(true)
+    try {
+      const data = await getPayments()
+      setPayments(data)
+    } catch (err) {
+      console.error("Failed to fetch payments:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPayments()
+  }, [])
+
+
+  const handleViewDetails = async (transactionRef: string) => {
+    setLoading(true)
+    try {
+      const data = await getPayment(transactionRef)
+      setSelectedPayment(data)
+    } catch (err) {
+      console.error("Failed to fetch payment details:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRefreshStatus = async () => {
+    if (!selectedPayment) return
+    setLoading(true)
+    try {
+      const statusData = await getTransactionStatus(
+        selectedPayment.provider,
+        selectedPayment.transactionRef
+      )
+      setSelectedPayment((prev: any) => ({ ...prev, ...statusData }))
+    } catch (err) {
+      console.error("Failed to refresh payment status:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+
+
+
+  const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
-      payment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.customerPhone.includes(searchTerm) ||
-      payment.reference.toLowerCase().includes(searchTerm.toLowerCase())
+      // payment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.mobileNumber.includes(searchTerm) ||
+      payment.transactionRef.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesStatus = statusFilter === "all" || payment.status === statusFilter
 
     return matchesSearch && matchesStatus
   })
 
-  const totalRequests = paymentRequests.length
-  const completedRequests = paymentRequests.filter((p) => p.status === "completed").length
-  const pendingRequests = paymentRequests.filter((p) => p.status === "pending").length
-  const totalAmount = paymentRequests.filter((p) => p.status === "completed").reduce((sum, p) => sum + p.amount, 0)
+  const completedStatuses = ["SUCCESSFUL"]
+  const pendingStatuses = ["PENDING"]
 
+  const totalRequests = payments.length
+  const completedRequests = payments.filter(p => completedStatuses.includes(p.status)).length
+  const pendingRequests = payments.filter(p => pendingStatuses.includes(p.status)).length
+  const totalAmount = payments
+    .filter(p => completedStatuses.includes(p.status))
+    .reduce((sum, p) => sum + p.amount, 0)
   const successRate = totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-GH", {
@@ -305,8 +363,8 @@ export function PaymentsContent() {
                   <TableRow key={payment.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{payment.customerName}</div>
-                        <div className="text-sm text-muted-foreground">{payment.customerPhone}</div>
+                        {/* <div className="font-medium">{payment.customerName}</div> */}
+                        <div className="text-sm text-muted-foreground">{payment.mobileNumber}</div>
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">{formatCurrency(payment.amount)}</TableCell>
@@ -319,14 +377,14 @@ export function PaymentsContent() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Smartphone className="h-4 w-4" />
-                        {payment.network}
+                        {payment.provider}
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{payment.reference}</TableCell>
+                    <TableCell className="font-mono text-sm">{payment.transactionRef}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        {formatDate(payment.createdAt)}
+                        {formatDate(payment.initiatedAt)}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -339,18 +397,18 @@ export function PaymentsContent() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => setSelectedPayment(payment)}>
+                          <DropdownMenuItem onClick={() => handleViewDetails(payment.transactionRef)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          {payment.status === "pending" && (
+                          {payment.status === "PENDING" && (
                             <DropdownMenuItem>
                               <RefreshCw className="h-4 w-4 mr-2" />
                               Resend Request
                             </DropdownMenuItem>
                           )}
-                          {payment.status === "failed" && (
+                          {payment.status === "FAILED" && (
                             <DropdownMenuItem>
                               <RefreshCw className="h-4 w-4 mr-2" />
                               Retry Payment
@@ -466,12 +524,13 @@ export function PaymentsContent() {
                 <Button variant="outline" onClick={() => setSelectedPayment(null)}>
                   Close
                 </Button>
-                {selectedPayment.status === "pending" && (
-                  <Button>
+                {selectedPayment.status === "PENDING" && (
+                  <Button onClick={handleRefreshStatus}>
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Resend Request
+                    Refresh Status
                   </Button>
                 )}
+
               </div>
             </div>
           )}
