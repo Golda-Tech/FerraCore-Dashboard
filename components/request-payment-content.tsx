@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader } from "lucide-react"
+import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { getUserInfo } from "@/lib/payment"
+import { UserInfo } from "@/types/payment"
+
 
 export function RequestPaymentContent() {
   const router = useRouter()
@@ -51,6 +54,26 @@ export function RequestPaymentContent() {
   const amount = Number.parseFloat(formData.amount) || 0
   const fee = amount * 0.015 // 1.5% fee
   const totalAmount = amount + fee
+
+  const [isFetchingName, setIsFetchingName] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const handleFetchName = async () => {
+  if (!formData.phoneNumber) return;
+  setIsFetchingName(true);
+  setFetchError(null);
+
+  try {
+    // Concatenate country code and phone number **without the '+'**
+    const fullNumber = `${formData.countryCode.replace("+", "")}${formData.phoneNumber}`;
+    const data: UserInfo = await getUserInfo(fullNumber); 
+    setFormData(prev => ({ ...prev, customerName: data.accountName }));
+  } catch (err: any) {
+    setFetchError("Unable to fetch customer name");
+  } finally {
+    setIsFetchingName(false);
+  }
+};
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-3 sm:p-4 lg:p-6">
@@ -99,16 +122,28 @@ export function RequestPaymentContent() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="sm:col-span-2 space-y-2">
+                  <div className="sm:col-span-2 space-y-2 relative">
                     <Label htmlFor="phoneNumber" className="text-sm">Mobile Number *</Label>
-                    <Input
-                      id="phoneNumber"
-                      placeholder="24 123 4567"
-                      value={formData.phoneNumber}
-                      onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                      required
-                      className="h-10 sm:h-9"
-                    />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="phoneNumber"
+                        placeholder="24 123 4567"
+                        value={formData.phoneNumber}
+                        onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                        required
+                        className="h-10 sm:h-9 flex-1"
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleFetchName}
+                        disabled={!formData.phoneNumber || isFetchingName}
+                        size="sm"
+                        className="h-10 w-10 p-0 flex items-center justify-center"
+                      >
+                        {isFetchingName ? <Loader className="h-4 w-4 animate-spin" /> : <User className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    {fetchError && <p className="text-xs text-red-600 mt-1">{fetchError}</p>}
                   </div>
                   <div className="sm:col-span-1 space-y-2">
                     <Label htmlFor="network" className="text-sm">Network *</Label>
@@ -121,7 +156,7 @@ export function RequestPaymentContent() {
                         <SelectValue placeholder="Select network" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mtn">MTN</SelectItem>
+                        <SelectItem value="mtn" >MTN</SelectItem>
                         <SelectItem value="vodafone">Vodafone</SelectItem>
                         <SelectItem value="airteltigo">AirtelTigo</SelectItem>
                         <SelectItem value="telecel">Telecel</SelectItem>
@@ -174,11 +209,11 @@ export function RequestPaymentContent() {
                     <Label htmlFor="customerName" className="text-sm">Customer Name *</Label>
                     <Input
                       id="customerName"
-                      placeholder="Enter customer name"
+                      placeholder="Customer name will appear here"
                       value={formData.customerName}
-                      onChange={(e) => handleInputChange("customerName", e.target.value)}
+                      readOnly
                       required
-                      className="h-10 sm:h-9"
+                      className="h-10 sm:h-9 bg-gray-100"
                     />
                   </div>
                   <div className="space-y-2">
