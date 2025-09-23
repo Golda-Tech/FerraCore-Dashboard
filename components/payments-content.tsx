@@ -453,19 +453,19 @@ export function PaymentsContent() {
               <div>
                 <h4 className="font-medium mb-3">Customer Information</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  {/* <div>
                     <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-                    <p>{selectedPayment.customerName}</p>
-                  </div>
+                    <p>{selectedPayment.first}</p>
+                  </div> */}
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
-                    <p>{selectedPayment.customerPhone}</p>
+                    <p>{selectedPayment.mobileNumber}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Network</Label>
                     <div className="flex items-center gap-2">
                       <Smartphone className="h-4 w-4" />
-                      <p>{selectedPayment.network}</p>
+                      <p>{selectedPayment.provider}</p>
                     </div>
                   </div>
                 </div>
@@ -480,20 +480,20 @@ export function PaymentsContent() {
                     <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
                     <p className="text-lg font-semibold">{formatCurrency(selectedPayment.amount)}</p>
                   </div>
-                  <div>
+                  {/* <div>
                     <Label className="text-sm font-medium text-muted-foreground">Method</Label>
                     <div className="flex items-center gap-2">
                       <Smartphone className="h-4 w-4" />
                       <p>{selectedPayment.method}</p>
                     </div>
-                  </div>
+                  </div> */}
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Reference</Label>
-                    <p className="font-mono">{selectedPayment.reference}</p>
+                    <p className="font-mono">{selectedPayment.transactionRef}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Description</Label>
-                    <p>{selectedPayment.description}</p>
+                    <p>{selectedPayment.mtnPayeeNote}</p>
                   </div>
                 </div>
               </div>
@@ -505,16 +505,16 @@ export function PaymentsContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Created</Label>
-                    <p>{formatDate(selectedPayment.createdAt)}</p>
+                    <p>{formatDate(selectedPayment.initiatedAt)}</p>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Due Date</Label>
-                    <p>{formatDate(selectedPayment.dueDate)}</p>
-                  </div>
+                  {/* <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Completed At</Label>
+                    <p>{formatDate(selectedPayment.completedAt)}</p>
+                  </div> */}
                   {selectedPayment.paidAt && (
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Paid At</Label>
-                      <p>{formatDate(selectedPayment.paidAt)}</p>
+                      <p>{formatDate(selectedPayment.completedAt)}</p>
                     </div>
                   )}
                 </div>

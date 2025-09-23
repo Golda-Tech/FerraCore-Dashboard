@@ -15,8 +15,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getUserInfo, createPayment} from "@/lib/payment"
+import { getUserInfo, createPayment, sendOtp, verifyOtp} from "@/lib/payment"
 import { UserInfo } from "@/types/payment"
+import { send } from "process"
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
 
 
 export function RequestPaymentContent() {
@@ -26,6 +28,13 @@ export function RequestPaymentContent() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [showOtpDialog, setShowOtpDialog] = useState(false)
+  const [otp, setOtp] = useState("")
+  const [isOtpSending, setIsOtpSending] = useState(false)
+  const [isOtpVerifying, setIsOtpVerifying] = useState(false)
+  const [isOtpVerified, setIsOtpVerified] = useState(false)
+
+
   const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
@@ -85,21 +94,38 @@ export function RequestPaymentContent() {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   const handleFetchName = async () => {
-  if (!formData.phoneNumber) return;
-  setIsFetchingName(true);
-  setFetchError(null);
+    if (!formData.phoneNumber) return;
+    setIsFetchingName(true);
+    setFetchError(null);
 
-  try {
-    // Concatenate country code and phone number **without the '+'**
-    const fullNumber = `${formData.countryCode.replace("+", "")}${formData.phoneNumber}`;
-    const data: UserInfo = await getUserInfo(fullNumber); 
-    setFormData(prev => ({ ...prev, customerName: data.accountName }));
-  } catch (err: any) {
-    setFetchError("Unable to fetch customer name");
-  } finally {
-    setIsFetchingName(false);
-  }
-};
+    try {
+      // Concatenate country code and phone number **without the '+'**
+      const fullNumber = `${formData.countryCode.replace("+", "")}${formData.phoneNumber}`;
+      const data: UserInfo = await getUserInfo(fullNumber); 
+      setFormData(prev => ({ ...prev, customerName: data.accountName }));
+
+      //Request OTP
+      requestOtpCode(fullNumber);
+    } catch (err: any) {
+      setFetchError("Unable to fetch customer name");
+    } finally {
+      setIsFetchingName(false);
+    }
+  };
+
+
+  const requestOtpCode = async (fullNumber: string) => {
+    setIsOtpSending(true);
+    try {
+      await sendOtp(fullNumber, "SMS", "PAYMENT");
+      setShowOtpDialog(true);
+    } catch (err) {
+      // ✅ only OTP failure here
+      setFetchError("Could not send OTP. Please try again.");
+    } finally {
+      setIsOtpSending(false);
+    }
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-3 sm:p-4 lg:p-6">
@@ -538,6 +564,60 @@ export function RequestPaymentContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+
+      {/* OTP Dialog */}
+      <Dialog open={showOtpDialog} onOpenChange={setShowOtpDialog}>
+        <DialogContent className="max-w-md mx-4 sm:mx-auto">
+          <DialogHeader>
+            <DialogTitle>Enter OTP</DialogTitle>
+            <DialogDescription>
+              We’ve sent a one-time password to {formData.phoneNumber}. Please enter it below.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <InputOTP
+              maxLength={6}
+              value={otp}
+              onChange={setOtp}   // ✅ this will update your state
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+              </InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup>
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+
+            <Button
+              disabled={otp.length < 6 || isOtpVerifying}
+              onClick={async () => {
+                setIsOtpVerifying(true)
+                try {
+                  const fullNumber = `${formData.countryCode.replace("+", "")}${formData.phoneNumber}`
+                  await verifyOtp(fullNumber, "SMS", otp) // <-- your backend OTP API
+                  setIsOtpVerified(true)
+                  setShowOtpDialog(false)
+                } catch (err) {
+                  setFetchError("Invalid OTP, please try again.")
+                } finally {
+                  setIsOtpVerifying(false)
+                }
+              }}
+              className="w-full"
+            >
+              {isOtpVerifying ? "Verifying..." : "Verify OTP"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
 
 

@@ -50,3 +50,34 @@ export async function getUserInfo(mobileNumber: string): Promise<UserInfo> {
   });
   return response.data;
 }
+
+
+//{{baseURL}}/api/v1/payments/send-otp?destination=233547362101&channel=SMS&type=PAYMENT returns {message: 'OTP sent successfully'}
+export async function sendOtp(
+  destination: string,
+  channel: string,
+  type: string
+): Promise<{ message: string }> {
+  const response = await api.get<{ message: string }>(
+    "/api/v1/payments/send-otp",
+    {
+      params: { destination, channel, type },
+    }
+  );
+  return response.data;
+}
+
+// Verify OTP {{baseURL}}/api/v1/payments/verify-otp?identifier=jonamarkin@gmail.com&channel=EMAIL&otp=306372
+export async function verifyOtp(
+  identifier: string,
+  channel: string,
+  otp: string
+): Promise<{ message: string }> {
+  const response = await api.get<{ message: string }>(
+    "/api/v1/payments/verify-otp",
+    {
+      params: { identifier, channel, otp },
+    }
+  );
+  return response.data;
+}
