@@ -47,6 +47,37 @@ export async function register(
   return response.data;
 }
 
+//{{baseURL}}/api/v1/auth/send-login-otp?destination=jonamarkin@gmail.com&channel=EMAIL&type=LOGIN
+export async function sendLoginOtp(
+  destination: string,
+  channel: string,
+  type: string
+): Promise<{ message: string }> {
+  const response = await api.get<{ message: string }>(
+    "/api/v1/auth/send-login-otp",
+    {
+      params: { destination, channel, type },
+    }
+  );
+  return response.data;
+}
+
+//{{baseURL}}/api/v1/auth/verify-otp?identifier=jonamarkin@gmail.com&channel=EMAIL&otp=525262
+export async function verifyLoginOtp(
+  identifier: string,
+  channel: string,
+  otp: string
+): Promise<LoginResponse> {
+  const response = await api.get<LoginResponse>("/api/v1/auth/verify-otp", {
+    params: { identifier, channel, otp },
+  });
+  if (response.data.token) {
+    localStorage.setItem(TOKEN_KEY, response.data.token);
+    localStorage.setItem(USER_KEY, JSON.stringify(response.data));
+  }
+  return response.data;
+}
+
 export function getUser(): LoginResponse | null {
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem(USER_KEY);

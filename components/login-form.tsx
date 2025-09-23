@@ -2,10 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isAuthenticated, login } from "@/lib/auth";
+import { isAuthenticated } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import {
   Dialog,
   DialogContent,
@@ -22,18 +27,23 @@ import {
   IconX,
   IconUser,
   IconLogin,
-  IconEye,
-  IconEyeOff,
+  IconMail,
+  IconShieldCheck,
 } from "@tabler/icons-react";
-import { LoginRequest } from "@/types/auth";
+
+import { verifyLoginOtp, login, sendLoginOtp } from "@/lib/auth";
+
+ 
 
 export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'email' | 'otp'>('email');
   const [showResultDialog, setShowResultDialog] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [loginResult, setLoginResult] = useState<{
     success: boolean;
     error?: string;
@@ -46,12 +56,42 @@ export function LoginForm() {
     }
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Cooldown timer for resend button
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const handleRequestOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const data = await login({ email, password } as LoginRequest);
+      await sendLoginOtp(email, "EMAIL", "LOGIN");
+      setStep('otp');
+      setOtpSent(true);
+      setResendCooldown(60); // 60 second cooldown
+    } catch (err: any) {
+      setLoginResult({
+        success: false,
+        error: err.message || "Failed to send OTP. Please try again.",
+      });
+      setShowResultDialog(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const data = await verifyLoginOtp(email, "EMAIL", otp);
 
       setLoginResult({
         success: true,
@@ -67,14 +107,37 @@ export function LoginForm() {
     } catch (err: any) {
       setLoginResult({
         success: false,
-        error:
-          err.response?.data?.message ||
-          "Login failed. Please check your credentials and try again.",
+        error: err.message || "Invalid OTP. Please check your code and try again.",
       });
       setShowResultDialog(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResendOTP = async () => {
+    if (resendCooldown > 0) return;
+    
+    setLoading(true);
+    try {
+      await sendLoginOtp(email, "EMAIL", "LOGIN");
+      setResendCooldown(60);
+    } catch (err: any) {
+      setLoginResult({
+        success: false,
+        error: err.message || "Failed to resend OTP. Please try again.",
+      });
+      setShowResultDialog(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackToEmail = () => {
+    setStep('email');
+    setOtp("");
+    setOtpSent(false);
+    setResendCooldown(0);
   };
 
   const handleCloseDialog = () => {
@@ -86,86 +149,138 @@ export function LoginForm() {
 
   const resetForm = () => {
     setEmail("");
-    setPassword("");
+    setOtp("");
+    setStep('email');
+    setOtpSent(false);
+    setResendCooldown(0);
     setShowResultDialog(false);
     setLoginResult({ success: false });
   };
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            placeholder="you@example.com"
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-            required
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="password">Password</Label>
-          <div className="relative">
+      {step === 'email' ? (
+        <form onSubmit={handleRequestOTP} className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              id="email"
+              type="email"
+              value={email}
+              placeholder="you@example.com"
+              onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
               required
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={() => setShowPassword(!showPassword)}
-              disabled={loading}
-            >
-              {showPassword ? (
-                <IconEyeOff className="h-4 w-4" />
-              ) : (
-                <IconEye className="h-4 w-4" />
-              )}
-            </Button>
           </div>
-        </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? (
-            <>
-              <IconLoader className="mr-2 h-4 w-4 animate-spin" />
-              Signing In...
-            </>
-          ) : (
-            <>
-              <IconLogin className="mr-2 h-4 w-4" />
-              Sign In
-            </>
-          )}
-        </Button>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              <>
+                <IconLoader className="mr-2 h-4 w-4 animate-spin" />
+                Sending OTP...
+              </>
+            ) : (
+              <>
+                <IconMail className="mr-2 h-4 w-4" />
+                Send OTP
+              </>
+            )}
+          </Button>
 
-        <div className="text-center text-sm">
-          <a
-            href="/forgot-password"
-            className="underline hover:text-primary"
-            tabIndex={loading ? -1 : 0}
-          >
-            Forgot password?
-          </a>{" "}
-          |{" "}
-          <a
-            href="/register"
-            className="underline hover:text-primary"
-            tabIndex={loading ? -1 : 0}
-          >
-            Create Account
-          </a>
-        </div>
-      </form>
+          <div className="text-center text-sm">
+            <a
+              href="/forgot-password"
+              className="underline hover:text-primary"
+              tabIndex={loading ? -1 : 0}
+            >
+              Need help?
+            </a>{" "}
+            |{" "}
+            <a
+              href="/register"
+              className="underline hover:text-primary"
+              tabIndex={loading ? -1 : 0}
+            >
+              Create Account
+            </a>
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={handleVerifyOTP} className="grid gap-4">
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full">
+              <IconMail className="h-6 w-6 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold">Check your email</h3>
+            <p className="text-sm text-muted-foreground">
+              We've sent a 6-digit verification code to
+            </p>
+            <p className="text-sm font-medium">{email}</p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="otp" className="text-center">
+              Enter verification code
+            </Label>
+            <div className="flex justify-center">
+              <InputOTP
+                maxLength={6}
+                value={otp}
+                onChange={(value) => setOtp(value)}
+                disabled={loading}
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
+            {loading ? (
+              <>
+                <IconLoader className="mr-2 h-4 w-4 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              <>
+                <IconShieldCheck className="mr-2 h-4 w-4" />
+                Verify & Sign In
+              </>
+            )}
+          </Button>
+
+          <div className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Didn't receive the code?
+            </p>
+            <div className="flex justify-center space-x-4 text-sm">
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                disabled={resendCooldown > 0 || loading}
+                className="underline hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+              </button>
+              <button
+                type="button"
+                onClick={handleBackToEmail}
+                disabled={loading}
+                className="underline hover:text-primary"
+              >
+                Change email
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
 
       {/* Loading Overlay */}
       {loading && (
@@ -177,9 +292,13 @@ export function LoginForm() {
                   <IconLoader className="h-8 w-8 text-blue-600 animate-spin" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">Signing In</h3>
+                  <h3 className="text-lg font-semibold">
+                    {step === 'email' ? 'Sending OTP' : 'Verifying Code'}
+                  </h3>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Please wait while we authenticate your account...
+                    {step === 'email' 
+                      ? 'Please wait while we send your verification code...'
+                      : 'Please wait while we verify your code...'}
                   </p>
                 </div>
                 <div className="flex items-center justify-center space-x-1">
@@ -211,12 +330,12 @@ export function LoginForm() {
               </div>
               <div>
                 <DialogTitle>
-                  {loginResult.success ? "Welcome Back!" : "Sign In Failed"}
+                  {loginResult.success ? "Welcome Back!" : "Verification Failed"}
                 </DialogTitle>
                 <DialogDescription>
                   {loginResult.success
                     ? "You have been successfully signed in."
-                    : "There was an error signing you in."}
+                    : "There was an error with your verification."}
                 </DialogDescription>
               </div>
             </div>
@@ -271,10 +390,13 @@ export function LoginForm() {
                   Try Again
                 </Button>
                 <Button
-                  onClick={() => router.push("/forgot-password")}
+                  onClick={() => {
+                    setShowResultDialog(false);
+                    resetForm();
+                  }}
                   className="w-full sm:w-auto"
                 >
-                  Forgot Password?
+                  Start Over
                 </Button>
               </>
             )}
