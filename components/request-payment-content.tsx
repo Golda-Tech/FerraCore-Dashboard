@@ -129,6 +129,28 @@ export function RequestPaymentContent() {
                   <Smartphone className="h-4 w-4 sm:h-5 sm:w-5" />
                   Customer Mobile Number
                 </h3>
+
+                {/**Network selection on one line */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="sm:col-span-1 space-y-2">
+                    <Label htmlFor="network" className="text-sm">Network *</Label>
+                    <Select
+                      value={formData.network}
+                      onValueChange={(value) => handleInputChange("network", value)}
+                      required
+                    >
+                      <SelectTrigger className="h-10 sm:h-9">
+                        <SelectValue placeholder="Select network" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mtn" >MTN</SelectItem>
+                        <SelectItem value="vodafone">Vodafone</SelectItem>
+                        <SelectItem value="airteltigo">AirtelTigo</SelectItem>
+                        <SelectItem value="telecel">Telecel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
                   <div className="space-y-2 sm:col-span-1">
                     <Label htmlFor="countryCode" className="text-sm">Country</Label>
@@ -171,24 +193,7 @@ export function RequestPaymentContent() {
                     </div>
                     {fetchError && <p className="text-xs text-red-600 mt-1">{fetchError}</p>}
                   </div>
-                  <div className="sm:col-span-1 space-y-2">
-                    <Label htmlFor="network" className="text-sm">Network *</Label>
-                    <Select
-                      value={formData.network}
-                      onValueChange={(value) => handleInputChange("network", value)}
-                      required
-                    >
-                      <SelectTrigger className="h-10 sm:h-9">
-                        <SelectValue placeholder="Select network" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="mtn" >MTN</SelectItem>
-                        <SelectItem value="vodafone">Vodafone</SelectItem>
-                        <SelectItem value="airteltigo">AirtelTigo</SelectItem>
-                        <SelectItem value="telecel">Telecel</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  
                 </div>
               </div>
 
