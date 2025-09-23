@@ -335,25 +335,26 @@ export function RequestPaymentContent() {
                   <Separator />
                   <div className="space-y-4">
                     <h3 className="text-base sm:text-lg font-medium">Payment Summary</h3>
-                    <div className="bg-gray-50 border rounded-lg p-3 sm:p-4 space-y-3">
-                      <div className="flex justify-between text-sm">
+                    <div className="bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-3 sm:p-4 space-y-3">
+                      <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
                         <span>Payment Amount:</span>
                         <span className="font-medium">GHS {amount.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
                         <span>Service Fee (1.5%):</span>
                         <span className="font-medium">GHS {fee.toFixed(2)}</span>
                       </div>
                       <Separator />
-                      <div className="flex justify-between font-medium text-green-600">
+                      <div className="flex justify-between font-medium text-green-600 dark:text-green-400">
                         <span>You Receive:</span>
                         <span>GHS {(amount - fee).toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-sm text-muted-foreground">
+                      <div className="flex justify-between text-sm text-muted-foreground dark:text-gray-400">
                         <span>Customer Pays:</span>
                         <span>GHS {amount.toFixed(2)}</span>
                       </div>
                     </div>
+
                   </div>
                 </>
               )}
@@ -407,8 +408,8 @@ export function RequestPaymentContent() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
-              <div className="space-y-2 text-sm">
+            <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg p-3 sm:p-4">
+              <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
                 <div className="flex justify-between">
                   <span>Customer:</span>
                   <span className="font-medium">{formData.customerName}</span>
@@ -433,6 +434,7 @@ export function RequestPaymentContent() {
                 </div>
               </div>
             </div>
+
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
