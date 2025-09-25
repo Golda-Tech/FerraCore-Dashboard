@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -101,8 +101,8 @@ export function SettingsContent() {
         <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Profile
@@ -122,6 +122,7 @@ export function SettingsContent() {
             API & Keys
           </TabsTrigger>
         </TabsList>
+
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-4">
@@ -307,6 +308,72 @@ export function SettingsContent() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Whitelisted IPs */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Whitelisted IPs</CardTitle>
+                <CardDescription>
+                  Restrict account access to specific IP addresses
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newIp">Add New IP</Label>
+                  <div className="flex space-x-2">
+                    <Input id="newIp" placeholder="e.g. 192.168.0.1" />
+                    <Button size="sm">Add</Button>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {/* Example of whitelisted IPs */}
+                  {["192.168.0.1", "102.176.45.23"].map((ip, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <p className="font-mono">{ip}</p>
+                      <Button variant="outline" size="sm">
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Whitelisted Mobile Numbers */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Whitelisted Mobile Numbers</CardTitle>
+                <CardDescription>
+                  Only allow login and notifications from verified numbers
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newNumber">Add New Number</Label>
+                  <div className="flex space-x-2">
+                    <Input id="newNumber" placeholder="+233 24 000 0000" />
+                    <Button size="sm">Add</Button>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {["+233 24 123 4567", "+233 20 765 4321"].map((num, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <p className="font-mono">{num}</p>
+                      <Button variant="outline" size="sm">
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          
 
             <Card>
               <CardHeader>
