@@ -116,7 +116,7 @@ const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">Registration Submitted!</h2>
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-              Thank you for registering your organization with Rexpay. Our team will review your application and contact
+              Thank you for registering your organization with Ferracore. Our team will review your application and contact
               you within 2-3 business days.
             </p>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -150,7 +150,7 @@ const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
           <div className="flex justify-center">
             <IconInnerShadowTop className="h-12 w-12 text-primary" />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">Join Rexpay Collections</h2>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">Join Ferracore Collections Platform</h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Register your organization to start processing payments
           </p>
