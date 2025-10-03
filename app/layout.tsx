@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RexPay Collections Gateway",
-  description: "Gateway for managing collections in RexPay",
+  title: "Ferracore Collections Platform",
+  description: "Platform for managing collections in Ferracore",
 };
 
 export default function RootLayout({
