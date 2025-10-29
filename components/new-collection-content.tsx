@@ -183,16 +183,16 @@ export function NewCollectionContent() {
             disabled={isCollecting}
           >
             <IconArrowLeft className="h-4 w-4 mr-2" />
-            Back to Collections
+            Back to Collections Summary
           </Button>
         </div>
 
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            New Collection Request
+            Request Collection
           </h1>
           <p className="text-muted-foreground">
-            Create a new payment collection request from a customer
+            Create a new payment collection request on behalf of a customer
           </p>
         </div>
 
@@ -233,6 +233,7 @@ export function NewCollectionContent() {
                         <RadioGroupItem
                           value="bank_transfer"
                           id="bank_transfer"
+                          disabled
                         />
                         <Label
                           htmlFor="bank_transfer"
@@ -271,7 +272,7 @@ export function NewCollectionContent() {
                         <Input
                           id="customerEmail"
                           type="email"
-                          placeholder="customer@example.com"
+                          placeholder="c*****@email.com"
                           value={formData.customerEmail}
                           onChange={(e) =>
                             handleInputChange("customerEmail", e.target.value)
@@ -481,7 +482,7 @@ export function NewCollectionContent() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Collection Summary</CardTitle>
+                <CardTitle>Collection Brief</CardTitle>
                 <CardDescription>
                   Review your collection request
                 </CardDescription>

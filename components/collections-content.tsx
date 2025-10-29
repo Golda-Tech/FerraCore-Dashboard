@@ -180,6 +180,27 @@ export function CollectionsContent() {
     }
   };
 
+
+  const telcos = [
+    { name: "mtn",  logo: "/mtn-momo.jpeg" },
+    { name: "telecel", logo: "/telecel-cash.webp" },
+    { name: "airteltigo", logo: "/airtel-tigo.png" },
+    { name: "gmoney", logo: "/gmoney.jpg" },
+  ];
+
+  const getTelcoLogo = (provider = "MTN") => {
+    const src =
+      telcos.find((t) => provider.toLowerCase().includes(t.name))?.logo ??
+      "/unknown-telco.webp";
+    return (
+      <img
+        src={src}
+        alt={provider}
+        className="h-12 w-12 rounded-lg object-contain bg-white p-1 "
+      />
+    );
+  };
+
   // Initial data fetch
   useEffect(() => {
     fetchCollections();
@@ -314,7 +335,7 @@ export function CollectionsContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Collections</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Collections Summary</h1>
           <p className="text-muted-foreground">
             View and manage all your collection requests
           </p>
@@ -432,9 +453,9 @@ export function CollectionsContent() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Collection History</CardTitle>
+              <CardTitle className="text-lg">Recent Collections</CardTitle>
               <CardDescription>
-                View and manage your collection requests
+                View and manage recent collections
               </CardDescription>
             </div>
             <DropdownMenu>
@@ -579,7 +600,7 @@ export function CollectionsContent() {
                 <TableRow>
                   <TableHead>Customer</TableHead>
                   <TableHead>Amount</TableHead>
-                  <TableHead>Method</TableHead>
+                  <TableHead>Network</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Reference</TableHead>
                   <TableHead>Date</TableHead>
@@ -637,9 +658,7 @@ export function CollectionsContent() {
                           <div className="font-medium">
                             {formatCustomerId(collection.customerId)}
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            Customer ID
-                          </div>
+
                         </div>
                       </TableCell>
                       <TableCell>
@@ -649,17 +668,13 @@ export function CollectionsContent() {
                             collection.currency
                           )}
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {collection.currency}
-                        </div>
+
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <IconDeviceMobile className="h-4 w-4" />
                           <div>
-                            <div className="font-medium">Mobile Money</div>
                             <div className="text-sm text-muted-foreground">
-                              MTN
+                             {getTelcoLogo(collection.provider)}
                             </div>
                           </div>
                         </div>
@@ -684,11 +699,7 @@ export function CollectionsContent() {
                         <div className="text-sm">
                           {formatDate(collection.initiatedAt)}
                         </div>
-                        {collection.updatedAt && (
-                          <div className="text-xs text-muted-foreground">
-                            Updated: {formatDate(collection.updatedAt)}
-                          </div>
-                        )}
+
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm">
@@ -709,7 +720,7 @@ export function CollectionsContent() {
                 Showing {filteredCollections.length} of {collections.length}{" "}
                 collections
               </div>
-              <div>Total: {formatCurrency(totalAmount)}</div>
+              <div className="text-green-600 dark:text-green-400 text-lg font-semibold">Total: {formatCurrency(totalAmount)}</div>
             </div>
           )}
         </CardContent>

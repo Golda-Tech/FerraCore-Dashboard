@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader, User, XCircle } from "lucide-react"
+import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader, User,ShieldCheck, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -25,6 +25,7 @@ export function RequestPaymentContent() {
   const router = useRouter()
   const [selectedMethod, setSelectedMethod] = useState("mobile_money")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isPending, setIsPending] = useState(true);   // true until you hear “success”
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
@@ -35,7 +36,9 @@ export function RequestPaymentContent() {
   const [isOtpVerified, setIsOtpVerified] = useState(false)
 
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(()=>{
+      const today = new Date().toISOString().split("T")[0];
+return{
     customerName: "",
     customerEmail: "",
     phoneNumber: "",
@@ -43,13 +46,37 @@ export function RequestPaymentContent() {
     amount: "",
     reference: "",
     description: "",
-    dueDate: "",
+    dueDate: today,
     network: "",
-  })
+    };
+  });
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
+
+ const telcos = [
+   {
+     name: 'MTN MoMo',
+     image: '/mtn-momo.jpeg', // Your MTN logo path
+     alt: 'MTN Mobile Money'
+   },
+   {
+     name: 'Telecel Cash',
+     image: '/telecel-cash.webp', // Your Telecel logo path
+     alt: 'Telecel Cash'
+   },
+   {
+     name: 'AirtelTigo',
+     image: '/airtel-tigo.png', // Your AirtelTigo logo path
+     alt: 'AirtelTigo'
+   },
+   {
+     name: 'G-Money',
+     image: '/gmoney.jpg', // Your G-Money logo path
+     alt: 'G-Money'
+   }
+ ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +99,7 @@ export function RequestPaymentContent() {
 
       // Call the payment API
       const paymentResponse = await createPayment(paymentRequest);
+      setIsPending(false);                              // <-- success
 
       // Optionally store or show the transactionRef
       console.log("Payment response:", paymentResponse);
@@ -79,6 +107,7 @@ export function RequestPaymentContent() {
       setShowSuccess(true);
     } catch (err: any) {
       console.error("Payment failed:", err);
+      setIsPending(true);
       setErrorMessage(err?.response?.data?.message || err.message || "An unexpected error occurred");
       setShowError(true);
     } finally {
@@ -131,9 +160,8 @@ export function RequestPaymentContent() {
     <div className="flex flex-1 flex-col gap-4 p-3 sm:p-4 lg:p-6">
       {/* Header */}
       <div className="flex items-center gap-2 sm:gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Back</span>
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className = "rounded-full hover:bg-gray-100 dark:hover:bg-gray-600">
+          <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Request Payment</h1>
@@ -156,26 +184,41 @@ export function RequestPaymentContent() {
                   Customer Mobile Number
                 </h3>
 
-                {/**Network selection on one line */}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="sm:col-span-1 space-y-2">
-                    <Label htmlFor="network" className="text-sm">Network *</Label>
-                    <Select
-                      value={formData.network}
-                      onValueChange={(value) => handleInputChange("network", value)}
-                      required
-                    >
-                      <SelectTrigger className="h-10 sm:h-9">
-                        <SelectValue placeholder="Select network" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="mtn" >MTN</SelectItem>
-                        <SelectItem value="vodafone">Vodafone</SelectItem>
-                        <SelectItem value="airteltigo">AirtelTigo</SelectItem>
-                        <SelectItem value="telecel">Telecel</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="sm:col-span-1 space-y-2">
+                                    <Label className="text-sm">Select Network *</Label>
+                                      <RadioGroup
+                                        value={formData.network}
+                                        onValueChange={(v) => handleInputChange("network", v)}
+                                        className="grid grid-cols-4 gap-4"      /* 4 columns on desktop */
+                                      >
+                                        {telcos.map((t) => (
+                                          <div key={t.name}>
+                                            <RadioGroupItem value={t.name.toLowerCase().replace(/\s+/g, "")} id={t.name} className="peer sr-only" />
+                                            <Label
+                                              htmlFor={t.name}
+                                              className=" flex flex-col items-center justify-center gap-2 p-3 border-2 rounded-lg cursor-pointer
+                                                           /* default text colour – always visible */
+                                                           text-gray-900 dark:text-white
+                                                           /* hover state */
+                                                           hover:bg-gray-50 dark:hover:bg-gray-800
+                                                           /* checked (selected) state */
+                                                           peer-data-[state=checked]:border-blue-600
+                                                           peer-data-[state=checked]:bg-blue-50
+                                                           dark:peer-data-[state=checked]:bg-blue-950     /* keep blue tint in dark */
+                                                           /* keep text contrasting when checked */
+                                                           peer-data-[state=checked]:text-gray-900
+                                                           dark:peer-data-[state=checked]:text-white
+                                                           transition-colors"
+                                            >
+                                              <img src={t.image} alt={t.alt} className="h-12 w-12 object-contain " />
+                                              <span className="text-xs text-center">{t.name}</span>
+                                            </Label>
+                                          </div>
+                                        ))}
+                                      </RadioGroup>
+                                      </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
                   <div className="space-y-2 sm:col-span-1">
@@ -201,9 +244,13 @@ export function RequestPaymentContent() {
                     <div className="flex items-center gap-2">
                       <Input
                         id="phoneNumber"
-                        placeholder="24 123 4567"
+                        placeholder="24 XXX XXXX"
                         value={formData.phoneNumber}
-                        onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                        onChange={(e) =>{
+                            const digitsOnly = e.target.value.replace(/\D/g, "").slice(0,10);
+                            handleInputChange("phoneNumber", digitsOnly)
+                            }}
+                         maxLength={10}
                         required
                         className="h-10 sm:h-9 flex-1"
                       />
@@ -214,7 +261,7 @@ export function RequestPaymentContent() {
                         size="sm"
                         className="h-10 w-10 p-0 flex items-center justify-center"
                       >
-                        {isFetchingName ? <Loader className="h-4 w-4 animate-spin" /> : <User className="h-4 w-4" />}
+                        {isFetchingName ? <Loader className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                       </Button>
                     </div>
                     {fetchError && <p className="text-xs text-red-600 mt-1">{fetchError}</p>}
@@ -278,7 +325,7 @@ export function RequestPaymentContent() {
                     <Input
                       id="customerEmail"
                       type="email"
-                      placeholder="customer@example.com"
+                      placeholder="c******@email.com"
                       value={formData.customerEmail}
                       onChange={(e) => handleInputChange("customerEmail", e.target.value)}
                       className="h-10 sm:h-9"
@@ -312,8 +359,8 @@ export function RequestPaymentContent() {
                       id="dueDate"
                       type="date"
                       value={formData.dueDate}
-                      onChange={(e) => handleInputChange("dueDate", e.target.value)}
-                      className="h-10 sm:h-9"
+                      readOnly
+                      className="h-10 sm:h-9 bg-gray-100 text-gray-600 cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -430,8 +477,9 @@ export function RequestPaymentContent() {
         <DialogContent className="max-w-md mx-4 sm:mx-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-4 w-4 text-green-600" />
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center
+                                           ${isPending ? 'bg-amber-100' : 'bg-green-100'}`}>
+                <CheckCircle className={`h-4 w-4 ${isPending ? 'text-amber-600' : 'text-green-600'}`} />
               </div>
               Payment Request Sent
             </DialogTitle>
@@ -482,13 +530,13 @@ export function RequestPaymentContent() {
                     amount: "",
                     reference: "",
                     description: "",
-                    dueDate: "",
+                    dueDate: new Date().toISOString().split("T")[0],
                     network: "",
                   })
                 }}
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Send Another
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Check Status
               </Button>
               <Button
                 className="flex-1 order-1 sm:order-2"
@@ -531,6 +579,7 @@ export function RequestPaymentContent() {
               <Button
                 variant="outline"
                 className="flex-1 bg-transparent order-2 sm:order-1"
+                disabled
                 onClick={() => {
                   setShowError(false)
                   // Reset form
@@ -542,17 +591,18 @@ export function RequestPaymentContent() {
                     amount: "",
                     reference: "",
                     description: "",
-                    dueDate: "",
+                      dueDate: new Date().toISOString().split("T")[0],
                     network: "",
                   })
                 }}
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Send Another
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Check Status
               </Button>
 
               <Button
                 className="flex-1 order-1 sm:order-2"
+                disabled
                 onClick={() => {
                   setShowError(false)
                   router.push("/payments")
@@ -606,6 +656,7 @@ export function RequestPaymentContent() {
                   setShowOtpDialog(false)
                 } catch (err) {
                   setFetchError("Invalid OTP, please try again.")
+                  setShowOtpDialog(false)
                 } finally {
                   setIsOtpVerifying(false)
                 }
