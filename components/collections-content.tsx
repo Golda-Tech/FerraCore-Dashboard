@@ -674,7 +674,7 @@ export function CollectionsContent() {
                         <div className="flex items-center gap-2">
                           <div>
                             <div className="text-sm text-muted-foreground">
-                             {getTelcoLogo(collection.provider)}
+                             {getTelcoLogo("MTN")}
                             </div>
                           </div>
                         </div>

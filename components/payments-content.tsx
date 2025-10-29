@@ -415,6 +415,7 @@ const getTelcoLogo = (provider = "") => {
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Network</TableHead>
+                  <TableHead>MTN Trans ID</TableHead>
                   <TableHead>Reference</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -442,6 +443,7 @@ const getTelcoLogo = (provider = "") => {
 
                       </div>
                     </TableCell>
+                    <TableCell className="font-mono text-sm">{payment.mtnFinancialTransactionId}</TableCell>
                     <TableCell className="font-mono text-sm">{payment.transactionRef}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
