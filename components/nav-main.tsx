@@ -6,7 +6,7 @@ import {
   IconFileUpload,
   IconMoneybagMove,
   type Icon,
-  IconChevronRight, // for folder caret
+  IconChevronRight,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -31,17 +31,15 @@ import {
 import type { PageName } from "@/types/navigation";
 
 /* --------------------------------------------------
-   Shape we expect now:
-   - flat :  { title, page, icon }
-   - group:  { title, icon, isGroup:true, pages:[{title,page,icon}] }
+   Updated to accept readonly arrays
 -------------------------------------------------- */
 type NavItem =
-  | { title: string; page: PageName; icon?: Icon } // flat
+  | { readonly title: string; readonly page: PageName; readonly icon?: Icon }
   | {
-      title: string;
-      icon?: Icon;
-      isGroup: true;
-      pages: { title: string; page: PageName; icon?: Icon }[];
+      readonly title: string;
+      readonly icon?: Icon;
+      readonly isGroup: true;
+      readonly pages: readonly { readonly title: string; readonly page: PageName; readonly icon?: Icon }[];
     };
 
 export function NavMain({
@@ -49,11 +47,10 @@ export function NavMain({
   onNavigate,
   currentPath,
 }: {
-  items: NavItem[];
+  items: readonly NavItem[];
   onNavigate: (page: PageName) => void;
-  currentPath: string; // /dashboard, /payments, ...
+  currentPath: string;
 }) {
-  /* open-state for collapsible folders – default open */
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({
     Ferracore: true,
     Rexpay: true,
@@ -62,14 +59,12 @@ export function NavMain({
   const toggleFolder = (name: string) =>
     setOpenFolders((o) => ({ ...o, [name]: !o[name] }));
 
-  /* helper: is a nested page active? */
   const isActive = (page: PageName) => currentPath === `/${page}`;
 
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          {/* -------- BIG orange CTA (kept as-is) -------- */}
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
               tooltip="Request Payment"
@@ -84,9 +79,7 @@ export function NavMain({
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          {/* -------- NAV TREE -------- */}
           {items.map((item) =>
-            /* ----------  GROUP  ---------- */
             "isGroup" in item ? (
               <Collapsible
                 key={item.title}
@@ -130,7 +123,6 @@ export function NavMain({
                 </CollapsibleContent>
               </Collapsible>
             ) : (
-              /* ----------  FLAT ITEM  ---------- */
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
                   asChild

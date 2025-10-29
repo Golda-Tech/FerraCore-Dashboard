@@ -59,9 +59,12 @@ const navMain = [
       { title: "Collections Summary", page: "collections" as PageName, icon: IconMoneybag },
     ],
   },
-  /* ------  standalone items  ------ */
-  { title: "User Management", page: "user-management" as PageName, icon: IconUsers },
-];
+  {
+    title: "User Management",
+    page: "user-management" as PageName,
+    icon: IconUsers,
+  },
+] as const;
 
 const navSecondary = [
   { title: "Settings", page: "settings" as PageName, icon: IconSettings },
