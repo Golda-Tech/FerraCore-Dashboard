@@ -43,17 +43,17 @@ import {
 const mockUser = {
   id: "user_123",
   firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@company.com",
+  lastName: "Kamara",
+  email: "john.quash@company.com",
   phone: "+233 24 123 4567",
   role: "admin",
   organization: {
-    name: "Acme Corporation",
+    name: "Mercury",
     businessType: "Technology",
-    address: "123 Business Street, Accra, Ghana",
+    address: "123 CBD, Accra, Ghana",
     registrationNumber: "REG-2024-001",
     taxId: "TAX-123456789",
-    website: "https://acme.com",
+    website: "https://mercury.com",
   },
   subscription: {
     plan: "Professional",

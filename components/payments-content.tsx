@@ -36,6 +36,8 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { getPayment, getPayments, getTransactionStatus } from "@/lib/payment"
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Mock data for payment requests
 const payments = [
@@ -149,6 +151,31 @@ export function PaymentsContent() {
     }
   }
 
+  const downloadPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.text("FerraCore Payments Report", 14, 16);
+
+    const body = filteredPayments.map((p) => [
+      p.mobileNumber,
+      p.transactionRef,
+      mapApiStatus(p.status),
+      p.provider,
+      Number(p.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
+      formatDate(p.initiatedAt),
+    ]);
+
+    autoTable(doc, {
+      head: [["Phone", "Reference", "Status", "Network", "Amount(GHS)", "Date"]],
+      body,
+      startY: 24,
+      theme: "grid",
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: "#22c55e" }, // green header
+    });
+
+    doc.save(`payments_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   useEffect(() => {
     fetchPayments()
   }, [])
@@ -182,18 +209,53 @@ export function PaymentsContent() {
     }
   }
 
+// Status mapping for API data
+const mapApiStatus = (status: string) => {
+  switch (status.toUpperCase()) {
+    case "SUCCESSFUL":
+      return "completed";
+    case "ONGOING":
+    case "PENDING":
+      return "pending";
+    case "FAILED":
+      return "failed";
+    default:
+      return "expired";
+  }
+};
 
+const telcos = [
+  { name: "mtn",  logo: "/mtn-momo.jpeg" },
+  { name: "telecel", logo: "/telecel-cash.webp" },
+  { name: "airteltigo", logo: "/airtel-tigo.png" },
+  { name: "gmoney", logo: "/gmoney.jpg" },
+];
+
+const getTelcoLogo = (provider = "") => {
+  const src =
+    telcos.find((t) => provider.toLowerCase().includes(t.name))?.logo ??
+    "/unknown-telco.webp";
+  return (
+    <img
+      src={src}
+      alt={provider}
+      className="h-12 w-12 rounded-lg object-contain bg-white p-1 "
+    />
+  );
+};
 
 
   const filteredPayments = payments.filter((payment) => {
+      const mappedStatus = mapApiStatus(payment.status);
+
     const matchesSearch =
       // payment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.mobileNumber.includes(searchTerm) ||
-      payment.transactionRef.toLowerCase().includes(searchTerm.toLowerCase())
+      payment.mobileNumber?.includes(searchTerm) ||
+      payment.transactionRef?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || payment.status === statusFilter
+    const matchesStatus = statusFilter === "all" || mappedStatus === statusFilter;
 
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus;
   })
 
   const completedStatuses = ["SUCCESSFUL"]
@@ -228,7 +290,7 @@ export function PaymentsContent() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Payment Requests</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Payments Summary</h2>
             <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -309,8 +371,8 @@ export function PaymentsContent() {
       {/* Filters and Search */}
       <Card>
         <CardHeader>
-          <CardTitle>Payment Requests</CardTitle>
-          <CardDescription>Manage and track all your payment requests</CardDescription>
+          <CardTitle>Recent Payments </CardTitle>
+          <CardDescription>Track all payment requests</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
@@ -331,14 +393,14 @@ export function PaymentsContent() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="completed">Successful</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
                     <SelectItem value="expired">Expired</SelectItem>
                 </SelectContent>
                 </Select>
             </div>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={downloadPDF} >
                 <Download className="h-4 w-4 mr-2" />
                 Export
             </Button>
@@ -376,8 +438,8 @@ export function PaymentsContent() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Smartphone className="h-4 w-4" />
-                        {payment.provider}
+                         {getTelcoLogo(payment.provider)}
+
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">{payment.transactionRef}</TableCell>
@@ -422,6 +484,13 @@ export function PaymentsContent() {
               </TableBody>
             </Table>
           </div>
+           {/* Results Summary */}
+
+                      <div className="flex items-center justify-between text-sm text-muted-foreground mt-4">
+                        <div></div>
+                        <div className="text-green-600 dark:text-green-400 text-lg font-semibold">Total: {formatCurrency(totalAmount)}</div>
+                      </div>
+
         </CardContent>
       </Card>
 
