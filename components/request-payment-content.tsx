@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getUserInfo, createPayment, sendOtp, verifyOtp} from "@/lib/payment"
+import { getUserInfo, createPayment, sendOtp, verifyOtp, getTransactionStatus } from "@/lib/payment"
 import { UserInfo } from "@/types/payment"
 import { send } from "process"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
@@ -23,6 +23,9 @@ import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/i
 
 export function RequestPaymentContent() {
   const router = useRouter()
+  const [lastTransaction, setLastTransaction] = useState<{ provider?: string; transactionRef?: string } | null>(null)
+  const [statusLoading, setStatusLoading] = useState(false)
+  const [refreshedStatus, setRefreshedStatus] = useState<string | null>(null)
   const [selectedMethod, setSelectedMethod] = useState("mobile_money")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isPending, setIsPending] = useState(true);   // true until you hear “success”
@@ -104,6 +107,16 @@ return{
       // Optionally store or show the transactionRef
       console.log("Payment response:", paymentResponse);
 
+
+     // Save minimal info to allow status refresh later
+    const provider = paymentRequest.provider
+    const transactionRef =
+       paymentResponse.transactionRef ||
+       paymentRequest.collectionRef
+     setLastTransaction({ provider, transactionRef })
+     setRefreshedStatus(null)
+
+
       setShowSuccess(true);
     } catch (err: any) {
       console.error("Payment failed:", err);
@@ -121,6 +134,26 @@ return{
 
   const [isFetchingName, setIsFetchingName] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+
+ const refreshTransactionStatus = async () => {
+    if (!lastTransaction?.provider || !lastTransaction?.transactionRef) return
+    setStatusLoading(true)
+    try {
+      const statusData = await getTransactionStatus(
+        lastTransaction.provider,
+        lastTransaction.transactionRef
+      )
+      // try to show a readable status
+      const status = statusData?.status || "Unknown"
+      setRefreshedStatus(status)
+    } catch (err) {
+      console.error("Failed to refresh transaction status:", err)
+      setRefreshedStatus("Unable to fetch status")
+    } finally {
+      setStatusLoading(false)
+    }
+  }
 
   const handleFetchName = async () => {
     if (!formData.phoneNumber) return;
@@ -511,6 +544,12 @@ return{
                   <span>Reference:</span>
                   <span className="font-medium font-mono">PAY-{Date.now().toString().slice(-6)}</span>
                 </div>
+                {refreshedStatus && (
+                 <div className="flex justify-between">
+                   <span>Current Status:</span>
+                   <span className="font-medium">{refreshedStatus}</span>
+                 </div>
+               )}
               </div>
             </div>
 
@@ -519,23 +558,11 @@ return{
               <Button
                 variant="outline"
                 className="flex-1 bg-transparent order-2 sm:order-1"
-                onClick={() => {
-                  setShowSuccess(false)
-                  // Reset form
-                  setFormData({
-                    customerName: "",
-                    customerEmail: "",
-                    phoneNumber: "",
-                    countryCode: "+233",
-                    amount: "",
-                    reference: "",
-                    description: "",
-                    dueDate: new Date().toISOString().split("T")[0],
-                    network: "",
-                  })
+                onClick={async () => {
+                  await refreshTransactionStatus()
                 }}
               >
-                <CheckCircle className="mr-2 h-4 w-4" />
+                {statusLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                 Check Status
               </Button>
               <Button
