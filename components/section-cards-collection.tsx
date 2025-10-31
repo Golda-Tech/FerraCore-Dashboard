@@ -11,11 +11,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusSummary, PaymentTrend } from "@/types/payment";
+import { StatusSummary, CollectionTrend } from "@/types/collections";
 
 interface SectionCardsProps {
   statusSummary: StatusSummary | null;
-  trends: PaymentTrend[];
+  trends: CollectionTrend[];
   period: string;
   loading: boolean;
 }
@@ -99,7 +99,7 @@ export function SectionCards({
     <div className="grid grid-cols-1 gap-4 px-0 lg:px-0 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardDescription>Total Payments</CardDescription>
+          <CardDescription>Total Collections</CardDescription>
           <CardAction>
             <Badge
               variant="outline"
@@ -127,7 +127,7 @@ export function SectionCards({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardDescription>Pending Payments</CardDescription>
+          <CardDescription>Pending Collections</CardDescription>
           <CardAction>
             <Badge
               variant="outline"
@@ -174,7 +174,7 @@ export function SectionCards({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardDescription>Total Payments</CardDescription>
+          <CardDescription>Total Collections</CardDescription>
           <CardAction>
             <Badge variant="outline" className="text-green-600">
               <IconTrendingUp className="h-3 w-3 mr-1" />+{balanceChange}%

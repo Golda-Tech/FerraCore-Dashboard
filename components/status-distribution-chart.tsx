@@ -20,17 +20,19 @@ import {
 } from "@/components/ui/chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusSummary, CollectionTrend } from "@/types/collections";
+import { StatusSummary, PaymentTrend } from "@/types/payment";
 
 interface StatusDistributionChartProps {
   statusSummary: StatusSummary | null;
-  trends: CollectionTrend[];
+  trends: PaymentTrend[];
   loading: boolean;
 }
 
 const statusColors: Record<string, string> = {
+  SUCCESSFUL: "#10b981",
   SUCCESS: "#10b981",       // Green (Tailwind emerald-500)
   FAILED: "#ef4444",        // Red (Tailwind red-500)
+  PENDING: "#f59e0b",       // Yellow/Amber (Tailwind amber-500)
   ONGOING: "#f59e0b",       // Yellow/Amber (Tailwind amber-500)
   CANCELLED: "#6b7280",     // Gray (Tailwind gray-500)
   PENDING_EXTERNAL: "#8b5cf6", // Purple (Tailwind violet-500)

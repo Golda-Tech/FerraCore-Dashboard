@@ -18,7 +18,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PaymentTrend } from "@/types/payment";
+import { CollectionTrend } from "@/types/collections";
 import { ToggleGroup, ToggleGroupItem } from "@radix-ui/react-toggle-group";
 import { Select } from "react-day-picker";
 import {
@@ -43,7 +43,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface ChartAreaInteractiveProps {
-  data: PaymentTrend[];
+  data: CollectionTrend[];
   period: string;
   loading: boolean;
 }
@@ -106,7 +106,7 @@ export function ChartAreaInteractive({
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>Payments Area Chart</CardTitle>
+        <CardTitle>Collections Area Chart</CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
             Overview of total amount and transactions over{" "}

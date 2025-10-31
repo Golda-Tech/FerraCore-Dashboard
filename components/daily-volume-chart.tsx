@@ -22,10 +22,10 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CollectionTrend } from "@/types/collections";
+import { PaymentTrend } from "@/types/payment";
 
 interface DailyVolumeChartProps {
-  trends: CollectionTrend[];
+  trends: PaymentTrend[];
   loading: boolean;
 }
 

@@ -6,6 +6,8 @@ import {
   CreatePaymentResponse,
   TransactionStatus,
   UserInfo,
+  StatusSummary,
+  PaymentTrend,
 } from "@/types/payment";
 
 // Create a new payment
@@ -77,5 +79,25 @@ export async function verifyOtp(
       params: { identifier, channel, otp },
     }
   );
+  return response.data;
+}
+
+// Get payments status summary
+export async function getPaymentsStatusSummary(): Promise<StatusSummary> {
+  const response = await api.get<StatusSummary>(
+    "/api/v1/payments/status-summary"
+  );
+  return response.data;
+}
+
+// Fetch payments trends
+export async function getPaymentsTrends(
+  startDate: string,
+  endDate: string,
+  interval: "DAILY" | "WEEKLY" | "MONTHLY" = "DAILY"
+): Promise<PaymentTrend[]> {
+  const response = await api.get<PaymentTrend[]>("/api/v1/payments/trends", {
+    params: { startDate, endDate, interval },
+  });
   return response.data;
 }

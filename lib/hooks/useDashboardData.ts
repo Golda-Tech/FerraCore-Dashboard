@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { getCollectionsStatusSummary as getStatusSummary, getCollectionsTrends } from "@/lib/collections";
 import { StatusSummary, CollectionTrend } from "@/types/collections";
+import { getPaymentsStatusSummary, getPaymentsTrends } from "@/lib/payment";
+import { PaymentTrend, StatusSummary as PaymentStatusSummary } from "@/types/payment";
+
 
 export function useDashboardData(startDate: string, endDate: string, interval: "DAILY" | "WEEKLY" | "MONTHLY") {
-  const [statusSummary, setStatusSummary] = useState<StatusSummary | null>(null);
-  const [trends, setTrends] = useState<CollectionTrend[]>([]);
+  const [statusSummary, setStatusSummary] = useState<PaymentStatusSummary | null>(null);
+  const [trends, setTrends] = useState<PaymentTrend[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,8 +17,8 @@ export function useDashboardData(startDate: string, endDate: string, interval: "
       setLoading(true);
       try {
         const [summaryRes, trendsRes] = await Promise.all([
-          getStatusSummary(),
-          getCollectionsTrends(startDate, endDate, interval),
+          getPaymentsStatusSummary(),
+          getPaymentsTrends(startDate, endDate, interval),
         ]);
         setStatusSummary(summaryRes);
         setTrends(trendsRes);

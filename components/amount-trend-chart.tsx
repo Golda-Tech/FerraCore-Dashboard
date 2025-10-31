@@ -18,10 +18,10 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CollectionTrend } from "@/types/collections";
+import { PaymentTrend } from "@/types/payment";
 
 interface AmountTrendChartProps {
-  trends: CollectionTrend[];
+  trends: PaymentTrend[];
   loading: boolean;
 }
 
