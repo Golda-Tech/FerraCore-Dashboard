@@ -46,7 +46,7 @@ const navMain = [
     icon: IconFolder,
     isGroup: true,
     pages: [
-      { title: "Dashboard (Payments)", page: "dashboard" as PageName, icon: IconDashboard },
+      { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard },
       { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
     ],
   },
