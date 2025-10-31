@@ -174,7 +174,7 @@ export function SectionCards({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardDescription>Total Payments Count</CardDescription>
+          <CardDescription>Payment Count</CardDescription>
           <CardAction>
             <Badge variant="outline" className="text-green-600">
               <IconTrendingUp className="h-3 w-3 mr-1" />+{balanceChange}%
