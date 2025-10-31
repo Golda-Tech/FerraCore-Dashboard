@@ -1,3 +1,13 @@
+
+export type PaymentStatus =
+  | "SUCCESS"
+  | "FAILED"
+  | "ONGOING"
+  | "CANCELLED"
+  | "PENDING_EXTERNAL"
+  | "REFUNDED"
+  | "INITIATED";
+
 export interface CreatePaymentRequest {
   provider: string;
   collectionRef: string;
@@ -52,3 +62,19 @@ export interface UserInfo {
   bankName?: string | null;
   message?: string;
 }
+
+
+export interface StatusSummary {
+  SUCCESS: number;
+  FAILED: number;
+  ONGOING: number;
+}
+
+export interface PaymentTrend {
+  date: string;
+  totalCount: number;
+  totalAmount: number;
+  channelCounts: Record<string, number>;
+  statusCounts: Record<PaymentStatus, number>;
+}
+
