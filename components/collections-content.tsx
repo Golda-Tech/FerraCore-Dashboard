@@ -603,6 +603,7 @@ export function CollectionsContent() {
                   <TableHead>Network</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Reference</TableHead>
+                  <TableHead>External Ref</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -694,6 +695,9 @@ export function CollectionsContent() {
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         {collection.collectionRef}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {collection.externalRef}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">

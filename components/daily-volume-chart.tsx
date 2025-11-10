@@ -52,9 +52,9 @@ export function DailyVolumeChart({ trends, loading }: DailyVolumeChartProps) {
   const chartData = React.useMemo(() => {
     return trends.map((trend) => ({
       date: trend.date,
-      success: trend.statusCounts?.SUCCESS || 0,
+      success: trend.statusCounts?.SUCCESS || trend.statusCounts?.SUCCESSFUL || 0,
       failed: trend.statusCounts?.FAILED || 0,
-      ongoing: trend.statusCounts?.ONGOING || 0,
+      ongoing: trend.statusCounts?.ONGOING || trend.statusCounts?.PENDING ||0,
       pending: trend.statusCounts?.PENDING_EXTERNAL || 0,
     }));
   }, [trends]);
