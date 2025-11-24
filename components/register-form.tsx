@@ -143,7 +143,7 @@ export function RegisterForm() {
             <Input
               id="firstname"
               type="text"
-              placeholder="John"
+              placeholder=""
               value={firstname}
               onChange={(e) => setFirstname(e.target.value)}
               disabled={loading}
@@ -155,7 +155,7 @@ export function RegisterForm() {
             <Input
               id="lastname"
               type="text"
-              placeholder="Doe"
+              placeholder=""
               value={lastname}
               onChange={(e) => setLastname(e.target.value)}
               disabled={loading}
@@ -169,7 +169,7 @@ export function RegisterForm() {
           <Input
             id="email"
             type="email"
-            placeholder="you@example.com"
+            placeholder="you@mail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}

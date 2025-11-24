@@ -61,7 +61,7 @@ return{
  const telcos = [
    {
      name: 'MTN',
-     image: '/mtn-momo.jpeg', // Your MTN logo path
+     image: '/mtn-momo.png', // Your MTN logo path
      alt: 'MTN Mobile Money'
    },
    {
