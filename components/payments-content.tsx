@@ -225,7 +225,7 @@ const mapApiStatus = (status: string) => {
 };
 
 const telcos = [
-  { name: "mtn",  logo: "/mtn-momo.jpeg" },
+  { name: "mtn",  logo: "/mtn-momo.png" },
   { name: "telecel", logo: "/telecel-cash.webp" },
   { name: "airteltigo", logo: "/airtel-tigo.png" },
   { name: "gmoney", logo: "/gmoney.jpg" },

@@ -32,6 +32,7 @@ export function RequestPaymentContent() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [showReference, setReference] = useState("")
   const [showOtpDialog, setShowOtpDialog] = useState(false)
   const [otp, setOtp] = useState("")
   const [isOtpSending, setIsOtpSending] = useState(false)
@@ -94,7 +95,7 @@ return{
         collectionRef: formData.reference || `INV-${Date.now()}`,
         mobileNumber: fullMobileNumber,
         amount: Number(formData.amount),
-        currency: "EUR",                               // or "EUR" if applicable
+        currency: "GHS",                               // or "EUR" if applicable
         partyIdType: "MSISDN",
         payerMessage: formData.description,
         payeeNote: "Thank you for your payment",
@@ -115,6 +116,8 @@ return{
        paymentRequest.collectionRef
      setLastTransaction({ provider, transactionRef })
      setRefreshedStatus(null)
+     setReference(transactionRef);
+
 
 
       setShowSuccess(true);
@@ -169,7 +172,7 @@ return{
       //Request OTP
       requestOtpCode(fullNumber);
     } catch (err: any) {
-      setFetchError("Unable to fetch customer name");
+      setFetchError("Unable to fetch customer name:", err);
     } finally {
       setIsFetchingName(false);
     }
@@ -402,7 +405,7 @@ return{
                   <Label htmlFor="reference" className="text-sm">Reference</Label>
                   <Input
                     id="reference"
-                    placeholder="Invoice number or reference"
+                    placeholder="Invoice prefix or Business Initials (e.g. FCC)"
                     value={formData.reference}
                     onChange={(e) => handleInputChange("reference", e.target.value)}
                     className="h-10 sm:h-9"
@@ -516,7 +519,7 @@ return{
               </div>
               Payment Request Sent
             </DialogTitle>
-            <DialogDescription className="text-sm">Your payment request has been successfully sent to the customer.</DialogDescription>
+            <DialogDescription className="text-sm">Your payment request has been successfully sent to customer.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -538,11 +541,11 @@ return{
                 </div>
                 <div className="flex justify-between">
                   <span>Network:</span>
-                  <span className="font-medium capitalize">{formData.network}</span>
+                  <span className="font-medium uppercase">{formData.network}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span>Reference:</span>
-                  <span className="font-medium font-mono">PAY-{Date.now().toString().slice(-6)}</span>
+                  <span className="font-medium font-mono text-xs tracking-tight">{showReference}</span>
                 </div>
                 {refreshedStatus && (
                  <div className="flex justify-between">
