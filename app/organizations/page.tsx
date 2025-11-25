@@ -511,7 +511,7 @@ const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
                       <Input
                         id="adminFirstName"
                         type="text"
-                        placeholder="John"
+                        placeholder=""
                         value={formData.adminFirstName}
                         onChange={(e) => handleInputChange("adminFirstName", e.target.value)}
                         required
@@ -522,7 +522,7 @@ const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
                       <Input
                         id="adminLastName"
                         type="text"
-                        placeholder="Doe"
+                        placeholder=""
                         value={formData.adminLastName}
                         onChange={(e) => handleInputChange("adminLastName", e.target.value)}
                         required

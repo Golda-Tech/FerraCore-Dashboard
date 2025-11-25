@@ -28,6 +28,8 @@ import {
   IconUser,
   IconLogin,
   IconMail,
+  IconEye,
+  IconEyeOff,
   IconShieldCheck,
 } from "@tabler/icons-react";
 
@@ -38,6 +40,8 @@ import { verifyLoginOtp, login, sendLoginOtp } from "@/lib/auth";
 export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'email' | 'otp'>('email');
@@ -149,6 +153,7 @@ export function LoginForm() {
 
   const resetForm = () => {
     setEmail("");
+    setPassword("");
     setOtp("");
     setStep('email');
     setOtpSent(false);
@@ -167,11 +172,40 @@ export function LoginForm() {
               id="email"
               type="email"
               value={email}
-              placeholder="you@example.com"
+              placeholder="biz@mail.com"
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
               required
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+            <Input
+              id="password"
+              value={password}
+              type={showPassword ? "text" : "password"}
+              placeholder="Your account password"
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
+            />
+            <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={loading}
+                        >
+                          {showPassword ? (
+                            <IconEyeOff className="h-4 w-4" />
+                          ) : (
+                            <IconEye className="h-4 w-4" />
+                          )}
+                      </Button>
+                      </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
