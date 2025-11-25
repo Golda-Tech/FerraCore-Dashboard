@@ -172,7 +172,7 @@ return{
       //Request OTP
       requestOtpCode(fullNumber);
     } catch (err: any) {
-      setFetchError("Unable to fetch customer name:", err);
+      setFetchError("Unable to fetch customer name");
     } finally {
       setIsFetchingName(false);
     }
