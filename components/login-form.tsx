@@ -75,7 +75,7 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      await sendLoginOtp(email, "EMAIL", "LOGIN");
+      await sendLoginOtp(email,password, "EMAIL", "LOGIN");
       setStep('otp');
       setOtpSent(true);
       setResendCooldown(60); // 60 second cooldown

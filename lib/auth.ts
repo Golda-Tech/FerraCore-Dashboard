@@ -50,13 +50,14 @@ export async function register(
 //{{baseURL}}/api/v1/auth/send-login-otp?destination=jonamarkin@gmail.com&channel=EMAIL&type=LOGIN
 export async function sendLoginOtp(
   destination: string,
+  password: string,
   channel: string,
   type: string
 ): Promise<{ message: string }> {
   const response = await api.get<{ message: string }>(
     "/api/v1/auth/send-login-otp",
     {
-      params: { destination, channel, type },
+      params: { destination, password, channel, type },
     }
   );
   return response.data;
