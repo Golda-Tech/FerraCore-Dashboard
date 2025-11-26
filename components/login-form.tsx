@@ -124,7 +124,7 @@ export function LoginForm() {
     
     setLoading(true);
     try {
-      await sendLoginOtp(email, "EMAIL", "LOGIN");
+      await sendLoginOtp(email, password, "EMAIL", "LOGIN");
       setResendCooldown(60);
     } catch (err: any) {
       setLoginResult({
