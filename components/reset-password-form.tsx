@@ -320,17 +320,6 @@ export function ResetPasswordForm() {
             </>
           )}
         </Button>
-
-        <p className="text-center text-sm">
-          Remember your password?{" "}
-          <a
-            href="/login"
-            className="underline hover:text-primary"
-            tabIndex={loading ? -1 : 0}
-          >
-            Sign In
-          </a>
-        </p>
       </form>
 
       {/* Loading Overlay */}
