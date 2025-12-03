@@ -510,7 +510,11 @@ return{
 
       {/* Success Dialog */}
       <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
-        <DialogContent className="max-w-md mx-4 sm:mx-auto">
+        <DialogContent
+        className="max-w-md mx-4 sm:mx-auto"
+        modal={true}          // disables outside-click close
+        onPointerDownOutside={(e) => e.preventDefault()} // extra safety
+        onEscapeKeyDown={(e) => e.preventDefault()} >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <div className={`h-8 w-8 rounded-full flex items-center justify-center

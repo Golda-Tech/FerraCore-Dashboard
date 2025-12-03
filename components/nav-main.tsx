@@ -110,8 +110,14 @@ export function NavMain({
                           onClick={() => onNavigate(sub.page)}
                         >
                           <button
-                            className="data-[active=true]:bg-gray-200 data-[active=true]:text-gray-900
-                                       dark:data-[active=true]:bg-gray-700 dark:data-[active=true]:text-gray-100"
+                          className="
+                            w-full min-w-[14rem]                    /* at least 224 px           */
+                            max-w-none                              /* no upper clamp            */
+                            text-left inline-flex items-center
+                            data-[active=true]:bg-gray-200 data-[active=true]:text-gray-900
+                            dark:data-[active=true]:bg-gray-700 dark:data-[active=true]:text-gray-100
+                            px-3 py-2 rounded-md
+                          "
                           >
                             {sub.icon && <sub.icon className="mr-2 h-4 w-4" />}
                             <span>{sub.title}</span>
@@ -131,8 +137,14 @@ export function NavMain({
                 >
                   <button
                     onClick={() => onNavigate(item.page)}
-                    className="data-[active=true]:bg-gray-200 data-[active=true]:text-gray-900
-                               dark:data-[active=true]:bg-gray-700 dark:data-[active=true]:text-gray-100"
+                    className="
+                      w-full min-w-[14rem]                    /* at least 224 px           */
+                      max-w-none                              /* no upper clamp            */
+                      text-left inline-flex items-center
+                      data-[active=true]:bg-gray-200 data-[active=true]:text-gray-900
+                      dark:data-[active=true]:bg-gray-700 dark:data-[active=true]:text-gray-100
+                      px-3 py-2 rounded-md
+                    "
                   >
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>

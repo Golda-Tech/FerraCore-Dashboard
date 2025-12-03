@@ -221,8 +221,8 @@ export function LoginForm() {
               </>
             )}
           </Button>
-
-          <div className="text-center text-sm">
+            {/**
+           <div className="text-center text-sm">
             <a
               href="/forgot-password"
               className="underline hover:text-primary"
@@ -238,7 +238,7 @@ export function LoginForm() {
             >
               Create Account
             </a>
-          </div>
+          </div> **/}
         </form>
       ) : (
         <form onSubmit={handleVerifyOTP} className="grid gap-4">
