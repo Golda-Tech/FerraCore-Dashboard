@@ -5,6 +5,8 @@ import {
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from "@/types/auth";
 import { redirect } from "next/navigation";
 
@@ -62,6 +64,17 @@ export async function sendLoginOtp(
   );
   return response.data;
 }
+
+export async function resetPassword(
+  data: ResetPasswordRequest
+): Promise<ResetPasswordResponse> {
+  const response = await api.post<ResetPasswordResponse>(
+    "/api/v1/auth/reset-password",
+    data
+  );
+  return response.data;
+}
+
 
 //{{baseURL}}/api/v1/auth/verify-otp?identifier=jonamarkin@gmail.com&channel=EMAIL&otp=525262
 export async function verifyLoginOtp(
