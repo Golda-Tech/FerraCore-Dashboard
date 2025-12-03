@@ -17,7 +17,17 @@ export interface RegisterRequest {
   firstname: string;
   lastname: string;
   email: string;
-  password: string;
+  organizationName: string;
+  mobileNumber: string;
+  planType: PlanType;
+
+}
+
+export enum PlanType {
+  COLLECTIONS = "COLLECTIONS",
+  DISBURSEMENTS = "DISBURSEMENTS",
+  PREAPPROVALS = "PREAPPROVALS",
+  ALL_INCLUSIVE = "ALL_INCLUSIVE",
 }
 
 export interface RegisterResponse {

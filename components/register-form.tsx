@@ -14,6 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,22 +30,34 @@ import {
   IconX,
   IconUser,
   IconUserPlus,
-  IconEye,
-  IconEyeOff,
   IconMail,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { RegisterRequest } from "@/types/auth";
+
+enum PlanType {
+  COLLECTIONS = "COLLECTIONS",
+  DISBURSEMENTS = "DISBURSEMENTS",
+  PREAPPROVALS = "PREAPPROVALS",
+  ALL_INCLUSIVE = "ALL_INCLUSIVE",
+}
+
+interface RegisterRequest {
+  firstname: string;
+  lastname: string;
+  email: string;
+  organizationName: string;
+  mobileNumber: string;
+  planType: PlanType;
+}
 
 export function RegisterForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [organizationName, setOrganizationName] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [planType, setPlanType] = useState<PlanType | "">("");
   const [loading, setLoading] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [registerResult, setRegisterResult] = useState<{
@@ -48,14 +67,14 @@ export function RegisterForm() {
   }>({ success: false });
 
   const validateForm = () => {
-    if (password !== confirm) {
-      return "Passwords do not match";
-    }
-    if (password.length < 6) {
-      return "Password must be at least 6 characters long";
-    }
     if (!firstname.trim() || !lastname.trim()) {
       return "First name and last name are required";
+    }
+    if (!organizationName.trim()) {
+      return "Organization name is required";
+    }
+    if (!mobileNumber.trim()) {
+      return "Mobile number is required";
     }
     return null;
   };
@@ -75,12 +94,24 @@ export function RegisterForm() {
 
     setLoading(true);
 
+    const cleanMobileNumber = (num: string) => {
+      // Remove any non-digit characters
+      let cleaned = num.replace(/\D/g, "");
+      // If it starts with '0', remove it
+      if (cleaned.startsWith("0")) {
+        cleaned = cleaned.substring(1);
+      }
+      return `233${cleaned}`;
+    };
+
     try {
       const data = await register({
         firstname: firstname.trim(),
         lastname: lastname.trim(),
         email,
-        password,
+        organizationName: organizationName.trim(),
+        mobileNumber: cleanMobileNumber(mobileNumber),
+        planType: planType as PlanType,
       } as RegisterRequest);
 
       setRegisterResult({
@@ -116,23 +147,14 @@ export function RegisterForm() {
 
   const resetForm = () => {
     setEmail("");
-    setPassword("");
     setFirstname("");
     setLastname("");
-    setConfirm("");
+    setOrganizationName("");
+    setMobileNumber("");
+    setPlanType("");
     setShowResultDialog(false);
     setRegisterResult({ success: false });
   };
-
-  const passwordsMatch = password === confirm;
-  const passwordStrength =
-    password.length >= 8 ? "Strong" : password.length >= 6 ? "Medium" : "Weak";
-  const passwordColor =
-    password.length >= 8
-      ? "text-green-600"
-      : password.length >= 6
-      ? "text-yellow-600"
-      : "text-red-600";
 
   return (
     <>
@@ -178,84 +200,54 @@ export function RegisterForm() {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="password">Password</Label>
-          <div className="relative">
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              required
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={() => setShowPassword(!showPassword)}
-              disabled={loading}
-            >
-              {showPassword ? (
-                <IconEyeOff className="h-4 w-4" />
-              ) : (
-                <IconEye className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          {password && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Strength:</span>
-              <span className={passwordColor}>{passwordStrength}</span>
-              <Badge
-                variant="outline"
-                className={`text-xs ${passwordColor} border-current`}
-              >
-                {password.length}/8+ chars
-              </Badge>
-            </div>
-          )}
+          <Label htmlFor="organizationName">Organization Name</Label>
+          <Input
+            id="organizationName"
+            type="text"
+            placeholder="Your Company Inc."
+            value={organizationName}
+            onChange={(e) => setOrganizationName(e.target.value)}
+            disabled={loading}
+            required
+          />
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="confirm">Confirm Password</Label>
-          <div className="relative">
+          <Label htmlFor="mobileNumber">Mobile Number</Label>
+          <div className="flex items-center">
+            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-background text-sm text-muted-foreground h-10">
+              +233
+            </span>
             <Input
-              id="confirm"
-              type={showConfirmPassword ? "text" : "password"}
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
+              id="mobileNumber"
+              type="tel"
+              placeholder="244123456"
+              className="rounded-l-none"
+              value={mobileNumber}
+              onChange={(e) => setMobileNumber(e.target.value)}
               disabled={loading}
               required
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              disabled={loading}
-            >
-              {showConfirmPassword ? (
-                <IconEyeOff className="h-4 w-4" />
-              ) : (
-                <IconEye className="h-4 w-4" />
-              )}
-            </Button>
           </div>
-          {confirm && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Passwords:</span>
-              <span
-                className={passwordsMatch ? "text-green-600" : "text-red-600"}
-              >
-                {passwordsMatch ? "Match" : "Don't match"}
-              </span>
-              {passwordsMatch && (
-                <IconCheck className="h-3 w-3 text-green-600" />
-              )}
-            </div>
-          )}
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="planType">Select Plan</Label>
+          <Select
+            onValueChange={(value) => setPlanType(value as PlanType)}
+            value={planType}
+            disabled={loading}
+          >
+            <SelectTrigger id="planType">
+              <SelectValue placeholder="Choose a plan" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={PlanType.COLLECTIONS}>Collections</SelectItem>
+              <SelectItem value={PlanType.DISBURSEMENTS}>Disbursements</SelectItem>
+              <SelectItem value={PlanType.PREAPPROVALS}>Pre-approvals</SelectItem>
+              <SelectItem value={PlanType.ALL_INCLUSIVE}>All-inclusive</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <Button type="submit" className="w-full" disabled={loading}>
