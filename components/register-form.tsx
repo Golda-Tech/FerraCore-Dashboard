@@ -120,11 +120,6 @@ export function RegisterForm() {
       });
 
       setShowResultDialog(true);
-
-      // Navigate to dashboard after showing success
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
     } catch (err: any) {
       setRegisterResult({
         success: false,
@@ -141,7 +136,7 @@ export function RegisterForm() {
   const handleCloseDialog = () => {
     setShowResultDialog(false);
     if (registerResult.success) {
-      router.push("/dashboard");
+      router.push("/login");
     }
   };
 
@@ -328,7 +323,7 @@ export function RegisterForm() {
                 </DialogTitle>
                 <DialogDescription>
                   {registerResult.success
-                    ? "Welcome! Your account has been created and you are now signed in."
+                    ? "Please check your email for instructions on the next steps."
                     : "There was an error creating your account."}
                 </DialogDescription>
               </div>
@@ -338,43 +333,10 @@ export function RegisterForm() {
           <div className="space-y-4">
             {registerResult.success ? (
               <>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <IconUser className="h-4 w-4 text-green-600" />
-                    <span className="font-medium text-green-800">
-                      Account Details
-                    </span>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-green-700">Name:</span>
-                      <span className="font-medium text-green-800">
-                        {firstname} {lastname}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-green-700">Email:</span>
-                      <span className="font-medium text-green-800">
-                        {email}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-green-700">Status:</span>
-                      <Badge
-                        variant="outline"
-                        className="text-green-700 border-green-300"
-                      >
-                        Active
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
                 <Alert>
                   <IconMail className="h-4 w-4" />
                   <AlertDescription>
-                    You may receive a welcome email shortly. Your account is
-                    ready to use!
+                    You will receive an email with your account details and instructions to complete your registration.
                   </AlertDescription>
                 </Alert>
               </>
@@ -391,7 +353,7 @@ export function RegisterForm() {
           <DialogFooter className="flex-col sm:flex-row gap-2">
             {registerResult.success ? (
               <Button onClick={handleCloseDialog} className="w-full sm:w-auto">
-                Continue to Dashboard
+                Go to Sign In
               </Button>
             ) : (
               <>
