@@ -39,3 +39,14 @@ export interface RegisterResponse {
   role: string;
   message: string;
 }
+
+
+export interface ResetPasswordRequest {
+  email: string;
+  tempPassword: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}

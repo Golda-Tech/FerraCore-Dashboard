@@ -25,11 +25,6 @@ import {
   IconAlertCircle,
 } from "@tabler/icons-react";
 
-interface ResetPasswordRequest {
-  temporaryPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
 
 export function ResetPasswordForm() {
   const router = useRouter();
