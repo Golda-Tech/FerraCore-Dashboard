@@ -68,7 +68,7 @@ const navMain = [
 
 const navSecondary = [
   { title: "Settings", page: "settings" as PageName, icon: IconSettings },
-  { title: "Get Help", page: "help" as PageName, icon: IconHelp },
+//   { title: "Get Help", page: "help" as PageName, icon: IconHelp },
 ];
 
 const documents: any[] = []; // empty for now
