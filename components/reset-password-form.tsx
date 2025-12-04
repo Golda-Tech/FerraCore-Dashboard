@@ -29,7 +29,7 @@ import { resetPassword } from "@/lib/auth";
 
 export function ResetPasswordForm() {
   const router = useRouter();
-  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [tempPassword, setTempPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showTempPassword, setShowTempPassword] = useState(false);
@@ -68,7 +68,7 @@ export function ResetPasswordForm() {
   };
 
   const validateForm = () => {
-    if (!temporaryPassword.trim()) {
+    if (!tempPassword.trim()) {
       return "Temporary password is required";
     }
     if (!newPassword.trim()) {
@@ -87,7 +87,7 @@ export function ResetPasswordForm() {
       return "Passwords do not match";
     }
 
-    if (temporaryPassword === newPassword) {
+    if (tempPassword === newPassword) {
       return "New password must be different from temporary password";
     }
 
@@ -130,7 +130,7 @@ export function ResetPasswordForm() {
     try {
 
       const response = await resetPassword({
-        temporaryPassword,
+        tempPassword,
         newPassword,
       });
 
@@ -167,14 +167,14 @@ export function ResetPasswordForm() {
     <>
       <form onSubmit={handleSubmit} className="grid gap-4">
         <div className="grid gap-2">
-          <Label htmlFor="temporaryPassword">Temporary Password</Label>
+          <Label htmlFor="tempPassword">Temporary Password</Label>
           <div className="relative">
             <Input
-              id="temporaryPassword"
+              id="tempPassword"
               type={showTempPassword ? "text" : "password"}
               placeholder="Enter temporary password from email"
-              value={temporaryPassword}
-              onChange={(e) => setTemporaryPassword(e.target.value)}
+              value={tempPassword}
+              onChange={(e) => setTempPassword(e.target.value)}
               disabled={loading}
               required
               className="pr-10"
