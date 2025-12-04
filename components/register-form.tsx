@@ -154,6 +154,15 @@ export function RegisterForm() {
   return (
     <>
       <form onSubmit={handleSubmit} className="grid gap-4">
+
+      <div className="w-full">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+          Onboard New Business Entity
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Provide the details below to register a new business in the system.
+        </p>
+      </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="firstname">First Name</Label>
@@ -210,16 +219,21 @@ export function RegisterForm() {
         <div className="grid gap-2">
           <Label htmlFor="mobileNumber">Mobile Number</Label>
           <div className="flex items-center">
-            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-background text-sm text-muted-foreground h-10">
+            {/* country code - non-editable but readable */}
+            <span
+              aria-hidden="true"
+              className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground h-10"
+            >
               +233
             </span>
             <Input
               id="mobileNumber"
               type="tel"
-              placeholder="244123456"
+              inputMode="numeric"
+              placeholder="244 123 456"
               className="rounded-l-none"
               value={mobileNumber}
-              onChange={(e) => setMobileNumber(e.target.value)}
+              onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 9))}
               disabled={loading}
               required
             />
