@@ -29,6 +29,7 @@ import { resetPassword } from "@/lib/auth";
 
 export function ResetPasswordForm() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [tempPassword, setTempPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -69,6 +70,9 @@ export function ResetPasswordForm() {
 
   const validateForm = () => {
     if (!tempPassword.trim()) {
+      return "Email is required";
+    }
+if (!tempPassword.trim()) {
       return "Temporary password is required";
     }
     if (!newPassword.trim()) {
@@ -130,6 +134,7 @@ export function ResetPasswordForm() {
     try {
 
       const response = await resetPassword({
+          email,
         tempPassword,
         newPassword,
       });
@@ -166,6 +171,18 @@ export function ResetPasswordForm() {
   return (
     <>
       <form onSubmit={handleSubmit} className="grid gap-4">
+      <div className="grid gap-2">
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="you@mail.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={loading}
+                            required
+                          />
+                        </div>
         <div className="grid gap-2">
           <Label htmlFor="tempPassword">Temporary Password</Label>
           <div className="relative">
