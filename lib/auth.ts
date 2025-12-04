@@ -75,6 +75,16 @@ export async function resetPassword(
   return response.data;
 }
 
+export async function forgotPassword(
+  data: ResetPasswordRequest
+): Promise<ResetPasswordResponse> {
+  const response = await api.post<ResetPasswordResponse>(
+    "/api/v1/auth/forgot-password",
+    data
+  );
+  return response.data;
+}
+
 
 //{{baseURL}}/api/v1/auth/verify-otp?identifier=jonamarkin@gmail.com&channel=EMAIL&otp=525262
 export async function verifyLoginOtp(

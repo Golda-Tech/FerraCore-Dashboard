@@ -25,6 +25,7 @@ import {
   IconAlertCircle,
 } from "@tabler/icons-react";
 
+import { resetPassword } from "@/lib/auth";
 
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -127,14 +128,12 @@ export function ResetPasswordForm() {
     setLoading(true);
 
     try {
-      // Replace this with your actual API call
-      // const response = await resetPassword({
-      //   temporaryPassword,
-      //   newPassword,
-      // });
 
-      // Simulating API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const response = await resetPassword({
+        temporaryPassword,
+        newPassword,
+      });
+
 
       setResetResult({
         success: true,
@@ -406,12 +405,12 @@ export function ResetPasswordForm() {
                 >
                   Try Again
                 </Button>
-                <Button
+               {/** <Button
                   onClick={() => router.push("/login")}
                   className="w-full sm:w-auto"
                 >
                   Sign In Instead
-                </Button>
+                </Button>**/}
               </>
             )}
           </DialogFooter>

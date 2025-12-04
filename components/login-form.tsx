@@ -221,24 +221,24 @@ export function LoginForm() {
               </>
             )}
           </Button>
-            {/**
+
            <div className="text-center text-sm">
             <a
               href="/forgot-password"
               className="underline hover:text-primary"
               tabIndex={loading ? -1 : 0}
             >
-              Need help?
+              Forgotten Password?
             </a>{" "}
-            |{" "}
+          {/**  |{" "}
             <a
               href="/register"
               className="underline hover:text-primary"
               tabIndex={loading ? -1 : 0}
             >
               Create Account
-            </a>
-          </div> **/}
+            </a>**/}
+          </div>
         </form>
       ) : (
         <form onSubmit={handleVerifyOTP} className="grid gap-4">
