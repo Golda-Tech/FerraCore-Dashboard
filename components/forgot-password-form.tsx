@@ -30,7 +30,7 @@ import { forgotPassword } from "@/lib/auth";
 export function ForgotPasswordForm() {
   const router = useRouter();
     const [email, setEmail] = useState("");
-    const [oldPassword, setOldPassword] = useState("");
+    const [temporaryPassword, setTemporaryPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showTempPassword, setShowTempPassword] = useState(false);
@@ -85,7 +85,7 @@ export function ForgotPasswordForm() {
         return "Passwords do not match";
       }
 
-//       if (oldPassword === newPassword) {
+//       if (temporaryPassword === newPassword) {
 //         return "New password must be different from temporary password";
 //       }
 
@@ -128,7 +128,7 @@ export function ForgotPasswordForm() {
       try {
         const response = await forgotPassword({
           email,
-          oldPassword,
+          temporaryPassword,
           newPassword,
         });
 
