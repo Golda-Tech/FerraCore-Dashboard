@@ -11,6 +11,7 @@ export interface LoginResponse {
   email: string;
   role: string;
   message: string;
+  passwordResetRequired: boolean;
 }
 
 export interface RegisterRequest {

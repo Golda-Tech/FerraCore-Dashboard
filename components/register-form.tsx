@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { register } from "@/lib/auth";
+import { register, clearAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -136,7 +136,14 @@ export function RegisterForm() {
   const handleCloseDialog = () => {
     setShowResultDialog(false);
     if (registerResult.success) {
-      router.push("/login");
+      // CRITICAL: Clear ALL localStorage and use hard navigation
+      if (typeof window !== "undefined") {
+        localStorage.clear(); // Clear everything to be absolutely sure
+        console.log("Cleared all localStorage");
+        
+        // Force a hard navigation instead of Next.js routing
+        window.location.href = "/login?registered=true";
+      }
     }
   };
 
@@ -378,12 +385,6 @@ export function RegisterForm() {
                 >
                   Try Again
                 </Button>
-             {/**  <Button
-                  onClick={() => router.push("/login")}
-                  className="w-full sm:w-auto"
-                >
-                  Sign In Instead
-                </Button> **/}
               </>
             )}
           </DialogFooter>
