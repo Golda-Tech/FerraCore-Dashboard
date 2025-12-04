@@ -30,7 +30,7 @@ import { forgotPassword } from "@/lib/auth";
 export function ForgotPasswordForm() {
   const router = useRouter();
     const [email, setEmail] = useState("");
-    const [temporaryPassword, setTemporaryPassword] = useState("");
+    const [tempPassword, setTempPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showTempPassword, setShowTempPassword] = useState(false);
@@ -128,7 +128,7 @@ export function ForgotPasswordForm() {
       try {
         const response = await forgotPassword({
           email,
-          temporaryPassword,
+          tempPassword,
           newPassword,
         });
 
