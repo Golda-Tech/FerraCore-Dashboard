@@ -367,7 +367,7 @@ export function RegisterForm() {
           <DialogFooter className="flex-col sm:flex-row gap-2">
             {registerResult.success ? (
              <Button onClick={handleCloseDialog} className="w-full sm:w-auto">
-                Go to Sign In
+                Sign In
               </Button>
             ) : (
               <>
