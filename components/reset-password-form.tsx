@@ -153,10 +153,31 @@ if (!tempPassword.trim()) {
 
       setShowResultDialog(true);
     } catch (err: any) {
+        /*  RFC 7807 (Problem Details) shape  */
+                    const problem = err.response?.data;
+
+                    // 1.  Prefer RFC 7807 fields
+                    const userMsg =
+                      problem?.detail ||                       // "Invalid temporary password."
+                      problem?.title ||                        // "Internal Server Error"
+                      problem?.message ||                      // fallback
+                      err.response?.statusText ||              // "Internal Server Error"
+                      err.message ||                           // final fallback
+                      "Password change failed. Please try again.";
+
+                    console.error("Reset error:", {
+                      status: err.response?.status,
+                      type: problem?.type,
+                      title: problem?.title,
+                      detail: problem?.detail,
+                      instance: problem?.instance,
+                      timestamp: problem?.timestamp,
+                    });
+
       setResetResult({
         success: false,
         error:
-          err.response?.data?.message ||
+          problem?.detail ||
           "Password reset failed. Please try again.",
       });
       setShowResultDialog(true);
@@ -178,6 +199,17 @@ if (!tempPassword.trim()) {
   return (
     <>
       <form onSubmit={handleSubmit} className="grid gap-4">
+      <div className="w-full">
+
+                  <div className="text-center">
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground whitespace-nowrap">
+                      Reset your password
+                    </h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Enter the temporary password sent via email and reset your password with a new one for a personalized experience.
+                    </p>
+                  </div>
+                  </div>
       <div className="grid gap-2">
                           <Label htmlFor="email">Email</Label>
                           <Input
@@ -418,7 +450,7 @@ if (!tempPassword.trim()) {
           <DialogFooter className="flex-col sm:flex-row gap-2">
             {resetResult.success ? (
               <Button onClick={handleCloseDialog} className="w-full sm:w-auto">
-                Go to Sign In
+                Sign In
               </Button>
             ) : (
               <>

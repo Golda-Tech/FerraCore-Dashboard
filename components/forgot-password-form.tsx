@@ -138,10 +138,32 @@ export function ForgotPasswordForm() {
 
         setShowResultDialog(true);
       } catch (err: any) {
+
+           /*  RFC 7807 (Problem Details) shape  */
+            const problem = err.response?.data;
+
+            // 1.  Prefer RFC 7807 fields
+            const userMsg =
+              problem?.detail ||                       // "User not found"
+              problem?.title ||                        // "Internal Server Error"
+              problem?.message ||                      // fallback
+              err.response?.statusText ||              // "Internal Server Error"
+              err.message ||                           // final fallback
+              "Password change failed. Please try again.";
+
+            console.error("Reset error:", {
+              status: err.response?.status,
+              type: problem?.type,
+              title: problem?.title,
+              detail: problem?.detail,
+              instance: problem?.instance,
+              timestamp: problem?.timestamp,
+            });
+
         setResetResult({
           success: false,
           error:
-            err.response?.data?.message ||
+            problem?.detail ||
             "Password change failed. Please try again.",
         });
         setShowResultDialog(true);
@@ -163,6 +185,18 @@ export function ForgotPasswordForm() {
     return (
       <>
         <form onSubmit={handleSubmit} className="grid gap-4">
+
+        <div className="w-full">
+
+            <div className="text-center">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground whitespace-nowrap">
+                Forgot your password?
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Enter the email linked to your account and your password will be changed.
+              </p>
+            </div>
+            </div>
           <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -287,7 +321,7 @@ export function ForgotPasswordForm() {
             {loading ? (
               <>
                 <IconLoader className="mr-2 h-4 w-4 animate-spin" />
-                Resetting Password...
+                Changing Password...
               </>
             ) : (
               <>

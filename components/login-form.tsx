@@ -112,9 +112,20 @@ export function LoginForm() {
       setOtpSent(true);
       setResendCooldown(60); // 60 second cooldown
     } catch (err: any) {
+         // 1.  Network / timeout
+          if (err.code === "ECONNABORTED") {
+            console.error("OTP send timed out");
+          }
+          // 2.  Axios error with server payload
+          const msg = err.response?.data?.message || err.response?.statusText;
+          // 3.  Fallback
+          const userMsg = msg || err.message || "Failed to send OTP. Please try again.";
+
+          console.error("OTP send error:", { code: err.code, status: err.response?.status, message: userMsg });
+
       setLoginResult({
         success: false,
-        error: err.message || "Failed to send OTP. Please try again.",
+        error: userMsg || "Failed to send OTP. Please try again.",
       });
       setShowResultDialog(true);
     } finally {
@@ -128,12 +139,18 @@ export function LoginForm() {
 
     try {
       const data = await verifyLoginOtp(email, "EMAIL", otp);
+      console.log("verify otp response:", data);
 
       if (data.passwordResetRequired) {
         // If password reset is required, redirect to the reset page
         router.push(`/reset-password?email=${encodeURIComponent(email)}`);
-      } else {
+      } else if(data.isFirstTimeUser) {
+        // If first time user, redirect to settings
+        router.push(`/settings`);
+      }
+    else {
         // Otherwise, proceed with successful login
+        console.log("Login successful:", data);
         setLoginResult({
           success: true,
           userData: data,
@@ -466,7 +483,7 @@ export function LoginForm() {
                   }}
                   className="w-full sm:w-auto"
                 >
-                  Start Over
+                  OK
                 </Button>
               </>
             )}
