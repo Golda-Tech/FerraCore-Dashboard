@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +29,7 @@ import { resetPassword } from "@/lib/auth";
 
 export function ResetPasswordForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const searchParams = useSearchParams();
   const [tempPassword, setTempPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -42,6 +42,13 @@ export function ResetPasswordForm() {
     success: boolean;
     error?: string;
   }>({ success: false });
+  const [email, setEmail] = useState(searchParams.get("email") || "");
+
+  useEffect(() => {
+    if (searchParams.get("email")) {
+      setEmail(searchParams.get("email") || "");
+    }
+  }, [searchParams]);
 
   const validatePassword = (password: string) => {
     const minLength = 8;

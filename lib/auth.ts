@@ -15,7 +15,9 @@ const USER_KEY = "user";
 
 export function isAuthenticated(): boolean {
   if (typeof window !== "undefined") {
-    return !!localStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
+    console.log("isAuthenticated check:", !!token); // Debug log
+    return !!token;
   }
   return false;
 }
@@ -38,15 +40,35 @@ export async function login({
 export async function register(
   data: RegisterRequest
 ): Promise<RegisterResponse> {
+  // Clear any existing auth data BEFORE making the request
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    console.log("Cleared auth data before registration"); // Debug log
+  }
+  
   const response = await api.post<RegisterResponse>(
     "/api/v1/auth/register",
     data
   );
-  if (response.data.token) {
-    localStorage.setItem(TOKEN_KEY, response.data.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(response.data));
+
+  // Double-check it's cleared after registration
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    console.log("Cleared auth data after registration"); // Debug log
   }
+
   return response.data;
+}
+
+// Clear authentication - exported so it can be used elsewhere
+export function clearAuth(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    console.log("Auth cleared"); // Debug log
+  }
 }
 
 //{{baseURL}}/api/v1/auth/send-login-otp?destination=jonamarkin@gmail.com&channel=EMAIL&type=LOGIN
@@ -85,7 +107,6 @@ export async function forgotPassword(
   return response.data;
 }
 
-
 //{{baseURL}}/api/v1/auth/verify-otp?identifier=jonamarkin@gmail.com&channel=EMAIL&otp=525262
 export async function verifyLoginOtp(
   identifier: string,
@@ -95,7 +116,8 @@ export async function verifyLoginOtp(
   const response = await api.get<LoginResponse>("/api/v1/auth/verify-otp", {
     params: { identifier, channel, otp },
   });
-  if (response.data.token) {
+  // Only set token if password reset is not required
+  if (response.data.token && !response.data.passwordResetRequired) {
     localStorage.setItem(TOKEN_KEY, response.data.token);
     localStorage.setItem(USER_KEY, JSON.stringify(response.data));
   }
@@ -111,9 +133,6 @@ export function getUser(): LoginResponse | null {
 }
 
 export function logout(): void {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY); // ✅ clear user
-    redirect("/login");
-  }
+  clearAuth();
+  redirect("/login");
 }

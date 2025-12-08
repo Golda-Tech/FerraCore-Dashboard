@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated, clearAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,13 +35,12 @@ import {
 
 import { verifyLoginOtp, login, sendLoginOtp } from "@/lib/auth";
 
- 
-
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'email' | 'otp'>('email');
@@ -53,12 +52,45 @@ export function LoginForm() {
     error?: string;
     userData?: any;
   }>({ success: false });
+  const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
+
+  // Check if user is coming from registration
+  const isFromRegistration = searchParams.get("registered") === "true";
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    console.log("LoginForm mounted");
+    console.log("isFromRegistration:", isFromRegistration);
+    console.log("Current localStorage token:", localStorage.getItem("token"));
+    console.log("Current localStorage user:", localStorage.getItem("user"));
+    
+    // If coming from registration, clear any existing auth and DON'T redirect
+    if (isFromRegistration) {
+      console.log("User coming from registration - clearing auth");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      console.log("After clear - token:", localStorage.getItem("token"));
+      console.log("After clear - user:", localStorage.getItem("user"));
+      return;
+    }
+    
+    // Only redirect to dashboard if authenticated AND not from registration
+    const hasToken = !!localStorage.getItem("token");
+    console.log("Has token:", hasToken);
+    
+    if (hasToken) {
+      console.log("User already authenticated - redirecting to dashboard");
       router.replace("/dashboard");
     }
-  }, [router]);
+  }, [router, isFromRegistration]);
+
+  useEffect(() => {
+    if (isFromRegistration) {
+      setShowRegistrationSuccess(true);
+      // Remove the query param from URL without reloading the page
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [isFromRegistration]);
 
   // Cooldown timer for resend button
   useEffect(() => {
@@ -75,7 +107,7 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      await sendLoginOtp(email,password, "EMAIL", "LOGIN");
+      await sendLoginOtp(email, password, "EMAIL", "LOGIN");
       setStep('otp');
       setOtpSent(true);
       setResendCooldown(60); // 60 second cooldown
@@ -97,17 +129,21 @@ export function LoginForm() {
     try {
       const data = await verifyLoginOtp(email, "EMAIL", otp);
 
-      setLoginResult({
-        success: true,
-        userData: data,
-      });
+      if (data.passwordResetRequired) {
+        // If password reset is required, redirect to the reset page
+        router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+      } else {
+        // Otherwise, proceed with successful login
+        setLoginResult({
+          success: true,
+          userData: data,
+        });
+        setShowResultDialog(true);
 
-      setShowResultDialog(true);
-
-      // Navigate to dashboard after showing success
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1500);
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1500);
+      }
     } catch (err: any) {
       setLoginResult({
         success: false,
@@ -164,6 +200,14 @@ export function LoginForm() {
 
   return (
     <>
+      {showRegistrationSuccess && (
+        <Alert className="mb-4 border-green-500 text-green-700">
+          <IconCheck className="h-4 w-4" />
+          <AlertDescription>
+            Registration successful! Please sign in to continue.
+          </AlertDescription>
+        </Alert>
+      )}
       {step === 'email' ? (
         <form onSubmit={handleRequestOTP} className="grid gap-4">
           <div className="grid gap-2">
@@ -192,20 +236,20 @@ export function LoginForm() {
               required
             />
             <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                          disabled={loading}
-                        >
-                          {showPassword ? (
-                            <IconEyeOff className="h-4 w-4" />
-                          ) : (
-                            <IconEye className="h-4 w-4" />
-                          )}
-                      </Button>
-                      </div>
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={loading}
+            >
+              {showPassword ? (
+                <IconEyeOff className="h-4 w-4" />
+              ) : (
+                <IconEye className="h-4 w-4" />
+              )}
+            </Button>
+            </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
@@ -222,22 +266,14 @@ export function LoginForm() {
             )}
           </Button>
 
-           <div className="text-center text-sm">
+          <div className="text-center text-sm">
             <a
               href="/forgot-password"
               className="underline hover:text-primary"
               tabIndex={loading ? -1 : 0}
             >
               Forgotten Password?
-            </a>{" "}
-          {/**  |{" "}
-            <a
-              href="/register"
-              className="underline hover:text-primary"
-              tabIndex={loading ? -1 : 0}
-            >
-              Create Account
-            </a>**/}
+            </a>
           </div>
         </form>
       ) : (
