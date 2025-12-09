@@ -12,7 +12,7 @@ export interface LoginResponse {
   role: string;
   message: string;
   passwordResetRequired: boolean;
-  isFirstTimeUser: boolean;
+  firstTimeUser: boolean;
 }
 
 export interface RegisterRequest {

@@ -141,30 +141,42 @@ export function LoginForm() {
       const data = await verifyLoginOtp(email, "EMAIL", otp);
       console.log("verify otp response:", data);
 
-      if (data.passwordResetRequired) {
-        // If password reset is required, redirect to the reset page
-        router.push(`/reset-password?email=${encodeURIComponent(email)}`);
-      } else if(data.isFirstTimeUser) {
-        // If first time user, redirect to settings
-        router.push(`/settings`);
-      }
-    else {
-        // Otherwise, proceed with successful login
-        console.log("Login successful:", data);
-        setLoginResult({
-          success: true,
-          userData: data,
-        });
-        setShowResultDialog(true);
+      console.log("Password reset status:", data.passwordResetRequired);
+      console.log("First time user status:", data.firstTimeUser);
 
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 1500);
-      }
+     if (data.passwordResetRequired) {
+         console.log("Password reset required - redirecting to reset page");
+      return router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+     }
+
+    if (data.firstTimeUser) {
+            console.log("First time user - redirecting to settings page");
+       setLoginResult({ success: true, userData: data });
+       setShowResultDialog(true);
+      return setTimeout(() => router.push("/settings"), 1500);
+     }
+
+   if (!data.passwordResetRequired && !data.firstTimeUser) {
+            console.log("Regular login - redirecting to dashboard");
+       setLoginResult({ success: true, userData: data });
+       setShowResultDialog(true);
+      return setTimeout(() => router.push("/dashboard"), 1500);
+     }
     } catch (err: any) {
+
+                 // 1.  Network / timeout
+                  if (err.code === "ECONNABORTED") {
+                    console.error("OTP verify timed out");
+                  }
+                  // 2.  Axios error with server payload
+                  const msg = err.response?.data?.message || err.response?.statusText;
+                  // 3.  Fallback
+                  const userMsg = msg || err.message || "Invalid OTP. Please check your code and try again.";
+
+                  console.error("OTP verify:", { code: err.code, status: err.response?.status, message: userMsg });
       setLoginResult({
         success: false,
-        error: err.message || "Invalid OTP. Please check your code and try again.",
+        error: userMsg || "Invalid OTP. Please check your code and try again.",
       });
       setShowResultDialog(true);
     } finally {

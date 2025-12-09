@@ -121,10 +121,31 @@ export function RegisterForm() {
 
       setShowResultDialog(true);
     } catch (err: any) {
+         /*  RFC 7807 (Problem Details) shape  */
+                            const problem = err.response?.data;
+
+                            // 1.  Prefer RFC 7807 fields
+                            const userMsg =
+                              problem?.detail ||                       // "Invalid temporary password."
+                              problem?.title ||                        // "Internal Server Error"
+                              problem?.message ||                      // fallback
+                              err.response?.statusText ||              // "Internal Server Error"
+                              err.message ||                           // final fallback
+                              "Registration failed. Please try again.";
+
+                            console.error("Register error:", {
+                              status: err.response?.status,
+                              type: problem?.type,
+                              title: problem?.title,
+                              detail: problem?.detail,
+                              instance: problem?.instance,
+                              timestamp: problem?.timestamp,
+                            });
+
       setRegisterResult({
         success: false,
         error:
-          err.response?.data?.message ||
+          problem?.detail ||
           "Registration failed. Please try again.",
       });
       setShowResultDialog(true);
