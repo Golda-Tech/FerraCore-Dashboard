@@ -129,7 +129,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         </Card>
 
         <div className="text-center text-xs text-gray-500 dark:text-gray-400">
-          <p>© 2024 Collections Gateway. All rights reserved.</p>
+          <p>© 2025 Payments Gateway. All rights reserved.</p>
           <p className="mt-1">Secure payment processing for Ghana</p>
         </div>
       </div>
