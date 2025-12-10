@@ -197,7 +197,7 @@ export function RegisterForm() {
             <Input
               id="firstname"
               type="text"
-              placeholder=""
+              placeholder="First Name"
               value={firstname}
               onChange={(e) => setFirstname(e.target.value)}
               disabled={loading}
@@ -209,7 +209,7 @@ export function RegisterForm() {
             <Input
               id="lastname"
               type="text"
-              placeholder=""
+              placeholder="Last Name"
               value={lastname}
               onChange={(e) => setLastname(e.target.value)}
               disabled={loading}
@@ -223,7 +223,7 @@ export function RegisterForm() {
           <Input
             id="email"
             type="email"
-            placeholder="you@mail.com"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
@@ -287,7 +287,7 @@ export function RegisterForm() {
           </Select>
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button type="submit" className="w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors" disabled={loading}>
           {loading ? (
             <>
               <IconLoader className="mr-2 h-4 w-4 animate-spin" />
@@ -305,7 +305,7 @@ export function RegisterForm() {
           Already have an account?{" "}
           <a
             href="/login"
-            className="underline hover:text-primary"
+            className="text-rose-600 hover:text-rose-600"
             tabIndex={loading ? -1 : 0}
           >
             Sign In

@@ -239,13 +239,23 @@ export function LoginForm() {
       )}
       {step === 'email' ? (
         <form onSubmit={handleRequestOTP} className="grid gap-4">
+
+        <div className="w-full">
+                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                  Login
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Welcome back, Please login to continue
+                </p>
+              </div>
+
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               value={email}
-              placeholder="biz@mail.com"
+              placeholder="Email"
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
               required
@@ -259,7 +269,7 @@ export function LoginForm() {
               id="password"
               value={password}
               type={showPassword ? "text" : "password"}
-              placeholder="Your account password"
+              placeholder="Password"
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
               required
@@ -281,7 +291,17 @@ export function LoginForm() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+           <div className="text-right text-sm">
+                      <a
+                        href="/forgot-password"
+                        className="text-rose-600 hover:text-rose-600"
+                        tabIndex={loading ? -1 : 0}
+                      >
+                        Forgotten Password?
+                      </a>
+                    </div>
+
+          <Button type="submit" className="w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors" disabled={loading}>
             {loading ? (
               <>
                 <IconLoader className="mr-2 h-4 w-4 animate-spin" />
@@ -295,15 +315,6 @@ export function LoginForm() {
             )}
           </Button>
 
-          <div className="text-center text-sm">
-            <a
-              href="/forgot-password"
-              className="underline hover:text-primary"
-              tabIndex={loading ? -1 : 0}
-            >
-              Forgotten Password?
-            </a>
-          </div>
         </form>
       ) : (
         <form onSubmit={handleVerifyOTP} className="grid gap-4">

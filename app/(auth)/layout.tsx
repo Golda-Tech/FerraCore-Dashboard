@@ -1,34 +1,44 @@
 import { GalleryVerticalEnd } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import React from "react";
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <Link href="/" className="flex items-center gap-2 font-medium">
-            <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-4" />
-            </div>
-            Ferracore Collections Platform
-          </Link>
-        </div>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">{children}</div>
-        </div>
-      </div>
-      <div className="bg-muted relative hidden lg:block">
-        <div
-          className="absolute inset-0 h-full w-full 
-    bg-gradient-to-br from-white/30 via-gray-400/20 to-black/30 
-    backdrop-blur-xl"
+    <div className="grid min-h-svh lg:grid-cols-2 bg-[#f2f4f7]">
+      {/* LEFT – logo + headline + customer PNG (full bleed) */}
+      <div className="relative hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-10 bg-[#f2f4f7]">
+        {/* Rexhub logo – large, top */}
+        <Image
+          src="/rexpay-logo.png"
+          alt="Rexpay Logo"
+          width={200}
+          height={60}
+          className="object-contain self-start ml-4"
         />
+
+      {/* Headline – left aligned, stacked */}
+      <div className="mt-8 mb-8 self-start">
+        <h1 className="text-4xl font-semibold text-zinc-800">Grow Your Business</h1>
+        <h2 className="text-4xl font-semibold text-zinc-800">With Seamless Mobile Money</h2>
+        <h2 className="text-4xl font-semibold text-zinc-800">Collections</h2>
+      </div>
+
+        {/* customer PNG – left aligned, inset slightly */}
+        <Image
+          src="/rexpaycustomer.png"
+          alt="Collections UI"
+          width={400}
+          height={240}
+          className="object-contain self-start ml-4"
+        />
+      </div>
+
+      {/* RIGHT – login form (unchanged) */}
+      <div className="flex flex-1 items-center justify-center px-5 py-10 bg-[#f2f4f7]">
+        <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl">
+          <div className="w-full max-w-sm">{children}</div>
+        </div>
       </div>
     </div>
   );
