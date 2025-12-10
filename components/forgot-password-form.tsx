@@ -317,7 +317,7 @@ export function ForgotPasswordForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors" disabled={loading}>
             {loading ? (
               <>
                 <IconLoader className="mr-2 h-4 w-4 animate-spin" />
