@@ -25,6 +25,36 @@ export interface RegisterRequest {
 
 }
 
+
+export interface ProfileResponse {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: "admin" | "user";
+  organization: {
+    name: string;
+    businessType: string;
+    address: string;
+    registrationNumber: string;
+    taxId: string;
+    website: string;
+  };
+  subscription: {
+    plan: string;
+    status: string;
+    billingCycle: string;
+    nextBilling: string;
+    amount: number;
+    currency: string;
+  };
+  apiCredentials: {
+    subscriptionKey: string;
+    subscriptionSecret: string;
+  };
+}
+
 export enum PlanType {
   COLLECTIONS = "COLLECTIONS",
   DISBURSEMENTS = "DISBURSEMENTS",

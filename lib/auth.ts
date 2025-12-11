@@ -6,6 +6,7 @@ import {
   RegisterRequest,
   RegisterResponse,
   ResetPasswordRequest,
+  ProfileResponse,
   ResetPasswordResponse,
 } from "@/types/auth";
 import { redirect } from "next/navigation";
@@ -35,6 +36,19 @@ export async function login({
     localStorage.setItem(USER_KEY, JSON.stringify(response.data));
   }
   return response.data;
+}
+
+
+export async function getUserProfile(): Promise<ProfileResponse> {
+  const { data } = await api.get<ProfileResponse>("/api/v1/auth/profile");
+  return data;
+}
+
+export async function fetchNewKeys(): Promise<ProfileResponse> {
+  const { data } = await api.post<ProfileResponse>(
+          "/api/v1/auth/profile/regenerate-credentials"
+        );
+  return data;
 }
 
 export async function register(

@@ -352,7 +352,7 @@ export function LoginForm() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
+          <Button type="submit" className="w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors" disabled={loading || otp.length !== 6}>
             {loading ? (
               <>
                 <IconLoader className="mr-2 h-4 w-4 animate-spin" />
@@ -487,7 +487,7 @@ export function LoginForm() {
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
             {loginResult.success ? (
-              <Button onClick={handleCloseDialog} className="w-full sm:w-auto">
+              <Button onClick={handleCloseDialog} className="w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors sm:w-auto">
                 Continue to Dashboard
               </Button>
             ) : (
@@ -495,7 +495,7 @@ export function LoginForm() {
                 <Button
                   variant="outline"
                   onClick={() => setShowResultDialog(false)}
-                  className="w-full sm:w-auto"
+                  className="w-full w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors sm:w-auto"
                 >
                   Try Again
                 </Button>
@@ -504,7 +504,7 @@ export function LoginForm() {
                     setShowResultDialog(false);
                     resetForm();
                   }}
-                  className="w-full sm:w-auto"
+                  className="w-full w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors sm:w-auto"
                 >
                   OK
                 </Button>
