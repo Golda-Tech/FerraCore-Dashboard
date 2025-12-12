@@ -11,8 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { User, Building2, Shield, Key, Eye, EyeOff, Copy,Calendar,CreditCard,Smartphone, Mail, Bell,RefreshCw, Check, AlertTriangle, Globe } from "lucide-react";
-
+import { User, Building2, Shield, Key, Eye, EyeOff, Copy,Calendar,CreditCard,Smartphone, Mail, Bell,RefreshCw, Check, AlertTriangle, Info, Globe } from "lucide-react";
 
 import { getUserProfile, fetchNewKeys } from "@/lib/auth";
 
@@ -66,6 +65,15 @@ export function SettingsContent() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
       </div>
+      {user.isFirstTimeUser ? (
+        <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <Info className="h-5 w-5 text-blue-600" />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium">Welcome aboard!</p>
+            <p>Finish setting up your Profile, Business details and keys to start transacting.</p>
+          </div>
+        </div>
+      ) : null}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
@@ -103,16 +111,27 @@ export function SettingsContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Business Type</Label>
-                    <Select defaultValue={user.organization.businessType.toLowerCase()}>
-                      <SelectContent>
-                        <SelectItem value="technology">Technology</SelectItem>
-                        <SelectItem value="finance">Finance</SelectItem>
-                        <SelectItem value="retail">Retail</SelectItem>
-                        <SelectItem value="healthcare">Healthcare</SelectItem>
-                        <SelectItem value="education">Education</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {user?.organization?.businessType ? (
+                      <Select defaultValue={user.organization.businessType.toLowerCase()}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="technology">Technology</SelectItem>
+                          <SelectItem value="finance">Finance</SelectItem>
+                          <SelectItem value="retail">Retail</SelectItem>
+                          <SelectItem value="healthcare">Healthcare</SelectItem>
+                          <SelectItem value="education">Education</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select disabled>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Loading…" />
+                        </SelectTrigger>
+                      </Select>
+                    )}
                   </div>
                   <div className="space-y-2"><Label>Website</Label><Input defaultValue={user.organization.website} /></div>
                 </div>

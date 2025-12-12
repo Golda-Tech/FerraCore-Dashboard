@@ -37,6 +37,7 @@ export interface ProfileResponse {
     name: string;
     businessType: string;
     address: string;
+    isFirstTimeUser: boolean;
     registrationNumber: string;
     taxId: string;
     website: string;

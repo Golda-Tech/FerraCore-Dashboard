@@ -35,10 +35,10 @@ import {
 } from "@tabler/icons-react";
 
 enum PlanType {
-  COLLECTIONS = "COLLECTIONS",
-  DISBURSEMENTS = "DISBURSEMENTS",
-  PREAPPROVALS = "PREAPPROVALS",
-  ALL_INCLUSIVE = "ALL_INCLUSIVE",
+  PAYMENT_REQUEST = "PAYMENT REQUEST",
+  PAYOUTS = "PAYOUTS",
+  RECURRING PAYMENTS = "RECURRING PAYMENTS",
+  ENTERPRISE_FULL_ACCESS = "ENTERPRISE FULL ACCESS",
 }
 
 interface RegisterRequest {
@@ -279,10 +279,10 @@ export function RegisterForm() {
               <SelectValue placeholder="Choose a plan" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={PlanType.COLLECTIONS}>Collections</SelectItem>
-              <SelectItem value={PlanType.DISBURSEMENTS}>Disbursements</SelectItem>
-              <SelectItem value={PlanType.PREAPPROVALS}>Pre-approvals</SelectItem>
-              <SelectItem value={PlanType.ALL_INCLUSIVE}>All-inclusive</SelectItem>
+              <SelectItem value={PlanType.PAYMENT_REQUEST}>PAYMENT REQUEST</SelectItem>
+              <SelectItem value={PlanType.PAYOUTS}>PAYOUTS</SelectItem>
+              <SelectItem value={PlanType.RECURRING_PAYMENTS}>RECURRING PAYMENTS</SelectItem>
+              <SelectItem value={PlanType.ENTERPRISE_FULL_ACCESS}>ENTERPRISE FULL ACCESS</SelectItem>
             </SelectContent>
           </Select>
         </div>
