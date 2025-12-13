@@ -121,6 +121,7 @@ export function SettingsContent() {
           callbackUrl: (document.getElementById("callbackUrl") as HTMLInputElement).value;
     setUser(updated);
     setDirty(false); // success → green "Saved"
+     });
     } catch (err: any) {
          setDirty(true); // error → back to "Save Changes"
       console.error("Save callback URL failed", err);
