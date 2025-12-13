@@ -19,6 +19,7 @@ import { getUserInfo, createPayment, sendOtp, verifyOtp, getTransactionStatus } 
 import { UserInfo } from "@/types/payment"
 import { send } from "process"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
+import { v4 as uuid } from "uuid";
 
 
 export function RequestPaymentContent() {
@@ -58,6 +59,8 @@ return{
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
+
+  const refId = uuid();
 
  const telcos = [
    {
@@ -102,7 +105,11 @@ return{
       };
 
       // Call the payment API
-      const paymentResponse = await createPayment(paymentRequest);
+      const paymentResponse = await createPayment(paymentRequest, {
+        "X-Callback-Url": "https://ferracore.tech/api/v1/payments/mtn/callback",
+        "X-Reference-Id": refId,
+        "X-Target-Environment": "poc"
+      });
       setIsPending(false);                              // <-- success
 
       // Optionally store or show the transactionRef
@@ -122,9 +129,30 @@ return{
 
       setShowSuccess(true);
     } catch (err: any) {
-      console.error("Payment failed:", err);
+        /*  RFC 7807 (Problem Details) shape  */
+                            const problem = err.response?.data;
+
+                            // 1.  Prefer RFC 7807 fields
+                            const userMsg =
+                              problem?.detail ||                       // "Invalid temporary password."
+                              problem?.title ||                        // "Internal Server Error"
+                              problem?.message ||                      // fallback
+                              err.response?.statusText ||              // "Internal Server Error"
+                              err.message ||                           // final fallback
+                              "An unexpected error occurred";
+
+                            console.error("Payment error:", {
+                              status: err.response?.status,
+                              type: problem?.type,
+                              title: problem?.title,
+                              detail: problem?.detail,
+                              instance: problem?.instance,
+                              timestamp: problem?.timestamp,
+                            });
+
+      console.error("Payment failed:", problem?.detail || err.message);
       setIsPending(true);
-      setErrorMessage(err?.response?.data?.message || err.message || "An unexpected error occurred");
+      setErrorMessage(problem?.detail || "An unexpected error occurred");
       setShowError(true);
     } finally {
       setIsProcessing(false);

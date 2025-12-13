@@ -51,6 +51,22 @@ export async function fetchNewKeys(): Promise<ProfileResponse> {
   return data;
 }
 
+
+export async function updateProfile(data: Partial<ProfileResponse>) {
+  const { data: updated } = await api.put<ProfileResponse>("/api/v1/auth/profile", data);
+  return updated;
+}
+
+export async function updateOrganization(data: Partial<ProfileResponse["organization"]>) {
+  const { data: updated } = await api.put<ProfileResponse>("/api/v1/auth/profile/organization", data);
+  return updated;
+}
+
+export async function updateCallbackUrl(callbackUrl: string) {
+  const { data: updated } = await api.put<ProfileResponse>("/api/v1/auth/profile/callback", { callbackUrl });
+  return updated;
+}
+
 export async function register(
   data: RegisterRequest
 ): Promise<RegisterResponse> {

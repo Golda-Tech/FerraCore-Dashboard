@@ -47,6 +47,7 @@ export interface ProfileResponse {
     status: string;
     billingCycle: string;
     nextBilling: string;
+    callbackUrl: string;
     amount: number;
     currency: string;
   };

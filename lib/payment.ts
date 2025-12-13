@@ -12,9 +12,18 @@ import {
 
 // Create a new payment
 export async function createPayment(
-  data: CreatePaymentRequest
+  data: CreatePaymentRequest,
+  headers?: {
+    "X-Callback-Url"?: string;
+    "X-Reference-Id"?: string;
+    "X-Target-Environment"?: string;
+  }
 ): Promise<CreatePaymentResponse> {
-  const response = await api.post<CreatePaymentResponse>("/api/v1/payments", data);
+  const response = await api.post<CreatePaymentResponse>(
+    "/api/v1/payments",
+    data,
+    { headers }
+  );
   return response.data;
 }
 

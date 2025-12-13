@@ -13,7 +13,7 @@ import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { User, Building2, Shield, Key, Eye, EyeOff, Copy,Calendar,CreditCard,Smartphone, Mail, Bell,RefreshCw, Check, AlertTriangle, Info, Globe } from "lucide-react";
 
-import { getUserProfile, fetchNewKeys } from "@/lib/auth";
+import { getUserProfile, fetchNewKeys, updateProfile, updateOrganization, updateCallbackUrl } from "@/lib/auth";
 
 
 export function SettingsContent() {
@@ -22,6 +22,8 @@ export function SettingsContent() {
   const [showClientToken, setShowClientToken] = useState(false);
   const [isGeneratingKey, setIsGeneratingKey] = useState(false);
   const [copied, setCopied] = useState("");
+  const [businessType, setBusinessType] = useState(""); // empty on first render
+  const [saving, setSaving] = useState(false);
 
   /* ---- live data ---- */
   const [user, setUser] = useState<any>(null);
@@ -35,6 +37,13 @@ export function SettingsContent() {
      .finally(() => setLoading(false));
  }, []);
 
+  useEffect(() => {
+     if (user?.organization?.businessType) {
+       setBusinessType(user.organization.businessType.toLowerCase());
+     }
+   }, [user]); // re-run when user loads
+
+
   if (loading) return <p className="p-8">Loading profile…</p>;
   if (error) return error && <p className="p-8 text-red-600">{String(error)}</p>;
   if (!user) return null;
@@ -45,6 +54,7 @@ export function SettingsContent() {
     setCopied(type);
     setTimeout(() => setCopied(""), 2000);
   };
+
 
   const generateNewKey = async () => {
     setIsGeneratingKey(true);
@@ -58,6 +68,58 @@ export function SettingsContent() {
       setIsGeneratingKey(false);
     }
   };
+
+  /* ----------  PROFILE  ---------- */
+  const saveProfile = async () => {
+      setSaving(true);
+      try{
+    const updated = await updateProfile({
+      firstName: (document.getElementById("firstName") as HTMLInputElement).value,
+      lastName: (document.getElementById("lastName") as HTMLInputElement).value,
+      email: (document.getElementById("email") as HTMLInputElement).value,
+      phone: (document.getElementById("phone") as HTMLInputElement).value,
+    });
+    setUser(updated);
+    } catch (err: any) {
+      console.error("Save profile failed", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* ----------  BUSINESS  ---------- */
+  const saveBusiness = async () => {
+      setSaving(true);
+      try{
+    const updated = await updateOrganization({
+      businessType: businessType,
+      website: (document.getElementById("website") as HTMLInputElement).value,
+      address: (document.getElementById("address") as HTMLTextAreaElement).value,
+      registrationNumber: (document.getElementById("regNumber") as HTMLInputElement).value,
+      taxId: (document.getElementById("taxId") as HTMLInputElement).value,
+    });
+    setUser(updated);
+    } catch (err: any) {
+      console.error("Save organization details failed", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* ----------  CALLBACK  ---------- */
+  const saveCallback = async () => {
+      setSaving(true);
+      try{
+    const updated = await updateCallbackUrl(callbackUrl);
+    setUser(updated);
+    } catch (err: any) {
+      console.error("Save callback URL failed", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+
 
   /* ----------  RENDER  ---------- */
   return (
@@ -91,12 +153,22 @@ export function SettingsContent() {
             <CardHeader><CardTitle>Personal Information</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>First Name</Label><Input defaultValue={user.firstName} /></div>
-                <div className="space-y-2"><Label>Last Name</Label><Input defaultValue={user.lastName} /></div>
+                <div className="space-y-2"><Label>First Name</Label><Input id = "firstName" defaultValue={user.firstName} /></div>
+                <div className="space-y-2"><Label>Last Name</Label><Input id = "lastName" defaultValue={user.lastName} /></div>
               </div>
-              <div className="space-y-2"><Label>Email</Label><Input type="email" defaultValue={user.email} /></div>
-              <div className="space-y-2"><Label>Phone</Label><Input defaultValue={user.phone} /></div>
-              <Button>Save Changes</Button>
+              <div className="space-y-2"><Label>Email</Label><Input type="email" id = "email" defaultValue={user.email} /></div>
+              <div className="space-y-2"><Label>Phone</Label><Input id = "phone" defaultValue={user.phone} /></div>
+              <Button onClick={saveProfile} disabled={saving}>
+                {saving ? (
+                  <span className="flex items-center space-x-1">
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-white"></span>
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150"></span>
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300"></span>
+                  </span>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -107,12 +179,16 @@ export function SettingsContent() {
             <Card>
               <CardHeader><CardTitle>Organization Details</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2"><Label>Organization Name</Label><Input defaultValue={user.organization.name} /></div>
+                <div className="space-y-2"><Label>Organization Name</Label><Input id="orgName" defaultValue={user.organization.name} /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Business Type</Label>
-                    {user?.organization?.businessType ? (
-                      <Select defaultValue={user.organization.businessType.toLowerCase()}>
+
+                    <div className="space-y-2">
+                      <Label>Business Type</Label>
+                      <Select
+                        value={businessType}
+                        onValueChange={setBusinessType}
+                        disabled={!user?.organization?.businessType}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
@@ -125,29 +201,32 @@ export function SettingsContent() {
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
-                    ) : (
-                      <Select disabled>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Loading…" />
-                        </SelectTrigger>
-                      </Select>
-                    )}
-                  </div>
-                  <div className="space-y-2"><Label>Website</Label><Input defaultValue={user.organization.website} /></div>
+                    </div>
+                  <div className="space-y-2"><Label>Website</Label><Input id ="website" defaultValue={user.organization.website} /></div>
                 </div>
-                <div className="space-y-2"><Label>Address</Label><Textarea defaultValue={user.organization.address} /></div>
+                <div className="space-y-2"><Label>Address</Label><Textarea id = "address" defaultValue={user.organization.address} /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Registration Number</Label><Input defaultValue={user.organization.registrationNumber} /></div>
-                  <div className="space-y-2"><Label>Tax ID</Label><Input defaultValue={user.organization.taxId} /></div>
+                  <div className="space-y-2"><Label>Registration Number</Label><Input id = "regNumber" defaultValue={user.organization.registrationNumber} /></div>
+                  <div className="space-y-2"><Label>Tax ID</Label><Input id = "taxId" defaultValue={user.organization.taxId} /></div>
                 </div>
-                <Button>Save Changes</Button>
+                <Button onClick={saveBusiness} disabled={saving}>
+                  {saving ? (
+                    <span className="flex items-center space-x-1">
+                      <span className="h-1 w-1 animate-pulse rounded-full bg-white"></span>
+                      <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150"></span>
+                      <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300"></span>
+                    </span>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
         )}
 
         {/* Security Tab */}
-        <TabsContent value="security" className="space-y-4">
+       {/* <TabsContent value="security" className="space-y-4">
           <Card>
             <CardHeader><CardTitle>Two-Factor Authentication</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -157,7 +236,7 @@ export function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent>*/}
 
         {/* API & Keys Tab */}
         <TabsContent value="api" className="space-y-4">
@@ -180,12 +259,12 @@ export function SettingsContent() {
                             <Label className="text-sm font-medium text-muted-foreground">Billing Cycle</Label>
                             <p className="capitalize">{user.subscription.billingCycle}</p>
                           </div>
-                          <div className="space-y-2">
+                          {/*<div className="space-y-2">
                             <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
                             <p className="font-medium">
                               GHS {user.subscription.amount.toLocaleString()}/{user.subscription.billingCycle}
                             </p>
-                          </div>
+                          </div> **/}
                           <div className="space-y-2">
                             <Label className="text-sm font-medium text-muted-foreground">Next Billing</Label>
                             <div className="flex items-center space-x-2">
@@ -207,6 +286,27 @@ export function SettingsContent() {
              <CardDescription>Your API keys and service credentials for integration</CardDescription>
              </CardHeader>
             <CardContent className="space-y-4">
+
+                <div className="space-y-2">
+                  <Label>X-Callback-Url</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="callbackUrl"
+                      value={user?.subscription?.callbackUrl ?? ""}
+                      onChange={(e) => setUser({ ...user, subscription: { ...user.subscription, callbackUrl: e.target.value } })}
+                      placeholder="https://my.app/webhook"
+                      className="font-mono"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(callbackUrl, "callbackUrl")}
+                    >
+                      {copied === "callbackUrl" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+
               <div className="space-y-2"><Label>Subscription Key</Label>
                 <div className="flex items-center space-x-2"><Input value={user.apiCredentials.subscriptionKey} readOnly className="font-mono" />
                   <Button variant="outline" size="sm" onClick={() => copyToClipboard(user.apiCredentials.subscriptionKey, "subscriptionKey")}>{copied === "subscriptionKey" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}</Button>
@@ -234,6 +334,17 @@ export function SettingsContent() {
                   API Docs
                 </a>
               </div>
+              <Button onClick={saveCallback} disabled={saving}>
+                {saving ? (
+                  <span className="flex items-center space-x-1">
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-white"></span>
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150"></span>
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300"></span>
+                  </span>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
             </CardContent>
           </Card>
           </div>

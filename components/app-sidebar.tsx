@@ -95,10 +95,16 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <button onClick={() => handleNavigation("dashboard")}>
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Payments Gateway</span>
+            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-2">
+              <button
+                onClick={() => handleNavigation("dashboard")}
+                className="flex h-14 w-full items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <img
+                  src="/rexpay-logo.png"
+                  alt="Rexpay"
+                  className="h-8 w-auto object-contain"
+                />
               </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
