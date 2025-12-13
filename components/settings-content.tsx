@@ -24,6 +24,7 @@ export function SettingsContent() {
   const [copied, setCopied] = useState("");
   const [businessType, setBusinessType] = useState(""); // empty on first render
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(true);
 
   /* ---- live data ---- */
   const [user, setUser] = useState<any>(null);
@@ -69,6 +70,9 @@ export function SettingsContent() {
     }
   };
 
+  /* ----------  TRACK CHANGES  ---------- */
+  const handleFieldChange = () => setDirty(true);
+
   /* ----------  PROFILE  ---------- */
   const saveProfile = async () => {
       setSaving(true);
@@ -98,8 +102,10 @@ export function SettingsContent() {
       registrationNumber: (document.getElementById("regNumber") as HTMLInputElement).value,
       taxId: (document.getElementById("taxId") as HTMLInputElement).value,
     });
+    setDirty(false); // success → green "Saved"
     setUser(updated);
     } catch (err: any) {
+        setDirty(true); // error → back to "Save Changes"
       console.error("Save organization details failed", err);
     } finally {
       setSaving(false);
@@ -138,12 +144,12 @@ export function SettingsContent() {
       ) : null}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3">
           <TabsTrigger value="profile" className="flex items-center gap-2"><User className="h-4 w-4" />Profile</TabsTrigger>
           {user.role === "USER" && (
             <TabsTrigger value="business" className="flex items-center gap-2"><Building2 className="h-4 w-4" />Business</TabsTrigger>
           )}
-          <TabsTrigger value="security" className="flex items-center gap-2"><Shield className="h-4 w-4" />Security</TabsTrigger>
+         {/* <TabsTrigger value="security" className="flex items-center gap-2"><Shield className="h-4 w-4" />Security</TabsTrigger> **/}
           <TabsTrigger value="api" className="flex items-center gap-2"><Key className="h-4 w-4" />API & Keys</TabsTrigger>
         </TabsList>
 
@@ -153,22 +159,31 @@ export function SettingsContent() {
             <CardHeader><CardTitle>Personal Information</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>First Name</Label><Input id = "firstName" defaultValue={user.firstName} /></div>
-                <div className="space-y-2"><Label>Last Name</Label><Input id = "lastName" defaultValue={user.lastName} /></div>
+                <div className="space-y-2"><Label>First Name</Label><Input id = "firstName" defaultValue={user.firstName} onChange={handleFieldChange}/></div>
+                <div className="space-y-2"><Label>Last Name</Label><Input id = "lastName" defaultValue={user.lastName} onChange={handleFieldChange} /></div>
               </div>
-              <div className="space-y-2"><Label>Email</Label><Input type="email" id = "email" defaultValue={user.email} /></div>
-              <div className="space-y-2"><Label>Phone</Label><Input id = "phone" defaultValue={user.phone} /></div>
-              <Button onClick={saveProfile} disabled={saving}>
-                {saving ? (
-                  <span className="flex items-center space-x-1">
-                    <span className="h-1 w-1 animate-pulse rounded-full bg-white"></span>
-                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150"></span>
-                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300"></span>
-                  </span>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
+              <div className="space-y-2"><Label>Email</Label><Input type="email" id = "email" defaultValue={user.email} onChange={handleFieldChange}/></div>
+              <div className="space-y-2"><Label>Phone</Label><Input id = "phone" defaultValue={user.phone}  onChange={handleFieldChange} /></div>
+             <Button
+                               onClick={saveProfile}
+                               disabled={saving}
+                               className="w-36"
+                             >
+                               {saving ? (
+                                 <span className="flex items-center justify-center space-x-1 w-full">
+                                   <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
+                                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
+                                 </span>
+                               ) : dirty ? (
+                                 "Save Changes"
+                               ) : (
+                                 <span className="flex items-center space-x-1">
+                                   <Check className="h-4 w-4 text-green-300" />
+                                   <span className="text-green-300">Saved</span>
+                                 </span>
+                               )}
+                             </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -179,14 +194,17 @@ export function SettingsContent() {
             <Card>
               <CardHeader><CardTitle>Organization Details</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2"><Label>Organization Name</Label><Input id="orgName" defaultValue={user.organization.name} /></div>
+                <div className="space-y-2"><Label>Organization Name</Label><Input id="orgName" defaultValue={user.organization.name} onChange={handleFieldChange}/></div>
                 <div className="grid grid-cols-2 gap-4">
 
                     <div className="space-y-2">
                       <Label>Business Type</Label>
                       <Select
                         value={businessType}
-                        onValueChange={setBusinessType}
+                        onValueChange={(val) => {
+                            setBusinessType(val);
+                            handleFieldChange(); // ← flips label
+                          }}
                         disabled={!user?.organization?.businessType}
                       >
                         <SelectTrigger>
@@ -202,22 +220,31 @@ export function SettingsContent() {
                         </SelectContent>
                       </Select>
                     </div>
-                  <div className="space-y-2"><Label>Website</Label><Input id ="website" defaultValue={user.organization.website} /></div>
+                  <div className="space-y-2"><Label>Website</Label><Input id ="website" defaultValue={user.organization.website}  onChange={handleFieldChange}/></div>
                 </div>
-                <div className="space-y-2"><Label>Address</Label><Textarea id = "address" defaultValue={user.organization.address} /></div>
+                <div className="space-y-2"><Label>Address</Label><Textarea id = "address" defaultValue={user.organization.address}  onChange={handleFieldChange}/></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Registration Number</Label><Input id = "regNumber" defaultValue={user.organization.registrationNumber} /></div>
+                  <div className="space-y-2"><Label>Registration Number</Label><Input id = "regNumber" defaultValue={user.organization.registrationNumber}  onChange={handleFieldChange}/></div>
                   <div className="space-y-2"><Label>Tax ID</Label><Input id = "taxId" defaultValue={user.organization.taxId} /></div>
                 </div>
-                <Button onClick={saveBusiness} disabled={saving}>
+                <Button
+                  onClick={saveBusiness}
+                  disabled={saving}
+                  className="w-36"
+                >
                   {saving ? (
-                    <span className="flex items-center space-x-1">
-                      <span className="h-1 w-1 animate-pulse rounded-full bg-white"></span>
-                      <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150"></span>
-                      <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300"></span>
+                    <span className="flex items-center justify-center space-x-1 w-full">
+                      <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                      <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
+                      <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
                     </span>
-                  ) : (
+                  ) : dirty ? (
                     "Save Changes"
+                  ) : (
+                    <span className="flex items-center space-x-1">
+                      <Check className="h-4 w-4 text-green-300" />
+                      <span className="text-green-300">Saved</span>
+                    </span>
                   )}
                 </Button>
               </CardContent>
@@ -293,7 +320,7 @@ export function SettingsContent() {
                     <Input
                       id="callbackUrl"
                       value={user?.subscription?.callbackUrl ?? ""}
-                      onChange={(e) => setUser({ ...user, subscription: { ...user.subscription, callbackUrl: e.target.value } })}
+                      onChange={(e) => {setUser({ ...user, subscription: { ...user.subscription, callbackUrl: e.target.value } });handleFieldChange();}}
                       placeholder="https://my.app/webhook"
                       className="font-mono"
                     />
@@ -334,17 +361,26 @@ export function SettingsContent() {
                   API Docs
                 </a>
               </div>
-              <Button onClick={saveCallback} disabled={saving}>
-                {saving ? (
-                  <span className="flex items-center space-x-1">
-                    <span className="h-1 w-1 animate-pulse rounded-full bg-white"></span>
-                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150"></span>
-                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300"></span>
-                  </span>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
+              <Button
+                                onClick={saveCallback}
+                                disabled={saving}
+                                className="w-36"
+                              >
+                                {saving ? (
+                                  <span className="flex items-center justify-center space-x-1 w-full">
+                                    <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
+                                    <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
+                                  </span>
+                                ) : dirty ? (
+                                  "Save Changes"
+                                ) : (
+                                  <span className="flex items-center space-x-1">
+                                    <Check className="h-4 w-4 text-green-300" />
+                                    <span className="text-green-300">Saved</span>
+                                  </span>
+                                )}
+                              </Button>
             </CardContent>
           </Card>
           </div>
