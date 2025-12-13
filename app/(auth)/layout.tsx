@@ -5,9 +5,9 @@ import React from "react";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2 bg-[#f2f4f7]">
+    <div className="grid min-h-svh lg:grid-cols-2 bg-[#f2f4f7] dark:bg-zinc-900">
       {/* LEFT – logo + headline + customer PNG (full bleed) */}
-      <div className="relative hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-10 bg-[#f2f4f7]">
+      <div className="relative hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-10 bg-[#f2f4f7] dark:bg-zinc-900">
         {/* Rexhub logo – large, top */}
         <Image
           src="/rexpay-logo.png"
@@ -19,9 +19,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Headline – left aligned, stacked */}
       <div className="mt-8 mb-8 self-start">
-        <h1 className="text-4xl font-semibold text-zinc-800">Grow Your Business</h1>
-        <h2 className="text-4xl font-semibold text-zinc-800">With Seamless Mobile Money</h2>
-        <h2 className="text-4xl font-semibold text-zinc-800">Collections</h2>
+        <h1 className="text-4xl font-semibold text-zinc-800 dark:text-white">Grow Your Business</h1>
+        <h2 className="text-4xl font-semibold text-zinc-800 dark:text-white">With Seamless Mobile Money</h2>
+        <h2 className="text-4xl font-semibold text-zinc-800 dark:text-white">Collections</h2>
       </div>
 
         {/* customer PNG – left aligned, inset slightly */}
@@ -35,8 +35,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* RIGHT – login form (unchanged) */}
-      <div className="flex flex-1 items-center justify-center px-5 py-10 bg-[#f2f4f7]">
-        <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl">
+      <div className="flex flex-1 items-center justify-center px-5 py-10 bg-[#f2f4f7] dark:bg-zinc-900">
+        <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl dark:bg-zinc-800">
           <div className="w-full max-w-sm">{children}</div>
         </div>
       </div>

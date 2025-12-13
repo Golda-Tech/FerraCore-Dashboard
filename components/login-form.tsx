@@ -241,16 +241,16 @@ export function LoginForm() {
         <form onSubmit={handleRequestOTP} className="grid gap-4">
 
         <div className="w-full">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-950 dark:text-white whitespace-nowrap">
                   Login
                 </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                   Welcome back, Please login to continue
                 </p>
               </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-gray-950 dark:text-white font-medium">Email</Label>
             <Input
               id="email"
               type="email"
@@ -259,11 +259,12 @@ export function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
               required
+              className="text-gray-950 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-gray-950 dark:text-white font-medium">Password</Label>
             <div className="relative">
             <Input
               id="password"
@@ -273,6 +274,7 @@ export function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
               required
+              className="text-gray-950 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
             <Button
               type="button"
@@ -283,9 +285,9 @@ export function LoginForm() {
               disabled={loading}
             >
               {showPassword ? (
-                <IconEyeOff className="h-4 w-4" />
+                <IconEyeOff className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               ) : (
-                <IconEye className="h-4 w-4" />
+                <IconEye className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               )}
             </Button>
             </div>
@@ -294,7 +296,7 @@ export function LoginForm() {
            <div className="text-right text-sm">
                       <a
                         href="/forgot-password"
-                        className="text-rose-600 hover:text-rose-600"
+                        className="text-rose-600 hover:text-rose-700 font-medium"
                         tabIndex={loading ? -1 : 0}
                       >
                         Forgotten Password?
@@ -322,15 +324,15 @@ export function LoginForm() {
             <div className="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full">
               <IconMail className="h-6 w-6 text-blue-600" />
             </div>
-            <h3 className="text-lg font-semibold">Check your email</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="text-lg font-semibold text-gray-950 dark:text-white">Check your email</h3>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
               We've sent a 6-digit verification code to
             </p>
-            <p className="text-sm font-medium">{email}</p>
+            <p className="text-sm font-medium text-gray-950 dark:text-white">{email}</p>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="otp" className="text-center">
+            <Label htmlFor="otp" className="text-center text-gray-950 dark:text-white font-medium">
               Enter verification code
             </Label>
             <div className="flex justify-center">
@@ -341,12 +343,12 @@ export function LoginForm() {
                 disabled={loading}
               >
                 <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
+                  <InputOTPSlot index={0} className="text-gray-950 dark:text-white" />
+                  <InputOTPSlot index={1} className="text-gray-950 dark:text-white" />
+                  <InputOTPSlot index={2} className="text-gray-950 dark:text-white" />
+                  <InputOTPSlot index={3} className="text-gray-950 dark:text-white" />
+                  <InputOTPSlot index={4} className="text-gray-950 dark:text-white" />
+                  <InputOTPSlot index={5} className="text-gray-950 dark:text-white" />
                 </InputOTPGroup>
               </InputOTP>
             </div>
@@ -367,7 +369,7 @@ export function LoginForm() {
           </Button>
 
           <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
               Didn't receive the code?
             </p>
             <div className="flex justify-center space-x-4 text-sm">
@@ -375,7 +377,7 @@ export function LoginForm() {
                 type="button"
                 onClick={handleResendOTP}
                 disabled={resendCooldown > 0 || loading}
-                className="underline hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-rose-600 hover:text-rose-700 font-medium underline disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
               </button>
@@ -383,7 +385,7 @@ export function LoginForm() {
                 type="button"
                 onClick={handleBackToEmail}
                 disabled={loading}
-                className="underline hover:text-primary"
+                className="text-rose-600 hover:text-rose-700 font-medium underline"
               >
                 Change email
               </button>
@@ -402,10 +404,10 @@ export function LoginForm() {
                   <IconLoader className="h-8 w-8 text-blue-600 animate-spin" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">
+                  <h3 className="text-lg font-semibold text-gray-950 dark:text-white">
                     {step === 'email' ? 'Sending OTP' : 'Verifying Code'}
                   </h3>
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
                     {step === 'email' 
                       ? 'Please wait while we send your verification code...'
                       : 'Please wait while we verify your code...'}
