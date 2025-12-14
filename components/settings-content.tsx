@@ -116,9 +116,9 @@ export function SettingsContent() {
   const saveCallback = async () => {
     setSaving(true);
     try {
-      const updated = await updateCallbackUrl({
-        callbackUrl: (document.getElementById("callbackUrl") as HTMLInputElement).value,
-      });
+      const updated = await updateCallbackUrl(
+        (document.getElementById("callbackUrl") as HTMLInputElement).value
+      );
       setUser(updated);
       setDirty(false);
     } catch (err: any) {
