@@ -120,7 +120,7 @@ export function SettingsContent() {
     {
           callbackUrl: (document.getElementById("callbackUrl") as HTMLInputElement).value
     setUser(updated);
-    setDirty(false); // success → green "Saved"
+    setDirty(false);
      });
     } catch (err: any) {
          setDirty(true); // error → back to "Save Changes"
