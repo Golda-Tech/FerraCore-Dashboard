@@ -330,7 +330,7 @@ export function SettingsContent() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => copyToClipboard(callbackUrl, "callbackUrl")}
+                      onClick={() => copyToClipboard(user.subscription.callbackUrl, "callbackUrl")}
                     >
                       {copied === "callbackUrl" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
