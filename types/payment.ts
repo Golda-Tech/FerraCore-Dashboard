@@ -10,6 +10,9 @@ export type PaymentStatus =
   | "REFUNDED"
   | "INITIATED";
 
+
+export type Interval = "DAILY" | "WEEKLY" | "MONTHLY";
+
 export interface CreatePaymentRequest {
   provider: string;
   collectionRef: string;
