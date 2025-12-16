@@ -108,7 +108,7 @@ return{
         provider: formData.network.toUpperCase(),      // e.g., "MTN"
         collectionRef: formData.reference || `INV-${Date.now()}`,
         mobileNumber: fullMobileNumber,
-        initiatedBy: user.email,
+        initiatedBy: user?.email ?? "", // or throw / return early if missing
         amount: Number(formData.amount),
         currency: "GHS",                               // or "EUR" if applicable
         partyIdType: "MSISDN",
