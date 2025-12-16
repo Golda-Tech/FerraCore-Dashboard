@@ -6,7 +6,7 @@ import {
   RegisterRequest,
   RegisterResponse,
   ResetPasswordRequest,
-  WhitelistUpdateRequest
+  WhitelistUpdateRequest,
   ProfileResponse,
   ResetPasswordResponse,
 } from "@/types/auth";
