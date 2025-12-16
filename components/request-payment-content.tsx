@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getUserInfo, createPayment, sendOtp, verifyOtp, getTransactionStatus } from "@/lib/payment"
 import { UserInfo } from "@/types/payment"
 import { send } from "process"
+import { LoginResponse } from "@/types/auth";
 import { getUser } from "@/lib/auth";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
 import { v4 as uuid } from "uuid";

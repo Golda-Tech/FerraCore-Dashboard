@@ -41,6 +41,7 @@ import { useRouter } from "next/navigation"
 import { getPayment, getPayments, getTransactionStatus } from "@/lib/payment"
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { LoginResponse } from "@/types/auth";
 import { PaymentTrend, StatusSummary as PaymentStatusSummary } from "@/types/payment";
 import { getPaymentsStatusSummary, getPaymentsTrends } from "@/lib/payment";
 

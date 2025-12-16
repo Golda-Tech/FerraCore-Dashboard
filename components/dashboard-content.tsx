@@ -9,6 +9,7 @@ import { AmountTrendChart } from "@/components/amount-trend-chart";
 import { PeriodSelector } from "@/components/period-selector";
 import { useDashboardData } from "@/lib/hooks/useDashboardData";
 import { getUser } from "@/lib/auth";
+import { LoginResponse } from "@/types/auth";
 
 
 export function DashboardContent() {
