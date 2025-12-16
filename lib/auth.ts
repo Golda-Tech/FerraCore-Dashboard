@@ -168,6 +168,37 @@ export async function verifyLoginOtp(
   return response.data;
 }
 
+
+export async function sendResetOtp(
+  destination: string,
+  channel: string,
+  type: string
+): Promise<{ message: string }> {
+  const response = await api.get<{ message: string }>(
+    "/api/v1/auth/send-reset-otp",
+    {
+      params: { destination, channel, type },
+    }
+  );
+  return response.data;
+}
+
+
+export async function verifyResetOtp(
+  identifier: string,
+  channel: string,
+  otp: string
+): Promise<{ message: string }> {
+  const response = await api.get<{ message: string }>(
+    "/api/v1/auth/verify-reset-otp",
+    {
+      params: { identifier, channel, otp },
+    }
+  );
+  return response.data;
+}
+
+
 export function getUser(): LoginResponse | null {
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem(USER_KEY);
