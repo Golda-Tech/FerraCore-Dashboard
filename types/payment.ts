@@ -45,6 +45,7 @@ export interface Payment {
   message?: string | null;
   initiatedAt: string;
   initiatedBy: string;
+  initiationPartner: string;
   completedAt?: string | null;
   mtnFinancialTransactionId?: string | null;
   mtnExternalId?: string | null;
