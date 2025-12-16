@@ -48,28 +48,14 @@ const navMain = [
     pages: [
       { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard },
       { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
-      {/*{
-          title: "User Management",
-          page: "user-management" as PageName,
-          icon: IconUsers,
-        },**/},
     ],
   },
-  {/*{
-    title: "Rexpay",
-    icon: IconFolder,
-    isGroup: true,
-    pages: [
-      { title: "Request Collection", page: "new-collection" as PageName, icon: IconCash },
-      { title: "Collections Summary", page: "collections" as PageName, icon: IconMoneybag },
-    ],
-  },**/},
+
 
 ] as const;
 
 const navSecondary = [
   { title: "Settings", page: "settings" as PageName, icon: IconSettings },
-//   { title: "Get Help", page: "help" as PageName, icon: IconHelp },
 ];
 
 const documents: any[] = []; // empty for now
