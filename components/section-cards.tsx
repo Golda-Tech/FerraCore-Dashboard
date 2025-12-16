@@ -95,12 +95,12 @@ export function SectionCards({
    /* success-rate per period */
    const curSuccess = trends.reduce((sum, t) => {
      const d = new Date(t.date);
-     return d >= currentStart && d < currentEnd ? sum + (t.successCount ?? 0) : sum;
+     return d >= currentStart && d < currentEnd ? sum + ( 0) : sum;
    }, 0);
 
    const prevSuccess = trends.reduce((sum, t) => {
      const d = new Date(t.date);
-     return d >= prevStart && d < prevEnd ? sum + (t.successCount ?? 0) : sum;
+     return d >= prevStart && d < prevEnd ? sum + ( 0) : sum;
    }, 0);
 
    const pct = (now: number, prev: number) =>
