@@ -14,6 +14,7 @@ export interface CreatePaymentRequest {
   provider: string;
   collectionRef: string;
   mobileNumber: string;
+  initiatedBy: string;
   amount: number;
   currency: string;
   partyIdType: string;
@@ -40,6 +41,7 @@ export interface Payment {
   status: string;
   message?: string | null;
   initiatedAt: string;
+  initiatedBy: string;
   completedAt?: string | null;
   mtnFinancialTransactionId?: string | null;
   mtnExternalId?: string | null;

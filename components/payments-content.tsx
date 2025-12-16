@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils";
+import { getUser } from "@/lib/auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
@@ -38,6 +41,9 @@ import { useRouter } from "next/navigation"
 import { getPayment, getPayments, getTransactionStatus } from "@/lib/payment"
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { PaymentTrend, StatusSummary as PaymentStatusSummary } from "@/types/payment";
+import { getPaymentsStatusSummary, getPaymentsTrends } from "@/lib/payment";
+
 
 // Mock data for payment requests
 const payments = [
@@ -136,24 +142,37 @@ export function PaymentsContent() {
   const [payments, setPayments] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
+  const [user, setUser] = useState<LoginResponse | null>(null);
+    useEffect(() => {
+        const stored = getUser();
+        console.log("Stored user:", stored);
+        setUser(stored);
+      }, []);
+
+
 
   const router = useRouter()
 
-  const fetchPayments = async () => {
-    setLoading(true)
+  const fetchPayments = useCallback(async (email: string) => {
+    setLoading(true);
     try {
-      const data = await getPayments()
-      setPayments(data)
+      const data = await getPayments(email);
+      setPayments(data);
     } catch (err) {
-      console.error("Failed to fetch payments:", err)
+      console.error("Failed to fetch payments:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, []);
+
+  /* run when user becomes available */
+  useEffect(() => {
+    if (user?.email) fetchPayments(user.email);
+  }, [user, fetchPayments]);
 
   const downloadPDF = () => {
     const doc = new jsPDF({ orientation: "landscape" });
-    doc.text("FerraCore Payments Report", 14, 16);
+    doc.text("Rexhub Report", 14, 16);
 
     const body = filteredPayments.map((p) => [
       p.mobileNumber,
@@ -176,9 +195,6 @@ export function PaymentsContent() {
     doc.save(`payments_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
-  useEffect(() => {
-    fetchPayments()
-  }, [])
 
 
   const handleViewDetails = async (transactionRef: string) => {
@@ -224,6 +240,33 @@ const mapApiStatus = (status: string) => {
   }
 };
 
+/* ----------  REAL DELTA  ---------- */
+const [lastMonth, setLastMonth] = useState<{
+  total: number;
+  completed: number;
+  pending: number;
+  amount: number;
+}>({ total: 0, completed: 0, pending: 0, amount: 0 });
+
+
+useEffect(() => {
+  if (!user?.email) return;
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 30); // last 30 d
+
+  getPaymentsStatusSummary(user.email, start.toISOString(), end.toISOString())
+    .then((res) => {
+      const completed = res.completed ?? 0;
+      const pending = res.pending ?? 0;
+      const total = Object.values(res).reduce((a, b) => a + (b ?? 0), 0);
+      const amount = res.completedAmount ?? 0;
+      setLastMonth({ total, completed, pending, amount });
+    })
+    .catch(() => setLastMonth({ total: 0, completed: 0, pending: 0, amount: 0 }));
+}, [user?.email]);
+
+
 const telcos = [
   { name: "mtn",  logo: "/mtn-momo.png" },
   { name: "telecel", logo: "/telecel-cash.webp" },
@@ -244,6 +287,15 @@ const getTelcoLogo = (provider = "") => {
   );
 };
 
+const delta = (current: number, previous: number) => {
+  if (previous === 0) return { pct: 0, arrow: "→", color: "text-gray-500" };
+  const pct = ((current - previous) / previous) * 100;
+  return {
+    pct: Math.abs(pct).toFixed(1),
+    arrow: pct > 0 ? "↗" : pct < 0 ? "↘" : "→",
+    color: pct > 0 ? "text-green-600" : pct < 0 ? "text-red-600" : "text-gray-500",
+  };
+};
 
   const filteredPayments = payments.filter((payment) => {
       const mappedStatus = mapApiStatus(payment.status);
@@ -306,6 +358,7 @@ const getTelcoLogo = (provider = "") => {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Total Requests */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
@@ -313,14 +366,17 @@ const getTelcoLogo = (provider = "") => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalRequests}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 flex items-center">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                +12% from last month
-              </span>
+            <p className={cn("text-xs flex items-center",
+                delta(totalRequests, lastMonth.total).color)}>
+              <TrendingUp className="h-3 w-3 mr-1" />
+              {delta(totalRequests, lastMonth.total).pct}%
+              {delta(totalRequests, lastMonth.total).arrow}
+              from last month
             </p>
           </CardContent>
         </Card>
+
+        {/* Amount Collected */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Amount Collected</CardTitle>
@@ -328,14 +384,14 @@ const getTelcoLogo = (provider = "") => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 flex items-center">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                +8% from last month
-              </span>
+            <p className={cn("text-xs flex items-center", delta(totalAmount, lastMonth.amount).color)}>
+              <TrendingUp className="h-3 w-3 mr-1" />
+              {delta(totalAmount, lastMonth.amount).pct}% {delta(totalAmount, lastMonth.amount).arrow} from last month
             </p>
           </CardContent>
         </Card>
+
+        {/* Pending Requests */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
@@ -343,14 +399,14 @@ const getTelcoLogo = (provider = "") => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingRequests}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-yellow-600 flex items-center">
-                <Clock className="h-3 w-3 mr-1" />
-                Awaiting payment
-              </span>
+            <p className={cn("text-xs flex items-center", delta(pendingRequests, lastMonth.pending).color)}>
+              <Clock className="h-3 w-3 mr-1" />
+              {delta(pendingRequests, lastMonth.pending).pct}% {delta(pendingRequests, lastMonth.pending).arrow} from last month
             </p>
           </CardContent>
         </Card>
+
+        {/* Success Rate */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
@@ -358,11 +414,9 @@ const getTelcoLogo = (provider = "") => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{successRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 flex items-center">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                +2.5% from last month
-              </span>
+            <p className={cn("text-xs flex items-center", delta(successRate, lastMonth.completed / lastMonth.total * 100).color)}>
+              <TrendingUp className="h-3 w-3 mr-1" />
+              {delta(successRate, lastMonth.completed / lastMonth.total * 100).pct}% {delta(successRate, lastMonth.completed / lastMonth.total * 100).arrow} from last month
             </p>
           </CardContent>
         </Card>

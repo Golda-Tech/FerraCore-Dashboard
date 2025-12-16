@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader, User,ShieldCheck, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getUserInfo, createPayment, sendOtp, verifyOtp, getTransactionStatus } from "@/lib/payment"
 import { UserInfo } from "@/types/payment"
 import { send } from "process"
+import { getUser } from "@/lib/auth";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
 import { v4 as uuid } from "uuid";
 
@@ -39,6 +40,15 @@ export function RequestPaymentContent() {
   const [isOtpSending, setIsOtpSending] = useState(false)
   const [isOtpVerifying, setIsOtpVerifying] = useState(false)
   const [isOtpVerified, setIsOtpVerified] = useState(false)
+
+
+  const [user, setUser] = useState<LoginResponse | null>(null);
+    useEffect(() => {
+        const stored = getUser();
+        console.log("Stored user:", stored);
+        setUser(stored);
+      }, []);
+
 
 
   const [formData, setFormData] = useState(()=>{
@@ -97,6 +107,7 @@ return{
         provider: formData.network.toUpperCase(),      // e.g., "MTN"
         collectionRef: formData.reference || `INV-${Date.now()}`,
         mobileNumber: fullMobileNumber,
+        initiatedBy: user?.email,
         amount: Number(formData.amount),
         currency: "GHS",                               // or "EUR" if applicable
         partyIdType: "MSISDN",
@@ -152,7 +163,7 @@ return{
 
       console.error("Payment failed:", problem?.detail || err.message);
       setIsPending(true);
-      setErrorMessage(problem?.detail || "An unexpected error occurred");
+      setErrorMessage(userMsg|| "An unexpected error occurred");
       setShowError(true);
     } finally {
       setIsProcessing(false);
@@ -629,11 +640,12 @@ return{
 
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Error Message:</span>
-                  <span className="font-medium">{errorMessage}</span>
-                </div>
+              <div className="flex items-start gap-2 text-sm">
+                {/* label stays on one line */}
+                <span className="shrink-0 font-semibold text-red-700">Error Message:</span>
+
+                {/* message wraps naturally */}
+                <span className="break-words text-red-900">{errorMessage}</span>
               </div>
             </div>
 

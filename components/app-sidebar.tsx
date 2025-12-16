@@ -42,15 +42,20 @@ import { UserCog } from "lucide-react";
 /* ----------  NEW GROUPED NAV  ---------- */
 const navMain = [
   {
-    title: "Ferracore",
+    title: "RexHub",
     icon: IconFolder,
     isGroup: true,
     pages: [
       { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard },
       { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
+      {/*{
+          title: "User Management",
+          page: "user-management" as PageName,
+          icon: IconUsers,
+        },**/},
     ],
   },
-  {
+  {/*{
     title: "Rexpay",
     icon: IconFolder,
     isGroup: true,
@@ -58,12 +63,8 @@ const navMain = [
       { title: "Request Collection", page: "new-collection" as PageName, icon: IconCash },
       { title: "Collections Summary", page: "collections" as PageName, icon: IconMoneybag },
     ],
-  },
-  {
-    title: "User Management",
-    page: "user-management" as PageName,
-    icon: IconUsers,
-  },
+  },**/},
+
 ] as const;
 
 const navSecondary = [

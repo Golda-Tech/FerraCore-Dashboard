@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ferracore Collections Platform",
-  description: "Platform for managing collections in Ferracore",
+  title: "Rexhub",
+  description: "Powered by Ferracore Technologies",
 };
 
 export default function RootLayout({

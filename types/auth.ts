@@ -9,6 +9,7 @@ export interface LoginResponse {
   firstname: string;
   lastname: string;
   email: string;
+  organizationName: string;
   role: string;
   message: string;
   passwordResetRequired: boolean;
@@ -22,6 +23,14 @@ export interface RegisterRequest {
   organizationName: string;
   mobileNumber: string;
   planType: PlanType;
+
+}
+
+export interface WhitelistUpdateRequest {
+  phone1: string;
+  phone2: string;
+  phone3: string;
+  phone4: string;
 
 }
 
@@ -50,6 +59,10 @@ export interface ProfileResponse {
     callbackUrl: string;
     amount: number;
     currency: string;
+    whitelistedNumber1: string;
+    whitelistedNumber2: string;
+    whitelistedNumber3: string;
+    whitelistedNumber4: string;
   };
   apiCredentials: {
     subscriptionKey: string;

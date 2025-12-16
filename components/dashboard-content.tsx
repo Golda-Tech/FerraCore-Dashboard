@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { SectionCards } from "@/components/section-cards";
 import { StatusDistributionChart } from "@/components/status-distribution-chart";
@@ -8,59 +8,45 @@ import { DailyVolumeChart } from "@/components/daily-volume-chart";
 import { AmountTrendChart } from "@/components/amount-trend-chart";
 import { PeriodSelector } from "@/components/period-selector";
 import { useDashboardData } from "@/lib/hooks/useDashboardData";
+import { getUser } from "@/lib/auth";
+
 
 export function DashboardContent() {
-  const [period, setPeriod] = useState("30d");
+  const [period, setPeriod] = useState("7d");
   const [isMobile, setIsMobile] = useState(false);
 
-  // Calculate date range based on period
-  const getDateRange = (period: string) => {
-    const endDate = new Date();
-    const startDate = new Date();
+  const [user, setUser] = useState<LoginResponse | null>(null);
+  useEffect(() => {
+      const stored = getUser();
+      setUser(stored);
+    }, []);
 
-    switch (period) {
-      case "7d":
-        startDate.setDate(endDate.getDate() - 7);
-        break;
-      case "30d":
-        startDate.setDate(endDate.getDate() - 30);
-        break;
-      case "90d":
-        startDate.setDate(endDate.getDate() - 90);
-        break;
-      case "6m":
-        startDate.setMonth(endDate.getMonth() - 6);
-        break;
-      case "1y":
-        startDate.setFullYear(endDate.getFullYear() - 1);
-        break;
-      default:
-        startDate.setDate(endDate.getDate() - 30);
-    }
+    /* 2.  date / interval helpers */
+    const { startDate, endDate, interval } = useMemo(() => {
+      const end = new Date();
+      const start = new Date();
+      switch (period) {
+        case "7d": start.setDate(end.getDate() - 7); break;
+        case "30d": start.setDate(end.getDate() - 30); break;
+        case "90d": start.setDate(end.getDate() - 90); break;
+        case "6m": start.setMonth(end.getMonth() - 6); break;
+        case "1y": start.setFullYear(end.getFullYear() - 1); break;
+        default: start.setDate(end.getDate() - 30);
+      }
+      return {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        interval: (period === "7d" || period === "30d") ? "DAILY" : period === "90d" ? "WEEKLY" : "MONTHLY",
+      };
+    }, [period]);
 
-    return {
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-    };
-  };
-
-  const { startDate, endDate } = React.useMemo(
-    () => getDateRange(period),
-    [period]
-  );
-  const interval = React.useMemo(() => {
-    return period === "7d" || period === "30d"
-      ? "DAILY"
-      : period === "90d"
-      ? "WEEKLY"
-      : "MONTHLY";
-  }, [period]);
-
-  const { statusSummary, trends, loading } = useDashboardData(
-    startDate,
-    endDate,
-    interval
-  );
+    /* 3.  fetch charts – only when user exists */
+    const { statusSummary, trends, loading } = useDashboardData(
+      startDate,
+      endDate,
+      interval,
+      user?.email // pass email as dependency
+    );
 
   // useEffect(() => {
   //   const checkMobile = () => setIsMobile(window.innerWidth < 768);

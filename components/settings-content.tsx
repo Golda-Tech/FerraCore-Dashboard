@@ -13,7 +13,7 @@ import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { User, Building2, Shield, Key, Eye, EyeOff, Copy,Calendar,CreditCard,Smartphone, Mail, Bell,RefreshCw, Check, AlertTriangle, Info, Globe } from "lucide-react";
 
-import { getUserProfile, fetchNewKeys, updateProfile, updateOrganization, updateCallbackUrl } from "@/lib/auth";
+import { getUserProfile, fetchNewKeys, updateProfile, updateOrganization, updateCallbackUrl,updateWhitelistedNumbers } from "@/lib/auth";
 
 
 export function SettingsContent() {
@@ -23,6 +23,10 @@ export function SettingsContent() {
   const [isGeneratingKey, setIsGeneratingKey] = useState(false);
   const [copied, setCopied] = useState("");
   const [businessType, setBusinessType] = useState(""); // empty on first render
+  const [phone1, setPhone1] = useState("");
+  const [phone2, setPhone2] = useState("");
+  const [phone3, setPhone3] = useState("");
+  const [phone4, setPhone4] = useState("");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(true);
 
@@ -43,6 +47,14 @@ export function SettingsContent() {
        setBusinessType(user.organization.businessType.toLowerCase());
      }
    }, [user]); // re-run when user loads
+
+
+useEffect(() => {
+  setPhone1(user?.subscription.whitelistedNumber1 ?? "");
+  setPhone2(user?.subscription.whitelistedNumber2 ?? "");
+  setPhone3(user?.subscription.whitelistedNumber3 ?? "");
+  setPhone4(user?.subscription.whitelistedNumber4 ?? "");
+}, []);
 
 
   if (loading) return <p className="p-8">Loading profile…</p>;
@@ -129,6 +141,27 @@ export function SettingsContent() {
     }
   };
 
+/* ----------  SAVE WHITELISTED NUMBERS  ---------- */
+const saveWhitelistedNumbers = async () => {
+  setSaving(true);
+  try {
+
+      const updated = await updateWhitelistedNumbers({
+              phone1:  (document.getElementById("phone1") as HTMLInputElement).value.trim(),
+              phone2:  (document.getElementById("phone2") as HTMLInputElement).value.trim(),
+              phone3:  (document.getElementById("phone3") as HTMLInputElement).value.trim(),
+              phone4:  (document.getElementById("phone4") as HTMLInputElement).value.trim(),
+            } as WhitelistUpdateRequest);
+
+    setUser(updated);            // update local user state
+    setDirty(false);             // mark as saved
+  } catch (err: any) {
+    setDirty(true);              // allow retry
+    console.error("Save whitelisted numbers failed", err);
+  } finally {
+    setSaving(false);
+  }
+};
 
   /* ----------  RENDER  ---------- */
   return (
@@ -147,12 +180,12 @@ export function SettingsContent() {
       ) : null}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="profile" className="flex items-center gap-2"><User className="h-4 w-4" />Profile</TabsTrigger>
           {user.role === "USER" && (
             <TabsTrigger value="business" className="flex items-center gap-2"><Building2 className="h-4 w-4" />Business</TabsTrigger>
           )}
-         {/* <TabsTrigger value="security" className="flex items-center gap-2"><Shield className="h-4 w-4" />Security</TabsTrigger> **/}
+          <TabsTrigger value="security" className="flex items-center gap-2"><Shield className="h-4 w-4" />WhiteList MSISDN</TabsTrigger>
           <TabsTrigger value="api" className="flex items-center gap-2"><Key className="h-4 w-4" />API & Keys</TabsTrigger>
         </TabsList>
 
@@ -256,17 +289,107 @@ export function SettingsContent() {
         )}
 
         {/* Security Tab */}
-       {/* <TabsContent value="security" className="space-y-4">
-          <Card>
-            <CardHeader><CardTitle>Two-Factor Authentication</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5"><Label>Enable 2FA</Label><p className="text-sm text-muted-foreground">Use your phone to verify identity</p></div>
-                <Switch />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>*/}
+        <TabsContent value="security" className="space-y-4">
+           <Card>
+                <CardHeader>
+                  <CardTitle>Whitelist Phone Numbers</CardTitle>
+                  <CardDescription> Add up to 4 registered phone numbers that are allowed to initiate transactions.</CardDescription>
+             </CardHeader>
+                <CardContent className="space-y-4">
+                 <div className="grid grid-cols-2 gap-4">
+                   {/* Phone 1 */}
+                   <div className="space-y-2">
+                     <Label>Phone Number 1</Label>
+                     <Input
+                     id= "phone1"
+                       placeholder="233XXXXXXXXX"
+                       value={user?.subscription?.whitelistedNumber1 ?? phone1}
+                      onChange={(e) => {
+                                              const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
+                                              setPhone1(digits);
+                                              handleFieldChange();
+                                            }}
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            maxLength={12}
+                     />
+                   </div>
+
+                   {/* Phone 2 */}
+                   <div className="space-y-2">
+                     <Label>Phone Number 2</Label>
+                     <Input
+                          id= "phone2"
+                       placeholder="233XXXXXXXXX"
+                       value={user?.subscription?.whitelistedNumber2 ?? phone2}
+                       onChange={(e) => {
+                                               const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
+                                               setPhone2(digits);
+                                               handleFieldChange();
+                                             }}
+                                             inputMode="numeric"
+                                             pattern="[0-9]*"
+                                             maxLength={12}
+                     />
+                   </div>
+
+                   {/* Phone 3 */}
+                   <div className="space-y-2">
+                     <Label>Phone Number 3</Label>
+                     <Input
+                        id= "phone3"
+                       placeholder="233XXXXXXXXX"
+                       value={user?.subscription?.whitelistedNumber3 ?? phone3}
+                       onChange={(e) => {
+                                               const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
+                                               setPhone3(digits);
+                                               handleFieldChange();
+                                             }}
+                       inputMode="numeric"
+                       pattern="[0-9]*"
+                       maxLength={12}
+                     />
+                   </div>
+
+                   {/* Phone 4 */}
+                  <div className="space-y-2">
+                    <Label>Phone Number 4</Label>
+                    <Input
+                        id= "phone4"
+                      placeholder="233XXXXXXXXX"
+                      value={user?.subscription?.whitelistedNumber4 ?? phone4}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
+                        setPhone4(digits);
+                        handleFieldChange();
+                      }}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={12}
+                    />
+                  </div>
+                 </div>
+
+                  <Button onClick={saveWhitelistedNumbers} disabled={saving || !dirty} className="w-36">
+                    {saving ? (
+                      <span className="flex items-center justify-center space-x-1 w-full">
+                        <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
+                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
+                      </span>
+                    ) : dirty ? (
+                      "Save Changes"
+                    ) : (
+                       <span className="flex items-center space-x-1">
+                                                          <Check className="h-4 w-4 text-green-300" />
+                                                          <span className="text-green-300">Saved</span>
+                                                        </span>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+        </TabsContent>
 
         {/* API & Keys Tab */}
         <TabsContent value="api" className="space-y-4">

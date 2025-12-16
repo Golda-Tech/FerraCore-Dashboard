@@ -67,6 +67,8 @@ export async function updateCallbackUrl(callbackUrl: string) {
   return updated;
 }
 
+
+
 export async function register(
   data: RegisterRequest
 ): Promise<RegisterResponse> {
@@ -125,6 +127,16 @@ export async function resetPassword(
     data
   );
   return response.data;
+}
+
+export async function updateWhitelistedNumbers(
+  dto: WhitelistUpdateRequest
+): Promise<ProfileResponse> {
+  const { data } = await api.put<ProfileResponse>(
+    "/api/v1/auth/profile/whitelistIds",
+    dto
+  );
+  return data;
 }
 
 export async function forgotPassword(

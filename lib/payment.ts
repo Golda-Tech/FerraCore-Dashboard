@@ -29,10 +29,13 @@ export async function createPayment(
 
 // Fetch all payments, optional pagination
 export async function getPayments(
+  initiatedBy?: string,
   page: number = 0,
   size: number = 20
 ): Promise<Payment[]> {
-  const params = { page, size };
+  const params: any = { initiatedBy, page, size };
+  if (initiatedBy !== undefined) params.initiatedBy = initiatedBy;
+
   const response = await api.get<Payment[]>("/api/v1/payments", { params });
   return response.data;
 }
@@ -91,22 +94,27 @@ export async function verifyOtp(
   return response.data;
 }
 
-// Get payments status summary
-export async function getPaymentsStatusSummary(): Promise<StatusSummary> {
-  const response = await api.get<StatusSummary>(
-    "/api/v1/payments/status-summary"
-  );
-  return response.data;
+
+// Get ALL payments status summary OR filtered by initiatedBy
+export async function getPaymentsStatusSummary(initiatedBy?: string): Promise<StatusSummary> {
+  const url = initiatedBy
+    ? `/api/v1/payments/status-summary?initiatedBy=${encodeURIComponent(initiatedBy)}`
+    : "/api/v1/payments/status-summary";
+
+  const { data } = await api.get<StatusSummary>(url);
+  console.log("Payments Status Summary:", data); // Debug log
+  return data;
 }
 
 // Fetch payments trends
 export async function getPaymentsTrends(
+    initiatedBy?: string,
   startDate: string,
   endDate: string,
   interval: "DAILY" | "WEEKLY" | "MONTHLY" = "DAILY"
 ): Promise<PaymentTrend[]> {
   const response = await api.get<PaymentTrend[]>("/api/v1/payments/trends", {
-    params: { startDate, endDate, interval },
+    params: { initiatedBy, startDate, endDate, interval },
   });
   return response.data;
 }
