@@ -27,7 +27,7 @@ export function useDashboardData(
       try {
         const [summaryRes, trendsRes] = await Promise.all([
           getPaymentsStatusSummary(email),
-          getPaymentsTrends(email,startDate, endDate, interval),
+          getPaymentsTrends(startDate, endDate, interval,email),
         ]);
         setStatusSummary(summaryRes);
         setTrends(trendsRes);

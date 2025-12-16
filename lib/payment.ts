@@ -108,10 +108,10 @@ export async function getPaymentsStatusSummary(initiatedBy?: string): Promise<St
 
 // Fetch payments trends
 export async function getPaymentsTrends(
-    initiatedBy?: string,
-  startDate: string,
+    startDate: string,
   endDate: string,
-  interval: "DAILY" | "WEEKLY" | "MONTHLY" = "DAILY"
+  interval: "DAILY" | "WEEKLY" | "MONTHLY" = "DAILY",
+    initiatedBy?: string
 ): Promise<PaymentTrend[]> {
   const response = await api.get<PaymentTrend[]>("/api/v1/payments/trends", {
     params: { initiatedBy, startDate, endDate, interval },
