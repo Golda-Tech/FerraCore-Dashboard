@@ -262,7 +262,7 @@ useEffect(() => {
       const pending   = res.ONGOING ?? 0;
       const failed    = res.FAILED  ?? 0;
       const total = Object.values(res).reduce((a, b) => a + (b ?? 0), 0);
-      const amount = res.completedAmount ?? 0;
+      const amount = 0 ?? 0;
       setLastMonth({ total, completed, pending, amount });
     })
     .catch(() => setLastMonth({ total: 0, completed: 0, pending: 0, amount: 0 }));
