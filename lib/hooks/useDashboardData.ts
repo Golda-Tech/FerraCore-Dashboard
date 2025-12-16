@@ -6,12 +6,13 @@ import { StatusSummary, CollectionTrend } from "@/types/collections";
 import { getPaymentsStatusSummary, getPaymentsTrends } from "@/lib/payment";
 import { PaymentTrend, StatusSummary as PaymentStatusSummary } from "@/types/payment";
 import { getUser } from "@/lib/auth";
+import { Interval} from "@/types/payment"
 
 
 export function useDashboardData(
   startDate: string,
   endDate: string,
-  interval: "DAILY" | "WEEKLY" | "MONTHLY",
+  interval: Interval,
   email?: string
 ) {
   const [statusSummary, setStatusSummary] = useState<PaymentStatusSummary | null>(null);

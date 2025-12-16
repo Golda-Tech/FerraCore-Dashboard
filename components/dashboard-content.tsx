@@ -10,6 +10,7 @@ import { PeriodSelector } from "@/components/period-selector";
 import { useDashboardData } from "@/lib/hooks/useDashboardData";
 import { getUser } from "@/lib/auth";
 import { LoginResponse } from "@/types/auth";
+import { Interval } from "@/types/payment";
 
 
 export function DashboardContent() {
@@ -23,23 +24,29 @@ export function DashboardContent() {
     }, []);
 
     /* 2.  date / interval helpers */
-    const { startDate, endDate, interval } = useMemo(() => {
-      const end = new Date();
-      const start = new Date();
-      switch (period) {
-        case "7d": start.setDate(end.getDate() - 7); break;
-        case "30d": start.setDate(end.getDate() - 30); break;
-        case "90d": start.setDate(end.getDate() - 90); break;
-        case "6m": start.setMonth(end.getMonth() - 6); break;
-        case "1y": start.setFullYear(end.getFullYear() - 1); break;
-        default: start.setDate(end.getDate() - 30);
-      }
-      return {
-        startDate: start.toISOString(),
-        endDate: end.toISOString(),
-        interval: (period === "7d" || period === "30d") ? "DAILY" : period === "90d" ? "WEEKLY" : "MONTHLY",
-      };
-    }, [period]);
+  const { startDate, endDate, interval } = useMemo<{
+  startDate: string;
+  endDate: string;
+  interval: Interval;
+}>(() => {
+  const end = new Date();
+  const start = new Date();
+  switch (period) {
+    case "7d": start.setDate(end.getDate() - 7); break;
+    case "30d": start.setDate(end.getDate() - 30); break;
+    case "90d": start.setDate(end.getDate() - 90); break;
+    case "6m": start.setMonth(end.getMonth() - 6); break;
+    case "1y": start.setFullYear(end.getFullYear() - 1); break;
+    default: start.setDate(end.getDate() - 30);
+  }
+  return {
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+    interval: period === "7d" || period === "30d" ? "DAILY"
+              : period === "90d" ? "WEEKLY"
+              : "MONTHLY",
+  };
+}, [period]);
 
     /* 3.  fetch charts – only when user exists */
     const { statusSummary, trends, loading } = useDashboardData(
