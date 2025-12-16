@@ -6,9 +6,11 @@ import {
   RegisterRequest,
   RegisterResponse,
   ResetPasswordRequest,
+  WhitelistUpdateRequest
   ProfileResponse,
   ResetPasswordResponse,
 } from "@/types/auth";
+
 import { redirect } from "next/navigation";
 
 const TOKEN_KEY = "token";
