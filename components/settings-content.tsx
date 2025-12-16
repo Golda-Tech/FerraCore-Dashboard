@@ -304,7 +304,7 @@ const saveWhitelistedNumbers = async () => {
                      <Input
                      id= "phone1"
                        placeholder="233XXXXXXXXX"
-                       value={user?.subscription?.whitelistedNumber1 ?? phone1}
+                       value={dirty ? phone1 : (user?.subscription?.whitelistedNumber1 ?? phone1)}
                       onChange={(e) => {
                                               const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
                                               setPhone1(digits);
@@ -322,7 +322,7 @@ const saveWhitelistedNumbers = async () => {
                      <Input
                           id= "phone2"
                        placeholder="233XXXXXXXXX"
-                       value={user?.subscription?.whitelistedNumber2 ?? phone2}
+                       value={dirty ? phone2 : (user?.subscription?.whitelistedNumber2 ?? phone2)}
                        onChange={(e) => {
                                                const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
                                                setPhone2(digits);
@@ -340,7 +340,7 @@ const saveWhitelistedNumbers = async () => {
                      <Input
                         id= "phone3"
                        placeholder="233XXXXXXXXX"
-                       value={user?.subscription?.whitelistedNumber3 ?? phone3}
+                       value={dirty ? phone3 : (user?.subscription?.whitelistedNumber3 ?? phone3)}
                        onChange={(e) => {
                                                const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
                                                setPhone3(digits);
@@ -358,7 +358,7 @@ const saveWhitelistedNumbers = async () => {
                     <Input
                         id= "phone4"
                       placeholder="233XXXXXXXXX"
-                      value={user?.subscription?.whitelistedNumber4 ?? phone4}
+                      value={dirty ? phone4 : (user?.subscription?.whitelistedNumber4 ?? phone4)}
                       onChange={(e) => {
                         const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
                         setPhone4(digits);
