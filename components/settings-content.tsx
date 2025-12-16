@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { User, Building2, Shield, Key, Eye, EyeOff, Copy,Calendar,CreditCard,Smartphone, Mail, Bell,RefreshCw, Check, AlertTriangle, Info, Globe } from "lucide-react";
 
 import { getUserProfile, fetchNewKeys, updateProfile, updateOrganization, updateCallbackUrl,updateWhitelistedNumbers } from "@/lib/auth";
+import type { WhitelistUpdateRequest } from "@/types/auth";
 
 
 export function SettingsContent() {
