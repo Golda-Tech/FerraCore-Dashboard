@@ -42,7 +42,7 @@ import { UserCog } from "lucide-react";
 /* ----------  NEW GROUPED NAV  ---------- */
 const navMain = [
   {
-    title: "RexHub",
+    title: "Payment Requests",
     icon: IconFolder,
     isGroup: true,
     pages: [
