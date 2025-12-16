@@ -4,14 +4,14 @@ import React, { useState, useEffect, useMemo } from "react";
 import { getCollectionsStatusSummary as getStatusSummary, getCollectionsTrends } from "@/lib/collections";
 import { StatusSummary, CollectionTrend } from "@/types/collections";
 import { getPaymentsStatusSummary, getPaymentsTrends } from "@/lib/payment";
-import { PaymentTrend, Interval, StatusSummary as PaymentStatusSummary } from "@/types/payment";
+import { PaymentTrend, StatusSummary as PaymentStatusSummary } from "@/types/payment";
 import { getUser } from "@/lib/auth";
 
 
 export function useDashboardData(
   startDate: string,
   endDate: string,
-  interval: Interval,
+  interval: "DAILY" | "WEEKLY" | "MONTHLY",
   email?: string
 ) {
   const [statusSummary, setStatusSummary] = useState<PaymentStatusSummary | null>(null);

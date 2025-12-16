@@ -11,8 +11,6 @@ export type PaymentStatus =
   | "INITIATED";
 
 
-export type Interval = "DAILY" | "WEEKLY" | "MONTHLY";
-
 export interface CreatePaymentRequest {
   provider: string;
   collectionRef: string;
