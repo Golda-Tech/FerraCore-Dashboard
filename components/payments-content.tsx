@@ -258,8 +258,9 @@ useEffect(() => {
 
   getPaymentsStatusSummary(user.email)
     .then((res) => {
-      const completed = res.completed ?? 0;
-      const pending = res.pending ?? 0;
+      const completed = res.SUCCESS ?? 0;
+      const pending   = res.ONGOING ?? 0;
+      const failed    = res.FAILED  ?? 0;
       const total = Object.values(res).reduce((a, b) => a + (b ?? 0), 0);
       const amount = res.completedAmount ?? 0;
       setLastMonth({ total, completed, pending, amount });
