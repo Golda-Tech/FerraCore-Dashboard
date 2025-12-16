@@ -256,7 +256,7 @@ useEffect(() => {
   const start = new Date();
   start.setDate(start.getDate() - 30); // last 30 d
 
-  getPaymentsStatusSummary(user.email, start.toISOString(), end.toISOString())
+  getPaymentsStatusSummary(user.email)
     .then((res) => {
       const completed = res.completed ?? 0;
       const pending = res.pending ?? 0;
