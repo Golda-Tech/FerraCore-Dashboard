@@ -6,6 +6,7 @@ import { isAuthenticated, clearAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
   InputOTP,
   InputOTPGroup,
@@ -339,16 +340,25 @@ export function LoginForm() {
               <InputOTP
                 maxLength={6}
                 value={otp}
-                onChange={(value) => setOtp(value)}
+                onChange={setOtp}
                 disabled={loading}
+                className="gap-2"
+                containerClassName="group"
               >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} className="text-gray-950 dark:text-white" />
-                  <InputOTPSlot index={1} className="text-gray-950 dark:text-white" />
-                  <InputOTPSlot index={2} className="text-gray-950 dark:text-white" />
-                  <InputOTPSlot index={3} className="text-gray-950 dark:text-white" />
-                  <InputOTPSlot index={4} className="text-gray-950 dark:text-white" />
-                  <InputOTPSlot index={5} className="text-gray-950 dark:text-white" />
+                <InputOTPGroup className="flex gap-2">
+                  {[...Array(6)].map((_, i) => (
+                    <InputOTPSlot
+                      key={i}
+                      index={i}
+                      className={cn(
+                        "h-14 w-12 rounded-xl border-2 border-input bg-background text-xl font-semibold",
+                        "transition-all duration-200",
+                        "focus:border-primary focus:bg-accent focus:ring-2 focus:ring-primary/20",
+                        "dark:border-gray-700 dark:bg-gray-800 dark:text-white",
+                        "group-focus-within:border-primary group-hover:border-primary/50"
+                      )}
+                    />
+                  ))}
                 </InputOTPGroup>
               </InputOTP>
             </div>
@@ -495,7 +505,6 @@ export function LoginForm() {
             ) : (
               <>
                 <Button
-                  variant="outline"
                   onClick={() => setShowResultDialog(false)}
                   className="w-full w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors sm:w-auto"
                 >

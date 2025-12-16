@@ -500,7 +500,7 @@ const delta = (current: number, previous: number) => {
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">{payment.mtnFinancialTransactionId}</TableCell>
-                    <TableCell className="font-mono text-sm">{payment.transactionRef}</TableCell>
+                    <TableCell className="font-mono text-sm">{payment.externalRef}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />

@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader, User,ShieldCheck, XCircle } from "lucide-react"
+import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader, ClockIcon, User,ShieldCheck, RefreshCw, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,7 @@ import { getUserInfo, createPayment, sendOtp, verifyOtp, getTransactionStatus } 
 import { UserInfo } from "@/types/payment"
 import { send } from "process"
 import { LoginResponse } from "@/types/auth";
+import { cn } from "@/lib/utils"
 import { getUser } from "@/lib/auth";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
 import { v4 as uuid } from "uuid";
@@ -109,6 +110,7 @@ return{
         collectionRef: formData.reference || `INV-${Date.now()}`,
         mobileNumber: fullMobileNumber,
         initiatedBy: user?.email ?? "", // or throw / return early if missing
+        initiationPartner: user?.organizationName ?? "Partner", //
         amount: Number(formData.amount),
         currency: "GHS",                               // or "EUR" if applicable
         partyIdType: "MSISDN",
@@ -477,7 +479,7 @@ return{
                       <li>They dial the USSD code or use mobile app</li>
                       <li>Enter their mobile money PIN to authorize</li>
                       <li>You receive instant notification when paid</li>
-                      <li>Request expires after 24 hours if not paid</li>
+                      <li>Request expires after 5 minutes if not paid</li>
                     </ul>
                   </div>
                 </div>
@@ -548,83 +550,85 @@ return{
         </Card>
       </div>
 
-      {/* Success Dialog */}
-      <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
-        <DialogContent
-        className="max-w-md mx-4 sm:mx-auto"
-          onPointerDownOutside={(e) => e.preventDefault()} // block overlay click
-          onEscapeKeyDown={(e) => e.preventDefault()}     // optional: block Esc
-          >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center
-                                           ${isPending ? 'bg-amber-100' : 'bg-green-100'}`}>
-                <CheckCircle className={`h-4 w-4 ${isPending ? 'text-amber-600' : 'text-green-600'}`} />
-              </div>
-              Payment Request Sent
-            </DialogTitle>
-            <DialogDescription className="text-sm">Your payment request has been successfully sent to customer.</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg p-3 sm:p-4">
-              <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                <div className="flex justify-between">
-                  <span>Customer:</span>
-                  <span className="font-medium">{formData.customerName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Phone:</span>
-                  <span className="font-medium">
-                    {formData.countryCode} {formData.phoneNumber}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Amount:</span>
-                  <span className="font-medium">GHS {amount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Network:</span>
-                  <span className="font-medium uppercase">{formData.network}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Reference:</span>
-                  <span className="font-medium font-mono text-xs tracking-tight">{showReference}</span>
-                </div>
-                {refreshedStatus && (
-                 <div className="flex justify-between">
-                   <span>Current Status:</span>
-                   <span className="font-medium">{refreshedStatus}</span>
-                 </div>
+     {/* Success Dialog */}
+     <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
+       <DialogContent
+         className="max-w-md mx-4 sm:mx-auto"
+         onPointerDownOutside={(e) => e.preventDefault()}
+         onEscapeKeyDown={(e) => e.preventDefault()}
+       >
+         <DialogHeader>
+           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+             {/* dynamic icon + colour */}
+             <div
+               className={cn(
+                 "h-8 w-8 rounded-full flex items-center justify-center",
+                 refreshedStatus === "FAILED"   ? "bg-red-100" :
+                 refreshedStatus === "PENDING"  ? "bg-amber-100"
+                                              : "bg-green-100"
                )}
-              </div>
-            </div>
+             >
+               {refreshedStatus === "FAILED"   ? <XCircle   className="h-4 w-4 text-red-600" /> :
+                refreshedStatus === "PENDING"  ? <ClockIcon className="h-4 w-4 text-amber-600" />
+                                              : <CheckCircle className="h-4 w-4 text-green-600" />}
+             </div>
 
+             {refreshedStatus === "FAILED"   ? "Payment Failed" :
+              refreshedStatus === "PENDING"  ? "Payment Pending"
+                                            : "Payment Request Sent"}
+           </DialogTitle>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                variant="outline"
-                className="flex-1 bg-transparent order-2 sm:order-1"
-                onClick={async () => {
-                  await refreshTransactionStatus()
-                }}
-              >
-                {statusLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                Check Status
-              </Button>
-              <Button
-                className="flex-1 order-1 sm:order-2"
-                onClick={() => {
-                  setShowSuccess(false)
-                  router.push("/payments")
-                }}
-              >
-                View Payments
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+           <DialogDescription className="text-sm">
+             {refreshedStatus === "FAILED"   ? "The payment could not be completed." :
+              refreshedStatus === "PENDING"  ? "Awaiting final confirmation."
+                                            : "Your payment request has been successfully sent to customer."}
+           </DialogDescription>
+         </DialogHeader>
+
+         {/* dynamic background */}
+         <div
+           className={cn(
+             "border rounded-lg p-3 sm:p-4",
+             refreshedStatus === "FAILED"   ? "bg-red-50   border-red-200 dark:bg-red-900   dark:border-red-700" :
+             refreshedStatus === "PENDING"  ? "bg-amber-50 border-amber-200 dark:bg-amber-900 dark:border-amber-700"
+                                            : "bg-green-50 border-green-200 dark:bg-green-900 dark:border-green-700"
+           )}
+         >
+           <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+             <div className="flex justify-between"><span>Customer:</span><span className="font-medium">{formData.customerName}</span></div>
+             <div className="flex justify-between"><span>Phone:</span><span className="font-medium">{formData.countryCode} {formData.phoneNumber}</span></div>
+             <div className="flex justify-between"><span>Amount:</span><span className="font-medium">GHS {amount.toFixed(2)}</span></div>
+             <div className="flex justify-between"><span>Network:</span><span className="font-medium uppercase">{formData.network}</span></div>
+             <div className="flex justify-between items-center"><span>Reference:</span><span className="font-mono text-xs tracking-tight">{showReference}</span></div>
+
+             {refreshedStatus && (
+               <div className="flex justify-between">
+                 <span>Current Status:</span>
+                 <span className="font-medium">{refreshedStatus}</span>
+               </div>
+             )}
+           </div>
+         </div>
+
+         {/* buttons unchanged */}
+         <div className="flex flex-col sm:flex-row gap-3">
+           <Button
+             variant="outline"
+             className="flex-1 bg-transparent order-2 sm:order-1"
+             onClick={refreshTransactionStatus}
+             disabled={statusLoading}
+           >
+             {statusLoading
+               ? <Loader className="mr-2 h-4 w-4 animate-spin" />
+               : <RefreshCw className="mr-2 h-4 w-4" />}
+             Check Status
+           </Button>
+           <Button className="flex-1 order-1 sm:order-2" onClick={() => { setShowSuccess(false); router.push("/payments"); }}>
+             View Payments
+           </Button>
+         </div>
+       </DialogContent>
+     </Dialog>
 
       {/* // Error dialog    */}
       <Dialog open={showError} onOpenChange={setShowError}>
