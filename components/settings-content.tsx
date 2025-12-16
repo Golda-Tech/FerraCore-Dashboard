@@ -478,7 +478,7 @@ const saveWhitelistedNumbers = async () => {
               <div className="flex space-x-2">
                 <Button variant="outline" onClick={generateNewKey} disabled={isGeneratingKey}>{isGeneratingKey ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Generating…</> : "Regenerate Keys"}</Button>
                 <a
-                  href="https://documenter.getpostman.com/view/3132318/2sB3dLUs4R"
+                  href="https://documenter.getpostman.com/view/26444770/2sB3dTtTga#346d58af-aa7e-4c33-b878-b7d0546ae5d5"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center rounded-lg bg-[#ff6c37] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e55a2b] transition-colors"

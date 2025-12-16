@@ -52,7 +52,7 @@ export function NavMain({
   currentPath: string;
 }) {
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({
-    "Payment Requests": true,
+    "Rexhub Payments": true,
     Rexpay: true,
   });
 
