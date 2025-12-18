@@ -22,6 +22,13 @@ import {
 } from "@tabler/icons-react";
 import { UserPlus } from "lucide-react";
 
+import type { LucideProps } from "lucide-react";
+import type { ForwardRefExoticComponent, RefAttributes } from "react";
+
+export type Icon = ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
+>;
+
 import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
