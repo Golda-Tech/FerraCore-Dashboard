@@ -48,6 +48,7 @@ interface RegisterRequest {
   organizationName: string;
   mobileNumber: string;
   planType: PlanType;
+  userType: UserType;
 }
 
 export function RegisterForm() {
