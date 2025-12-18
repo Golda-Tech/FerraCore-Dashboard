@@ -173,7 +173,7 @@ export function PaymentsContent() {
 
   const downloadPDF = () => {
     const doc = new jsPDF({ orientation: "landscape" });
-    doc.text(user?.organizationName, 14, 16);
+    doc.text(user?.organizationName || "PAYMENTS REPORT", 14, 16);
 
     const body = filteredPayments.map((p) => [
       p.mobileNumber,
