@@ -144,11 +144,16 @@ console.error(userMsg);
   /* ---------- loading ---------- */
   if (loading)
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <p className="text-sm text-muted-foreground">Loading partners…</p>
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8 pt-6">
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative">
+            {/* spinning ring */}
+            <div className="w-10 h-10 rounded-full border-4 border-muted border-t-primary animate-spin" />
+          </div>
+          <p className="text-sm text-muted-foreground">Loading Users…</p>
+        </div>
       </div>
     )
-
   /* ---------- filters ---------- */
   const filteredUsers = users.filter((u) => {
     const matchesSearch = `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(searchTerm.toLowerCase())
@@ -181,8 +186,10 @@ console.error(userMsg);
       {/* header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Partner Management</h2>
-          <p className="text-muted-foreground">Manage partners and their roles</p>
+          <h2 className="text-3xl font-bold tracking-tight">Users Management</h2>
+          <p className="text-muted-foreground">
+            Manage users and their roles within {orgName || "your organization"}
+          </p>
         </div>
       </div>
 
@@ -203,12 +210,12 @@ console.error(userMsg);
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm"><IconDownload className="mr-2 h-4 w-4" />Export</Button>
-          <Button size="sm"><IconPlus className="mr-2 h-4 w-4" />Add Partner</Button>
+         {/* <Button size="sm"><IconPlus className="mr-2 h-4 w-4" />Add Partner</Button> **/}
         </div>
       </div>
 
       {/* table */}
-      <Card><CardHeader><CardTitle>Users ({filteredUsers.length})</CardTitle><CardDescription>Manage user accounts and permissions</CardDescription></CardHeader><CardContent>
+      <Card><CardHeader><CardTitle>Users</CardTitle><CardDescription>Manage user accounts and permissions</CardDescription></CardHeader><CardContent>
         <Table><TableHeader><TableRow><TableHead>Partner</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead>Transactions</TableHead><TableHead>Volume (GHS)</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
             {filteredUsers.map((u) => (

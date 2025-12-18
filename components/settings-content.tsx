@@ -12,9 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { User, Building2, Shield, Key, Eye, EyeOff, Copy,Calendar,CreditCard,Smartphone, Mail, Bell,RefreshCw, Check, AlertTriangle, Info, Globe } from "lucide-react";
-
+import api from "@/lib/api"
 import { getUserProfile, fetchNewKeys, updateProfile, updateOrganization, updateCallbackUrl,updateWhitelistedNumbers } from "@/lib/auth";
 import type { WhitelistUpdateRequest } from "@/types/auth";
+import { useToast } from "@/components/ui/use-toast"
+
+
 
 
 export function SettingsContent() {
@@ -32,7 +35,9 @@ export function SettingsContent() {
   const [role, setRole] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [requesting, setRequesting] = useState(false);
   const [dirty, setDirty] = useState(true);
+   const { toast } = useToast();
 
   /* ---- live data ---- */
   const [user, setUser] = useState<any>(null);
@@ -53,9 +58,9 @@ export function SettingsContent() {
    }, [user]); // re-run when user loads
 
    useEffect(() => {
-     if (user?.role) {
-         console.log("User role:", user.role);
-       setUserType(user.role);
+     if (user?.userRoles) {
+         console.log("User role:", user.userRoles);
+       setUserType(user.userRoles);
      }
    }, [user]); // re-run when user loads
 
@@ -70,7 +75,18 @@ useEffect(() => {
 }, [user]);
 
 
-  if (loading) return <p className="p-8">Loading profile…</p>;
+  if (loading)
+      return (
+        <div className="flex-1 flex items-center justify-center p-4 md:p-8 pt-6">
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative">
+              {/* spinning ring */}
+              <div className="w-10 h-10 rounded-full border-4 border-muted border-t-primary animate-spin" />
+            </div>
+            <p className="text-sm text-muted-foreground">Loading Profile…</p>
+          </div>
+        </div>
+      )
   if (error) return error && <p className="p-8 text-red-600">{String(error)}</p>;
   if (!user) return null;
 
@@ -231,9 +247,9 @@ const saveWhitelistedNumbers = async () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="profile" className="flex items-center gap-2"><User className="h-4 w-4" />Profile</TabsTrigger>
-          {user.role === "USER" && (
+
             <TabsTrigger value="business" className="flex items-center gap-2"><Building2 className="h-4 w-4" />Business</TabsTrigger>
-          )}
+
           <TabsTrigger value="security" className="flex items-center gap-2"><Shield className="h-4 w-4" />WhiteList MSISDN</TabsTrigger>
           <TabsTrigger value="api" className="flex items-center gap-2"><Key className="h-4 w-4" />API & Keys</TabsTrigger>
         </TabsList>
@@ -259,58 +275,105 @@ const saveWhitelistedNumbers = async () => {
                <Label>Email</Label>
                <Input type="email" id="email" defaultValue={user.email} onChange={handleFieldChange} />
              </div>
-             <div className="space-y-2">
-               <Label>Phone</Label>
-               <Input id="phone" defaultValue={user.phone} onChange={handleFieldChange} />
+             <div className="grid grid-cols-2 gap-4">
+               {/* Phone */}
+               <div className="space-y-2">
+                 <Label>Phone</Label>
+                 <Input id="phone" defaultValue={user.phone} onChange={handleFieldChange} />
+               </div>
+
+               {/* User Type + Request button */}
+               <div className="space-y-2">
+                 <Label>User Type</Label>
+                 <div className="flex items-center gap-2">
+                   <Select
+                     value={userType}
+                     onValueChange={(val) => {
+                       setUserType(val);
+                       handleFieldChange();
+                     }}
+                     disabled={loading}
+                   >
+                     <SelectTrigger className="flex-1">
+                       <SelectValue placeholder="Select Type" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                       <SelectItem value="GA_ADMIN">GA Admin</SelectItem>
+                       <SelectItem value="BUSINESS_ADMIN">Business Admin</SelectItem>
+                       <SelectItem value="BUSINESS_FINANCE">Business Finance</SelectItem>
+                       <SelectItem value="BUSINESS_OPERATOR">Business Operator</SelectItem>
+                     </SelectContent>
+                   </Select>
+
+                   <Button
+                     size="sm"
+                     disabled={requesting}
+                     onClick={async () => {
+
+                       setRequesting(true)
+                       try {
+                        await api.post(`/api/v1/auth/roles/request-update?requestedRole=${encodeURIComponent(userType)}`, {});
+                         setSaveError("");
+                         toast({ title: "Request sent", description: "An administrator will review it." });
+                       } catch (err: any) {
+                         const msg = err.response?.data?.detail || err.message || "Request failed";
+                         setSaveError(msg);
+                       } finally {
+                           setRequesting(false)
+
+                       }
+                     }}
+                   >
+                     {requesting ? (
+                                                      <span className="flex items-center justify-center space-x-1 w-full">
+                                                        <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                                                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
+                                                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
+                                                      </span>
+                                                    ) : dirty ? (
+                                                      "Request"
+                                                    ) : (
+                                                      <span className="flex items-center space-x-1">
+                                                        <Check className="h-4 w-4 text-green-300" />
+                                                        <span className="text-green-300">Pending Approval</span>
+                                                      </span>
+                                                    )}
+                   </Button>
+                 </div>
+               </div>
              </div>
-
-             {/* User Type (read-only) */}
-             <div className="space-y-2">
-               <Label>User Type</Label>
-               <Select value={role} onValueChange={(v) => setRole(v)}><SelectTrigger className="w-[150px]"><SelectValue placeholder="Select Type" /></SelectTrigger><SelectContent><SelectItem value="SUPER_ADMIN">Super Admin</SelectItem><SelectItem value="GA_ADMIN">GA Admin</SelectItem><SelectItem value="BUSINESS_ADMIN">Business Admin</SelectItem><SelectItem value="BUSINESS_FINANCE">Business Finance</SelectItem><SelectItem value="BUSINESS_OPERATOR">Business Operator</SelectItem></SelectContent></Select>
-
-               <Select
-                 value={role}
-                 onValueChange={(v) => setRole(v)}
-                    disabled={!user?.role}
-                  >
-                 <SelectTrigger>
-                   <SelectValue placeholder="Select type" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="admin">Admin</SelectItem>
-                   <SelectItem value="user">Partner</SelectItem>
-                 </SelectContent>
-               </Select>
-             </div>
-
-            <div className="flex items-end gap-3">
-             <Button onClick={saveProfile} disabled={saving} className="w-36">
-               {saving ? (
-                 <span className="flex items-center justify-center space-x-1 w-full">
-                   <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
-                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
-                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
-                 </span>
-               ) : dirty ? (
-                 "Save Changes"
-               ) : (
-                 <span className="flex items-center space-x-1">
-                   <Check className="h-4 w-4 text-green-300" />
-                   <span className="text-green-300">Saved</span>
-                 </span>
-               )}
-             </Button>
-                {saveError && (
-                  <p className="text-sm text-red-600 leading-5">{saveError}</p>
-                )}
-           </div>
+             <div className="flex items-end gap-3">
+                             <Button
+                               onClick={saveProfile}
+                               disabled={saving}
+                               className="w-36"
+                             >
+                               {saving ? (
+                                 <span className="flex items-center justify-center space-x-1 w-full">
+                                   <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
+                                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
+                                 </span>
+                               ) : dirty ? (
+                                 "Save Changes"
+                               ) : (
+                                 <span className="flex items-center space-x-1">
+                                   <Check className="h-4 w-4 text-green-300" />
+                                   <span className="text-green-300">Saved</span>
+                                 </span>
+                               )}
+                             </Button>
+                             {saveError && (
+                               <p className="text-sm text-red-600 leading-5">{saveError}</p>
+                             )}
+                           </div>
            </CardContent>
          </Card>
        </TabsContent>
 
         {/* Business Tab (admin only) */}
-        {user.role === "USER" && (
+
           <TabsContent value="business" className="space-y-4">
             <Card>
               <CardHeader><CardTitle>Organization Details</CardTitle></CardHeader>
@@ -323,12 +386,12 @@ const saveWhitelistedNumbers = async () => {
                       <Select
                         value={businessType}
                         onValueChange={(val) => {
-                            setBusinessType(val);
-                            handleFieldChange(); // ← flips label
-                          }}
+                          setBusinessType(val);
+                          handleFieldChange();
+                        }}
                         disabled={!user?.organization?.businessType}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -376,7 +439,7 @@ const saveWhitelistedNumbers = async () => {
               </CardContent>
             </Card>
           </TabsContent>
-        )}
+
 
         {/* Security Tab */}
         <TabsContent value="security" className="space-y-4">

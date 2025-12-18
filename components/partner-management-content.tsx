@@ -144,11 +144,17 @@ export function UserManagementContent() {
   }, [])
 
   if (loading)
-    return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <p className="text-sm text-muted-foreground">Loading partners…</p>
-      </div>
-    )
+      return (
+        <div className="flex-1 flex items-center justify-center p-4 md:p-8 pt-6">
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative">
+              {/* spinning ring */}
+              <div className="w-10 h-10 rounded-full border-4 border-muted border-t-primary animate-spin" />
+            </div>
+            <p className="text-sm text-muted-foreground">Loading Partners…</p>
+          </div>
+        </div>
+      )
 
   /* ---------- filters ---------- */
   const filteredUsers = users.filter((u) => {
@@ -213,13 +219,18 @@ export function UserManagementContent() {
       </div>
 
       {/* table */}
-      <Card><CardHeader><CardTitle>Partners ({filteredUsers.length})</CardTitle><CardDescription>Manage partner accounts and permissions</CardDescription></CardHeader><CardContent>
+      <Card><CardHeader><CardTitle>Partners</CardTitle><CardDescription>Manage partner accounts and permissions</CardDescription></CardHeader><CardContent>
         <Table><TableHeader><TableRow><TableHead>Partner</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead>Plan</TableHead><TableHead>Transactions</TableHead><TableHead>Volume (GHS)</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
             {filteredUsers.map((u) => (
               <TableRow key={u.id}>
                 <TableCell><div className="font-medium">{u.organizationName}</div><div className="text-sm text-muted-foreground">{u.email}</div></TableCell>
-                <TableCell><Badge variant={getStatusBadgeVariant(u.role)} className="flex items-center gap-1 w-fit">{getRoleIcon(u.role)}{u.role.replace("_", " ")}</Badge></TableCell>
+                <TableCell>
+                  <Badge variant={getStatusBadgeVariant(u.role)} className="flex items-center gap-1 w-fit">
+                    {getRoleIcon(u.role)}
+                    {(u.role || "").replace("_", " ")}
+                  </Badge>
+                </TableCell>
                 <TableCell><Badge variant={getStatusBadgeVariant(u.status)}>{u.status}</Badge></TableCell>
                 <TableCell>{u.plan}</TableCell>
                 <TableCell>{u.transactionCount.toLocaleString()}</TableCell>

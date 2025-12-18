@@ -41,7 +41,7 @@ export interface ProfileResponse {
   lastName: string;
   email: string;
   phone: string;
-  role: "admin" | "user";
+  userRoles:string;
   organization: {
     name: string;
     businessType: string;

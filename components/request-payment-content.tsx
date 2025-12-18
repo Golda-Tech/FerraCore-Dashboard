@@ -149,6 +149,7 @@ return{
                             // 1.  Prefer RFC 7807 fields
                             const userMsg =
                               problem?.detail ||                       // "Invalid temporary password."
+                              problem?.errors?.amount ||                       // "Invalid temporary password."
                               problem?.title ||                        // "Internal Server Error"
                               problem?.message ||                      // fallback
                               err.response?.statusText ||              // "Internal Server Error"
@@ -225,7 +226,7 @@ return{
     setIsOtpSending(true);
     try {
       await sendOtp(fullNumber, "SMS", "PAYMENT");
-      setShowOtpDialog(true);
+      setShowOtpDialog(false); // remember to flip this to true when SMS services are restored!
     } catch (err) {
       // ✅ only OTP failure here
       setFetchError("Could not send OTP. Please try again.");
