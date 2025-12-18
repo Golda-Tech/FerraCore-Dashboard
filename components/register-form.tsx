@@ -68,6 +68,7 @@ export function RegisterForm() {
   const [organizationName, setOrganizationName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [planType, setPlanType] = useState<PlanType | "">("");
+  const [userType, setUserType] = useState<UserType | "">("");
   const [loading, setLoading] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [registerResult, setRegisterResult] = useState<{
