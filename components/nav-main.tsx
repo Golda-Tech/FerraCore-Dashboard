@@ -11,6 +11,13 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import type { LucideProps } from "lucide-react";
+import type { ForwardRefExoticComponent, RefAttributes } from "react";
+
+export type Icon = ForwardRefExoticComponent<
+  Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
+>;
+
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
