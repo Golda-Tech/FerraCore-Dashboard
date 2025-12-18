@@ -118,7 +118,7 @@ export function LoginForm() {
             console.error("OTP send timed out");
           }
           // 2.  Axios error with server payload
-          const msg = err.response?.data?.message || err.response?.statusText;
+          const msg = err.response?.data?.message || err.response?.data?.detail || err.response?.data?.title || err.response?.statusText;
           // 3.  Fallback
           const userMsg = msg || err.message || "Failed to send OTP. Please try again.";
 

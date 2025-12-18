@@ -24,10 +24,13 @@ export function SettingsContent() {
   const [isGeneratingKey, setIsGeneratingKey] = useState(false);
   const [copied, setCopied] = useState("");
   const [businessType, setBusinessType] = useState(""); // empty on first render
+  const [userType, setUserType] = useState(""); // empty on first render
   const [phone1, setPhone1] = useState("");
   const [phone2, setPhone2] = useState("");
   const [phone3, setPhone3] = useState("");
   const [phone4, setPhone4] = useState("");
+  const [role, setRole] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(true);
 
@@ -37,7 +40,7 @@ export function SettingsContent() {
   const [error, setError] = useState("");
 
  useEffect(() => {
-   getUserProfile()
+       getUserProfile()
      .then(setUser)
      .catch(setError)
      .finally(() => setLoading(false));
@@ -49,13 +52,22 @@ export function SettingsContent() {
      }
    }, [user]); // re-run when user loads
 
+   useEffect(() => {
+     if (user?.role) {
+         console.log("User role:", user.role);
+       setUserType(user.role);
+     }
+   }, [user]); // re-run when user loads
+
+
 
 useEffect(() => {
-  setPhone1(user?.subscription.whitelistedNumber1 ?? "");
-  setPhone2(user?.subscription.whitelistedNumber2 ?? "");
-  setPhone3(user?.subscription.whitelistedNumber3 ?? "");
-  setPhone4(user?.subscription.whitelistedNumber4 ?? "");
-}, []);
+  if (!user) return;
+  setPhone1(user.subscription?.whitelistedNumber1 ?? "");
+  setPhone2(user.subscription?.whitelistedNumber2 ?? "");
+  setPhone3(user.subscription?.whitelistedNumber3 ?? "");
+  setPhone4(user.subscription?.whitelistedNumber4 ?? "");
+}, [user]);
 
 
   if (loading) return <p className="p-8">Loading profile…</p>;
@@ -89,6 +101,7 @@ useEffect(() => {
   /* ----------  PROFILE  ---------- */
   const saveProfile = async () => {
       setSaving(true);
+        setSaveError(""); // clear previous error
       try{
     const updated = await updateProfile({
       firstName: (document.getElementById("firstName") as HTMLInputElement).value,
@@ -98,6 +111,14 @@ useEffect(() => {
     });
     setUser(updated);
     } catch (err: any) {
+         const problem = err.response?.data;
+               const userMsg = problem?.detail ||                       // "Invalid temporary password."
+                               problem?.title ||                        // "Internal Server Error"
+                               problem?.message ||                      // fallback
+                               err.response?.statusText ||              // "Internal Server Error"
+                               err.message ||                           // final fallback
+                               "Save profile failed.";
+            setSaveError(userMsg);
       console.error("Save profile failed", err);
     } finally {
       setSaving(false);
@@ -107,6 +128,7 @@ useEffect(() => {
   /* ----------  BUSINESS  ---------- */
   const saveBusiness = async () => {
       setSaving(true);
+      setSaveError(""); // clear previous error
       try{
     const updated = await updateOrganization({
       businessType: businessType,
@@ -118,6 +140,14 @@ useEffect(() => {
     setDirty(false); // success → green "Saved"
     setUser(updated);
     } catch (err: any) {
+         const problem = err.response?.data;
+               const userMsg = problem?.detail ||                       // "Invalid temporary password."
+                               problem?.title ||                        // "Internal Server Error"
+                               problem?.message ||                      // fallback
+                               err.response?.statusText ||              // "Internal Server Error"
+                               err.message ||                           // final fallback
+                               "Save organization details failed.";
+        setSaveError(userMsg);
         setDirty(true); // error → back to "Save Changes"
       console.error("Save organization details failed", err);
     } finally {
@@ -128,6 +158,7 @@ useEffect(() => {
   /* ----------  CALLBACK  ---------- */
   const saveCallback = async () => {
     setSaving(true);
+    setSaveError(""); // clear previous error
     try {
       const updated = await updateCallbackUrl(
         (document.getElementById("callbackUrl") as HTMLInputElement).value
@@ -135,6 +166,14 @@ useEffect(() => {
       setUser(updated);
       setDirty(false);
     } catch (err: any) {
+         const problem = err.response?.data;
+               const userMsg = problem?.detail ||                       // "Invalid temporary password."
+                               problem?.title ||                        // "Internal Server Error"
+                               problem?.message ||                      // fallback
+                               err.response?.statusText ||              // "Internal Server Error"
+                               err.message ||                           // final fallback
+                               "Save callback URL failed.";
+            setSaveError(userMsg);
       setDirty(true); // error → back to "Save Changes"
       console.error("Save callback URL failed", err);
     } finally {
@@ -145,6 +184,7 @@ useEffect(() => {
 /* ----------  SAVE WHITELISTED NUMBERS  ---------- */
 const saveWhitelistedNumbers = async () => {
   setSaving(true);
+  setSaveError(""); // clear previous error
   try {
 
       const updated = await updateWhitelistedNumbers({
@@ -157,7 +197,15 @@ const saveWhitelistedNumbers = async () => {
     setUser(updated);            // update local user state
     setDirty(false);             // mark as saved
   } catch (err: any) {
-    setDirty(true);              // allow retry
+       const problem = err.response?.data;
+       const userMsg = problem?.detail ||                       // "Invalid temporary password."
+                       problem?.title ||                        // "Internal Server Error"
+                       problem?.message ||                      // fallback
+                       err.response?.statusText ||              // "Internal Server Error"
+                       err.message ||                           // final fallback
+                       "Save whitelisted numbers failed.";
+    setSaveError(userMsg);
+    setDirty(true); // allow retry
     console.error("Save whitelisted numbers failed", err);
   } finally {
     setSaving(false);
@@ -191,39 +239,75 @@ const saveWhitelistedNumbers = async () => {
         </TabsList>
 
         {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-4">
-          <Card>
-            <CardHeader><CardTitle>Personal Information</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>First Name</Label><Input id = "firstName" defaultValue={user.firstName} onChange={handleFieldChange}/></div>
-                <div className="space-y-2"><Label>Last Name</Label><Input id = "lastName" defaultValue={user.lastName} onChange={handleFieldChange} /></div>
-              </div>
-              <div className="space-y-2"><Label>Email</Label><Input type="email" id = "email" defaultValue={user.email} onChange={handleFieldChange}/></div>
-              <div className="space-y-2"><Label>Phone</Label><Input id = "phone" defaultValue={user.phone}  onChange={handleFieldChange} /></div>
-             <Button
-                               onClick={saveProfile}
-                               disabled={saving}
-                               className="w-36"
-                             >
-                               {saving ? (
-                                 <span className="flex items-center justify-center space-x-1 w-full">
-                                   <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
-                                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
-                                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
-                                 </span>
-                               ) : dirty ? (
-                                 "Save Changes"
-                               ) : (
-                                 <span className="flex items-center space-x-1">
-                                   <Check className="h-4 w-4 text-green-300" />
-                                   <span className="text-green-300">Saved</span>
-                                 </span>
-                               )}
-                             </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+       <TabsContent value="profile" className="space-y-4">
+         <Card>
+           <CardHeader>
+             <CardTitle>Personal Information</CardTitle>
+           </CardHeader>
+           <CardContent className="space-y-4">
+             <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <Label>First Name</Label>
+                 <Input id="firstName" defaultValue={user.firstName} onChange={handleFieldChange} />
+               </div>
+               <div className="space-y-2">
+                 <Label>Last Name</Label>
+                 <Input id="lastName" defaultValue={user.lastName} onChange={handleFieldChange} />
+               </div>
+             </div>
+             <div className="space-y-2">
+               <Label>Email</Label>
+               <Input type="email" id="email" defaultValue={user.email} onChange={handleFieldChange} />
+             </div>
+             <div className="space-y-2">
+               <Label>Phone</Label>
+               <Input id="phone" defaultValue={user.phone} onChange={handleFieldChange} />
+             </div>
+
+             {/* User Type (read-only) */}
+             <div className="space-y-2">
+               <Label>User Type</Label>
+               <Select value={role} onValueChange={(v) => setRole(v)}><SelectTrigger className="w-[150px]"><SelectValue placeholder="Select Type" /></SelectTrigger><SelectContent><SelectItem value="SUPER_ADMIN">Super Admin</SelectItem><SelectItem value="GA_ADMIN">GA Admin</SelectItem><SelectItem value="BUSINESS_ADMIN">Business Admin</SelectItem><SelectItem value="BUSINESS_FINANCE">Business Finance</SelectItem><SelectItem value="BUSINESS_OPERATOR">Business Operator</SelectItem></SelectContent></Select>
+
+               <Select
+                 value={role}
+                 onValueChange={(v) => setRole(v)}
+                    disabled={!user?.role}
+                  >
+                 <SelectTrigger>
+                   <SelectValue placeholder="Select type" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="admin">Admin</SelectItem>
+                   <SelectItem value="user">Partner</SelectItem>
+                 </SelectContent>
+               </Select>
+             </div>
+
+            <div className="flex items-end gap-3">
+             <Button onClick={saveProfile} disabled={saving} className="w-36">
+               {saving ? (
+                 <span className="flex items-center justify-center space-x-1 w-full">
+                   <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
+                   <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
+                 </span>
+               ) : dirty ? (
+                 "Save Changes"
+               ) : (
+                 <span className="flex items-center space-x-1">
+                   <Check className="h-4 w-4 text-green-300" />
+                   <span className="text-green-300">Saved</span>
+                 </span>
+               )}
+             </Button>
+                {saveError && (
+                  <p className="text-sm text-red-600 leading-5">{saveError}</p>
+                )}
+           </div>
+           </CardContent>
+         </Card>
+       </TabsContent>
 
         {/* Business Tab (admin only) */}
         {user.role === "USER" && (
@@ -264,6 +348,7 @@ const saveWhitelistedNumbers = async () => {
                   <div className="space-y-2"><Label>Registration Number</Label><Input id = "regNumber" defaultValue={user.organization.registrationNumber}  onChange={handleFieldChange}/></div>
                   <div className="space-y-2"><Label>Tax ID</Label><Input id = "taxId" defaultValue={user.organization.taxId} /></div>
                 </div>
+                <div className="flex items-end gap-3">
                 <Button
                   onClick={saveBusiness}
                   disabled={saving}
@@ -284,6 +369,10 @@ const saveWhitelistedNumbers = async () => {
                     </span>
                   )}
                 </Button>
+                {saveError && (
+                  <p className="text-sm text-red-600 leading-5">{saveError}</p>
+                )}
+              </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -304,7 +393,7 @@ const saveWhitelistedNumbers = async () => {
                      <Input
                      id= "phone1"
                        placeholder="233XXXXXXXXX"
-                       value={dirty ? phone1 : (user?.subscription?.whitelistedNumber1 ?? phone1)}
+                       value={phone1}
                       onChange={(e) => {
                                               const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
                                               setPhone1(digits);
@@ -322,7 +411,7 @@ const saveWhitelistedNumbers = async () => {
                      <Input
                           id= "phone2"
                        placeholder="233XXXXXXXXX"
-                       value={dirty ? phone2 : (user?.subscription?.whitelistedNumber2 ?? phone2)}
+                       value={phone2}
                        onChange={(e) => {
                                                const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
                                                setPhone2(digits);
@@ -340,7 +429,7 @@ const saveWhitelistedNumbers = async () => {
                      <Input
                         id= "phone3"
                        placeholder="233XXXXXXXXX"
-                       value={dirty ? phone3 : (user?.subscription?.whitelistedNumber3 ?? phone3)}
+                       value={phone3 }
                        onChange={(e) => {
                                                const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
                                                setPhone3(digits);
@@ -358,7 +447,7 @@ const saveWhitelistedNumbers = async () => {
                     <Input
                         id= "phone4"
                       placeholder="233XXXXXXXXX"
-                      value={dirty ? phone4 : (user?.subscription?.whitelistedNumber4 ?? phone4)}
+                      value={phone4}
                       onChange={(e) => {
                         const digits = e.target.value.replace(/\D/g, "").slice(0, 12);  // strip non-digits
                         setPhone4(digits);
@@ -371,22 +460,32 @@ const saveWhitelistedNumbers = async () => {
                   </div>
                  </div>
 
-                  <Button onClick={saveWhitelistedNumbers} disabled={saving || !dirty} className="w-36">
-                    {saving ? (
-                      <span className="flex items-center justify-center space-x-1 w-full">
-                        <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
-                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
-                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
-                      </span>
-                    ) : dirty ? (
-                      "Save Changes"
-                    ) : (
-                       <span className="flex items-center space-x-1">
-                                                          <Check className="h-4 w-4 text-green-300" />
-                                                          <span className="text-green-300">Saved</span>
-                                                        </span>
+                  <div className="flex items-end gap-3">
+                    <Button
+                      onClick={saveWhitelistedNumbers}
+                      disabled={saving || !dirty}
+                      className="w-36"
+                    >
+                      {saving ? (
+                        <span className="flex items-center justify-center space-x-1 w-full">
+                          <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                          <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
+                          <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
+                        </span>
+                      ) : dirty ? (
+                        "Save Changes"
+                      ) : (
+                        <span className="flex items-center space-x-1">
+                          <Check className="h-4 w-4 text-green-300" />
+                          <span className="text-green-300">Saved</span>
+                        </span>
+                      )}
+                    </Button>
+
+                    {saveError && (
+                      <p className="text-sm text-red-600 leading-5">{saveError}</p>
                     )}
-                  </Button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -479,7 +578,7 @@ const saveWhitelistedNumbers = async () => {
               <div className="flex space-x-2">
                 <Button variant="outline" onClick={generateNewKey} disabled={isGeneratingKey}>{isGeneratingKey ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Generating…</> : "Regenerate Keys"}</Button>
                 <a
-                  href="https://documenter.getpostman.com/view/26444770/2sB3dTtTga#346d58af-aa7e-4c33-b878-b7d0546ae5d5"
+                  href="https://documenter.getpostman.com/view/3132318/2sB3dVMn5V"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center rounded-lg bg-[#ff6c37] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e55a2b] transition-colors"
@@ -488,6 +587,7 @@ const saveWhitelistedNumbers = async () => {
                   API Docs
                 </a>
               </div>
+              <div className="flex items-end gap-3">
               <Button
                                 onClick={saveCallback}
                                 disabled={saving}
@@ -508,6 +608,10 @@ const saveWhitelistedNumbers = async () => {
                                   </span>
                                 )}
                               </Button>
+                {saveError && (
+                  <p className="text-sm text-red-600 leading-5">{saveError}</p>
+                )}
+              </div>
             </CardContent>
           </Card>
           </div>

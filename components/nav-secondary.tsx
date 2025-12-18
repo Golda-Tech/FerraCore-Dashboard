@@ -36,7 +36,7 @@ export function NavSecondary({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton className = "cursor-pointer" asChild>
                 <button
                   onClick={() => onNavigate(item.page)}
                   className={

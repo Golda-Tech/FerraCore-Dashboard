@@ -15,10 +15,12 @@ import {
   IconPaywall,
   IconReport,
   IconCash,
+  IconUserCircle,
   IconSettings,
   IconUsers,
   IconFolder,      // parent-folder icon (optional)
 } from "@tabler/icons-react";
+import { UserPlus } from "lucide-react";
 
 import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
@@ -50,6 +52,17 @@ const navMain = [
       { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
     ],
   },
+  {
+    title: "Rexhub Partners & Users",
+    icon: IconFolder,
+    isGroup: true,
+    pages: [
+      { title: "Register Partners", page: "admin-register" as PageName, icon:  UserPlus },
+      { title: "Manage Partners", page: "partner-management" as PageName, icon: IconUsers },
+      { title: "Manage Users", page: "user-management" as PageName, icon: IconUserCircle },
+    ],
+  },
+
 
 
 ] as const;

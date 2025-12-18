@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader, ClockIcon, User,ShieldCheck, RefreshCw, XCircle } from "lucide-react"
+import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader,ArrowRight, UserCheck, ClockIcon, User,Check, ShieldCheck, RefreshCw, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -332,15 +332,19 @@ return{
                         required
                         className="h-10 sm:h-9 flex-1"
                       />
-                      <Button
-                        type="button"
-                        onClick={handleFetchName}
-                        disabled={!formData.phoneNumber || isFetchingName}
-                        size="sm"
-                        className="h-10 w-10 p-0 flex items-center justify-center"
-                      >
-                        {isFetchingName ? <Loader className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                      </Button>
+                    <Button
+                      type="button"
+                      onClick={handleFetchName}
+                      disabled={!formData.phoneNumber || isFetchingName}
+                      size="sm"
+                      className="h-10 w-10 p-0 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isFetchingName ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ArrowRight className="h-5 w-5" />
+                      )}
+                    </Button>
                     </div>
                     {fetchError && <p className="text-xs text-red-600 mt-1">{fetchError}</p>}
                   </div>

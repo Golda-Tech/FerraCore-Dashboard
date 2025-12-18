@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
   InputOTP,
   InputOTPGroup,
@@ -346,23 +347,33 @@ export function ForgotPasswordForm() {
             <Label htmlFor="otp" className="text-center">
               Enter verification code
             </Label>
-            <div className="flex justify-center">
-              <InputOTP
-                maxLength={6}
-                value={otp}
-                onChange={(value) => setOtp(value)}
-                disabled={loading}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
+             <div className="flex justify-center">
+               <InputOTP
+                 maxLength={6}
+                 value={otp}
+                 onChange={setOtp}
+                 disabled={loading}
+                 className="gap-2"
+                 containerClassName="group"
+               >
+                 <InputOTPGroup className="flex gap-2">
+                   {[...Array(6)].map((_, i) => (
+                     <InputOTPSlot
+                       key={i}
+                       index={i}
+                       className={cn(
+                         "h-14 w-12 rounded-xl border-2 transition-all duration-200",
+                         "bg-white/30 dark:bg-gray-900/80",               // subtle translucent background
+                         "border-gray-300 dark:border-gray-600",          // visible border at rest
+                         "text-gray-900 dark:text-white text-xl font-semibold",
+                         "focus:border-primary focus:bg-accent focus:ring-2 focus:ring-primary/20",
+                         "group-focus-within:border-primary group-hover:border-primary/50"
+                       )}
+                     />
+                   ))}
+                 </InputOTPGroup>
+               </InputOTP>
+             </div>
           </div>
 
           <Button 

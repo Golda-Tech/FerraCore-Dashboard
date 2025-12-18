@@ -173,7 +173,7 @@ export function PaymentsContent() {
 
   const downloadPDF = () => {
     const doc = new jsPDF({ orientation: "landscape" });
-    doc.text("Rexhub Report", 14, 16);
+    doc.text(user?.organizationName, 14, 16);
 
     const body = filteredPayments.map((p) => [
       p.mobileNumber,
@@ -472,7 +472,7 @@ const delta = (current: number, previous: number) => {
                   <TableHead>Status</TableHead>
                   <TableHead>Network</TableHead>
                   <TableHead>MTN Trans ID</TableHead>
-                  <TableHead>Reference</TableHead>
+                  <TableHead>External Reference</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -561,19 +561,25 @@ const delta = (current: number, previous: number) => {
           </DialogHeader>
           {selectedPayment && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Request ID</Label>
-                  <p className="font-mono">{selectedPayment.id}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    {getStatusIcon(selectedPayment.status)}
-                    {getStatusBadge(selectedPayment.status)}
-                  </div>
-                </div>
-              </div>
+             <div className="grid grid-cols-2 gap-4">
+               {/* Status (left) */}
+               <div className="flex flex-col">
+                 <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                 <div className="flex items-center gap-2 mt-1">
+                   {getStatusIcon(selectedPayment.status)}
+                   {getStatusBadge(selectedPayment.status)}
+                 </div>
+               </div>
+
+               {/* Status Reason (right) */}
+               <div className="flex flex-col">
+                 <Label className="text-sm font-medium text-muted-foreground">Status Reason</Label>
+                 {/* same vertical position as status badge line */}
+                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-5 mt-1">
+                   {selectedPayment.message ?? "—"}
+                 </p>
+               </div>
+             </div>
 
               <Separator />
 
@@ -607,17 +613,18 @@ const delta = (current: number, previous: number) => {
                     <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
                     <p className="text-lg font-semibold">{formatCurrency(selectedPayment.amount)}</p>
                   </div>
-                  {/* <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Method</Label>
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="h-4 w-4" />
-                      <p>{selectedPayment.method}</p>
-                    </div>
-                  </div> */}
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Reference</Label>
-                    <p className="font-mono">{selectedPayment.transactionRef}</p>
+                    <Label className="text-sm font-medium text-muted-foreground">External Reference</Label>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-sans text-gray-900 dark:text-gray-100 truncate">{selectedPayment.externalRef}</p>
+                    </div>
                   </div>
+                 <div>
+                   <Label className="text-sm font-medium text-muted-foreground">Transaction Reference</Label>
+                   <p className="text-sm font-sans text-gray-900 dark:text-gray-100 truncate">
+                     {selectedPayment.transactionRef}
+                   </p>
+                 </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Description</Label>
                     <p>{selectedPayment.mtnPayeeNote}</p>
@@ -628,12 +635,15 @@ const delta = (current: number, previous: number) => {
               <Separator />
 
               <div>
-                <h4 className="font-medium mb-3">Timeline</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Created</Label>
                     <p>{formatDate(selectedPayment.initiatedAt)}</p>
                   </div>
+                   <div>
+                                    <Label className="text-sm font-medium text-muted-foreground">Request ID</Label>
+                                    <p className="font-mono">{selectedPayment.id}</p>
+                                  </div>
                   {/* <div>
                     <Label className="text-sm font-medium text-muted-foreground">Completed At</Label>
                     <p>{formatDate(selectedPayment.completedAt)}</p>

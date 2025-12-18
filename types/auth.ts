@@ -23,7 +23,7 @@ export interface RegisterRequest {
   organizationName: string;
   mobileNumber: string;
   planType: PlanType;
-
+  userType: UserType;
 }
 
 export interface WhitelistUpdateRequest {
@@ -75,6 +75,14 @@ export enum PlanType {
     PAYOUTS = "PAYOUTS",
     RECURRING_PAYMENTS = "RECURRING_PAYMENTS",
     ENTERPRISE_FULL_ACCESS = "ENTERPRISE_FULL_ACCESS",
+}
+
+export enum UserType {
+        SUPER_ADMIN("SUPER_ADMIN"),
+        GA_ADMIN("GA_ADMIN"),
+        BUSINESS_ADMIN("BUSINESS_ADMIN"),
+        BUSINESS_FINANCE("BUSINESS_FINANCE"),
+        BUSINESS_OPERATOR("BUSINESS_OPERATOR");
 }
 
 export interface RegisterResponse {

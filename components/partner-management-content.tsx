@@ -6,58 +6,85 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import api from "@/lib/api"
-import { LoginResponse } from "@/types/auth";
-import { getUser } from "@/lib/auth";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-/* ---- shape that matches backend ---- */
+/* ---- types that mirror backend ---- */
+type Summary = {
+  partnerId: string
+  partnerName: string
+  totalCountTransactions: string
+  totalSuccessfulAmountTransactions: number
+  failedTransactionsCount: string
+  successfulTransactionsCount: string
+}
+
+type Subscription = {
+  plan: string
+  status: "ACTIVE" | "INACTIVE" | "PENDING"
+  billingCycle: string
+  nextBilling: string
+  callbackUrl: string | null
+  whitelistedNumber1: string | null
+  whitelistedNumber2: string | null
+  whitelistedNumber3: string | null
+  whitelistedNumber4: string | null
+  amount: number
+  currency: string
+}
+
+type Organization = {
+  name: string
+  businessType: string | null
+  address: string | null
+  registrationNumber: string | null
+  taxId: string | null
+  website: string | null
+}
+
 type BackendUser = {
   id: string
   firstName: string
   lastName: string
   email: string
+  isFirstTimeUser: boolean
+  phone: string | null
   userRoles: "SUPER_ADMIN" | "GA_ADMIN" | "BUSINESS_ADMIN" | "BUSINESS_FINANCE" | "BUSINESS_OPERATOR"
-  isFirstTimeUser?: boolean
-  phone?: string
-  organization: {
-    name: string
-    businessType: string
-    address: string
-    registrationNumber: string
-    taxId: string
-    website: string
-  }
-  subscription: {
-    plan: string
-    status: "ACTIVE" | "INACTIVE" | "PENDING"
-    billingCycle: string
-    nextBilling: string
-    callbackUrl: string
-    whitelistedNumber1: string
-    whitelistedNumber2: string
-    whitelistedNumber3: string
-    whitelistedNumber4: string
-    amount: number
-    currency: string
-  }
-  apiCredentials: {
-    subscriptionKey: string
-    subscriptionSecret: string
-  }
-  summary: {
-    partnerId: string
-    partnerName: string
-    totalCountTransactions: string
-    totalSuccessfulAmountTransactions: number
-    failedTransactionsCount: string
-    successfulTransactionsCount: string
-  }
+  organization: Organization
+  subscription: Subscription
+  apiCredentials: { subscriptionKey: string; subscriptionSecret: string }
+  summary: Summary | null
 }
 
 /* ---- table row shape ---- */
@@ -66,67 +93,56 @@ interface User {
   firstName: string
   lastName: string
   email: string
-  role: "SUPER_ADMIN" | "GA_ADMIN" | "BUSINESS_ADMIN" | "BUSINESS_FINANCE" | "BUSINESS_OPERATOR"
-  status: "ACTIVE" | "INACTIVE" | "PENDING"
+  role: BackendUser["userRoles"]
+  status: Subscription["status"]
   lastLogin: string
   createdAt: string
   transactionCount: number
   totalVolume: number
+  organizationName: string
+  plan: string
 }
 
 export function UserManagementContent() {
- const [orgName, setOrgName] = useState<string>("");
- const [user, setUser] = useState<LoginResponse | null>(null);
-
-    useEffect(() => {
-      const stored = getUser();
-      setUser(stored);
-      console.log("user response:", stored?.organizationName);
-      setOrgName(stored?.organizationName ?? "");
-    }, []);
-
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false)
-  const [isEditUserOpen, setIsEditUserOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-
-
-
 
   /* ---------- fetch partners ---------- */
   useEffect(() => {
     async function loadPartners() {
       try {
-        const res = await  api.get(`/api/v1/auth/profile/users?organizationName=${encodeURIComponent(orgName)}`)
-        if (!res.ok) throw new Error("Failed to fetch partners")
-        const data: BackendUser[] = await res.json()
+        const res = await api.get("/api/v1/auth/profile/partners")
+        const data: BackendUser[] = res.data
 
-        setUsers(data.map((u) => ({
-          id: u.id,
-          firstName: u.firstName,
-          lastName: u.lastName,
-          email: u.email,
-          role: u.userRoles,
-          status: u.subscription.status,
-          lastLogin: "Never", // backend does not provide it
-          createdAt: new Date().toISOString().split("T")[0], // placeholder
-          transactionCount: Number(u.summary?.totalCountTransactions ?? 0),
-          totalVolume: u.summary?.totalSuccessfulAmountTransactions ?? 0,
-        })))
-      } catch (e) {
-        console.error(e)
+        setUsers(
+          data.map((u) => ({
+            id: u.id,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            email: u.email,
+            role: u.userRoles,
+            status: u.subscription.status,
+            lastLogin: "Never", // backend does not provide it
+            createdAt: new Date().toISOString().split("T")[0], // placeholder
+            transactionCount: Number(u.summary?.totalCountTransactions ?? 0),
+            totalVolume: u.summary?.totalSuccessfulAmountTransactions ?? 0,
+            organizationName: u.organization.name,
+            plan: u.subscription.plan,
+          }))
+        )
+      } catch (err: any) {
+        const msg = err.response?.data?.detail || err.response?.data?.title || err.message || "Failed to load partners"
+        console.error(msg)
       } finally {
         setLoading(false)
       }
     }
     loadPartners()
-  }, [orgName])
+  }, [])
 
-  /* ---------- loading ---------- */
   if (loading)
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -136,7 +152,9 @@ export function UserManagementContent() {
 
   /* ---------- filters ---------- */
   const filteredUsers = users.filter((u) => {
-    const matchesSearch = `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = `${u.firstName} ${u.lastName} ${u.email} ${u.organizationName}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
     const matchesRole = roleFilter === "all" || u.role === roleFilter
     const matchesStatus = statusFilter === "all" || u.status === statusFilter
     return matchesSearch && matchesRole && matchesStatus
@@ -145,18 +163,20 @@ export function UserManagementContent() {
   /* ---------- helpers ---------- */
   const getRoleIcon = (r: string) => {
     switch (r) {
-      case "SUPER_ADMIN": return <IconCrown className="h-4 w-4" />
-      case "GA_ADMIN": return <IconShield className="h-4 w-4" />
-      default: return <IconUser className="h-4 w-4" />
+      case "SUPER_ADMIN":
+        return <IconCrown className="h-4 w-4" />
+      case "GA_ADMIN":
+        return <IconShield className="h-4 w-4" />
+      default:
+        return <IconUser className="h-4 w-4" />
     }
   }
   const getRoleBadgeVariant = (r: string) => (r === "SUPER_ADMIN" ? "destructive" : r === "GA_ADMIN" ? "default" : "secondary")
-  const getStatusBadgeVariant = (s: string) =>
-    s === "ACTIVE" ? "default" : s === "INACTIVE" ? "secondary" : "outline"
+  const getStatusBadgeVariant = (s: string) => (s === "ACTIVE" ? "default" : s === "INACTIVE" ? "secondary" : "outline")
 
   /* ---------- actions ---------- */
-  const handleAddUser = () => { /* stub */ }
-  const handleEditUser = () => { /* stub */ }
+  const handleAddUser = () => {/* stub */ }
+  const handleEditUser = () => {/* stub */ }
   const handleDeleteUser = (id: string) => setUsers((u) => u.filter((x) => x.id !== id))
   const handleStatusChange = (id: string, status: "ACTIVE" | "INACTIVE") =>
     setUsers((u) => u.map((x) => (x.id === id ? { ...x, status } : x)))
@@ -193,21 +213,22 @@ export function UserManagementContent() {
       </div>
 
       {/* table */}
-      <Card><CardHeader><CardTitle>Users ({filteredUsers.length})</CardTitle><CardDescription>Manage user accounts and permissions</CardDescription></CardHeader><CardContent>
-        <Table><TableHeader><TableRow><TableHead>Partner</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead>Transactions</TableHead><TableHead>Volume (GHS)</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+      <Card><CardHeader><CardTitle>Partners ({filteredUsers.length})</CardTitle><CardDescription>Manage partner accounts and permissions</CardDescription></CardHeader><CardContent>
+        <Table><TableHeader><TableRow><TableHead>Partner</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead>Plan</TableHead><TableHead>Transactions</TableHead><TableHead>Volume (GHS)</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
             {filteredUsers.map((u) => (
               <TableRow key={u.id}>
-                <TableCell><div className="font-medium">{u.firstName} {u.lastName}</div><div className="text-sm text-muted-foreground">{u.email}</div></TableCell>
+                <TableCell><div className="font-medium">{u.organizationName}</div><div className="text-sm text-muted-foreground">{u.email}</div></TableCell>
                 <TableCell><Badge variant={getStatusBadgeVariant(u.role)} className="flex items-center gap-1 w-fit">{getRoleIcon(u.role)}{u.role.replace("_", " ")}</Badge></TableCell>
                 <TableCell><Badge variant={getStatusBadgeVariant(u.status)}>{u.status}</Badge></TableCell>
+                <TableCell>{u.plan}</TableCell>
                 <TableCell>{u.transactionCount.toLocaleString()}</TableCell>
                 <TableCell>₵{u.totalVolume.toLocaleString()}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="sm">Actions</Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => { setSelectedUser(u); setIsEditUserOpen(true) }}><IconEdit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { /* stub */ }}><IconEdit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
                       {u.status === "PENDING" && <DropdownMenuItem onClick={() => handleStatusChange(u.id, "ACTIVE")}><IconUserPlus className="mr-2 h-4 w-4" />Activate</DropdownMenuItem>}
                       {u.status === "ACTIVE" && <DropdownMenuItem onClick={() => handleStatusChange(u.id, "INACTIVE")}><IconUser className="mr-2 h-4 w-4" />Deactivate</DropdownMenuItem>}
                       <AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()}><IconTrash className="mr-2 h-4 w-4" />Delete</DropdownMenuItem></AlertDialogTrigger>

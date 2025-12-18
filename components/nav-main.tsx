@@ -68,7 +68,7 @@ export function NavMain({
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
               tooltip="Request Payment"
-              className="bg-primary text-primary-foreground
+              className="cursor-pointer bg-primary text-primary-foreground
                                     hover:bg-primary/90 hover:text-primary-foreground
                                     active:bg-primary/90 active:text-primary-foreground
                                     min-w-8 duration-200 ease-linear"
@@ -88,7 +88,7 @@ export function NavMain({
               >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuItem>
-                    <SidebarMenuButton tooltip={item.title}>
+                    <SidebarMenuButton className = "cursor-pointer" tooltip={item.title}>
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
                       <IconChevronRight
@@ -106,6 +106,7 @@ export function NavMain({
                       <SidebarMenuSubItem key={sub.page}>
                         <SidebarMenuSubButton
                           asChild
+                          className = "cursor-pointer"
                           data-active={isActive(sub.page)}
                           onClick={() => onNavigate(sub.page)}
                         >
@@ -131,6 +132,7 @@ export function NavMain({
             ) : (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
+                className = "cursor-pointer"
                   asChild
                   tooltip={item.title}
                   data-active={isActive(item.page)}
@@ -138,6 +140,7 @@ export function NavMain({
                   <button
                     onClick={() => onNavigate(item.page)}
                     className="
+                      cursor-pointer
                       w-full min-w-[14rem]                    /* at least 224 px           */
                       max-w-none                              /* no upper clamp            */
                       text-left inline-flex items-center
