@@ -324,7 +324,7 @@ export function RegisterForm() {
               <div className="space-y-2">
                 <Label htmlFor="userType">User Type</Label>
                 <Select
-                  onValueChange={(value) => setUserType(value)}
+                  onValueChange={(value) => setUserType(value as UserType)}
                   value={userType}
                   disabled={loading}
                 >
