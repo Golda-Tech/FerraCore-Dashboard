@@ -101,9 +101,13 @@ export function UserManagementContent() {
   useEffect(() => {
     async function loadPartners() {
       try {
-        const res = await  api.get(`/api/v1/auth/profile/users?organizationName=${encodeURIComponent(orgName)}`)
-        if (!res.ok) throw new Error("Failed to fetch partners")
-        const data: BackendUser[] = await res.json()
+
+          // 1. Axios puts the result directly in 'data'
+            const res = await api.get<BackendUser[]>(`/api/v1/auth/profile/users?organizationName=${encodeURIComponent(orgName)}`);
+
+            // 2. Axios doesn't use .ok or .json().
+            // If the request fails, it jumps straight to the catch block.
+            const data = res.data;
 
         setUsers(data.map((u) => ({
           id: u.id,
@@ -118,7 +122,18 @@ export function UserManagementContent() {
           totalVolume: u.summary?.totalSuccessfulAmountTransactions ?? 0,
         })))
       } catch (e) {
-        console.error(e)
+          const problem = err.response?.data;
+
+                                      // 1.  Prefer RFC 7807 fields
+                                      const userMsg =
+                                        problem?.detail ||                       // "Invalid temporary password."
+                                        problem?.title ||                        // "Internal Server Error"
+                                        problem?.message ||                      // fallback
+                                        err.response?.statusText ||              // "Internal Server Error"
+                                        err.message ||                           // final fallback
+                                        "Failed to fetch partners";
+
+console.error(userMsg);
       } finally {
         setLoading(false)
       }
