@@ -5,6 +5,7 @@ import {
   IconCirclePlusFilled,
   IconFileUpload,
   IconMoneybagMove,
+  type Icon,
   IconChevronRight,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
