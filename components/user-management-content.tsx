@@ -121,7 +121,7 @@ export function UserManagementContent() {
           transactionCount: Number(u.summary?.totalCountTransactions ?? 0),
           totalVolume: u.summary?.totalSuccessfulAmountTransactions ?? 0,
         })))
-      } catch (e) {
+      } catch (err) {
           const problem = err.response?.data;
 
                                       // 1.  Prefer RFC 7807 fields
