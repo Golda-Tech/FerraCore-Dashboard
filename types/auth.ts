@@ -78,11 +78,11 @@ export enum PlanType {
 }
 
 export enum UserType {
-        SUPER_ADMIN("SUPER_ADMIN"),
-        GA_ADMIN("GA_ADMIN"),
-        BUSINESS_ADMIN("BUSINESS_ADMIN"),
-        BUSINESS_FINANCE("BUSINESS_FINANCE"),
-        BUSINESS_OPERATOR("BUSINESS_OPERATOR");
+          SUPER_ADMIN = "SUPER_ADMIN",
+          GA_ADMIN = "GA_ADMIN",
+          BUSINESS_ADMIN = "BUSINESS_ADMIN",
+          BUSINESS_FINANCE ="BUSINESS_FINANCE",
+          BUSINESS_OPERATOR = "BUSINESS_OPERATOR",
 }
 
 export interface RegisterResponse {
