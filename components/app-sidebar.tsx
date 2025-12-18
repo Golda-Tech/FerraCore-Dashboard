@@ -22,12 +22,6 @@ import {
 } from "@tabler/icons-react";
 import { UserPlus } from "lucide-react";
 
-import type { LucideProps } from "lucide-react";
-import type { ForwardRefExoticComponent, RefAttributes } from "react";
-
-export type Icon = ForwardRefExoticComponent<
-  Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
->;
 
 import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
@@ -46,7 +40,6 @@ import { getUser, logout } from "@/lib/auth";
 import type { PageName } from "@/types/navigation";
 import { useEffect, useState } from "react";
 import { LoginResponse } from "@/types/auth";
-import { UserCog } from "lucide-react";
 
 /* ----------  NEW GROUPED NAV  ---------- */
 const navMain = [
@@ -64,7 +57,7 @@ const navMain = [
     icon: IconFolder,
     isGroup: true,
     pages: [
-      { title: "Register Partners", page: "admin-register" as PageName, icon:  UserPlus },
+      { title: "Register Partners", page: "admin-register" as PageName, icon:  UserPlus as any},
       { title: "Manage Partners", page: "partner-management" as PageName, icon: IconUsers },
       { title: "Manage Users", page: "user-management" as PageName, icon: IconUserCircle },
     ],
