@@ -112,6 +112,7 @@ export function RegisterForm() {
         organizationName: organizationName.trim(),
         mobileNumber: cleanMobileNumber(mobileNumber),
         planType: planType as PlanType,
+         userType: userType as UserType,
       } as RegisterRequest);
 
       setRegisterResult({
