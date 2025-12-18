@@ -41,6 +41,15 @@ enum PlanType {
   ENTERPRISE_FULL_ACCESS = "ENTERPRISE_FULL_ACCESS",
 }
 
+enum UserType {
+          SUPER_ADMIN = "SUPER_ADMIN",
+          GA_ADMIN = "GA_ADMIN",
+          BUSINESS_ADMIN = "BUSINESS_ADMIN",
+          BUSINESS_FINANCE ="BUSINESS_FINANCE",
+          BUSINESS_OPERATOR = "BUSINESS_OPERATOR",
+}
+
+
 interface RegisterRequest {
   firstname: string;
   lastname: string;

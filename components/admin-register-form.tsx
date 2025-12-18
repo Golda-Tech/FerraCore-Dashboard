@@ -33,7 +33,6 @@ import {
   IconMail,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { UserPlus } from "lucide-react";
 
 enum PlanType {
   PAYMENT_REQUEST = "PAYMENT_REQUEST",
