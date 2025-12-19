@@ -28,11 +28,11 @@ export function SiteHeader() {
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
         <h1 className="text-base font-medium">
           {orgName}
-          {user?.organizationId && (
+
             <span className="ml-2 text-xs text-muted-foreground">
               (#{orgId})
             </span>
-          )}
+
         </h1>
         <div className="ml-auto flex items-center gap-2">
           {mounted && (
