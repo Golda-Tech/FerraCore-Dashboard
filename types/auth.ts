@@ -10,6 +10,7 @@ export interface LoginResponse {
   lastname: string;
   email: string;
   organizationName: string;
+  organizationId: string;
   role: string;
   message: string;
   passwordResetRequired: boolean;
@@ -40,11 +41,13 @@ export interface ProfileResponse {
   firstName: string;
   lastName: string;
   email: string;
+  isFirstTimeUser: boolean;
   phone: string;
   userRoles:string;
   organization: {
     name: string;
     businessType: string;
+    partnerId: string;
     address: string;
     isFirstTimeUser: boolean;
     registrationNumber: string;

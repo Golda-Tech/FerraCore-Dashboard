@@ -175,7 +175,7 @@ return{
   };
 
   const amount = Number.parseFloat(formData.amount) || 0
-  const fee = amount * 0.015 // 1.5% fee
+  const fee = amount * 0.0175// 1.75% fee
   const totalAmount = amount + fee
 
   const [isFetchingName, setIsFetchingName] = useState(false);
@@ -502,7 +502,7 @@ return{
                         <span className="font-medium">GHS {amount.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
-                        <span>Service Fee (1.5%):</span>
+                        <span>Service Fee (1.75%):</span>
                         <span className="font-medium">GHS {fee.toFixed(2)}</span>
                       </div>
                       <Separator />
