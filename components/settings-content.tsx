@@ -306,40 +306,39 @@ const saveWhitelistedNumbers = async () => {
                      </SelectContent>
                    </Select>
 
-                   <Button
-                     size="sm"
-                     disabled={requesting}
-                     onClick={async () => {
-
-                       setRequesting(true)
-                       try {
+                  <Button
+                    size="sm"
+                    disabled={requesting}
+                    className="max-w-full truncate"
+                    onClick={async () => {
+                      setRequesting(true);
+                      try {
                         await api.post(`/api/v1/auth/roles/request-update?requestedRole=${encodeURIComponent(userType)}`, {});
-                         setSaveError("");
-                         toast({ title: "Request sent", description: "An administrator will review it." });
-                       } catch (err: any) {
-                         const msg = err.response?.data?.detail || err.message || "Request failed";
-                         setSaveError(msg);
-                       } finally {
-                           setRequesting(false)
-
-                       }
-                     }}
-                   >
-                     {requesting ? (
-                                                      <span className="flex items-center justify-center space-x-1 w-full">
-                                                        <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
-                                                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
-                                                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
-                                                      </span>
-                                                    ) : dirty ? (
-                                                      "Request"
-                                                    ) : (
-                                                      <span className="flex items-center space-x-1">
-                                                        <Check className="h-4 w-4 text-green-300" />
-                                                        <span className="text-green-300">Pending Approval</span>
-                                                      </span>
-                                                    )}
-                   </Button>
+                        setSaveError("");
+                        toast({ title: "Request sent", description: "An administrator will review it." });
+                      } catch (err: any) {
+                        const msg = err.response?.data?.detail || err.message || "Request failed";
+                        setSaveError(msg);
+                      } finally {
+                        setRequesting(false);
+                      }
+                    }}
+                  >
+                    {requesting ? (
+                      <span className="flex items-center justify-center space-x-1">
+                        <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-150" />
+                        <span className="h-1 w-1 animate-pulse rounded-full bg-white animation-delay-300" />
+                      </span>
+                    ) : dirty ? (
+                      "Request"
+                    ) : (
+                      <span className="flex items-center space-x-1 truncate">
+                        <Check className="h-4 w-4 text-green-300 shrink-0" />
+                        <span className="truncate">Pending Approval</span>
+                      </span>
+                    )}
+                  </Button>
                  </div>
                </div>
              </div>

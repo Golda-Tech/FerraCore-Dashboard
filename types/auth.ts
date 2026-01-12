@@ -22,6 +22,7 @@ export interface RegisterRequest {
   lastname: string;
   email: string;
   organizationName: string;
+  registeredBy: string;
   mobileNumber: string;
   planType: PlanType;
   userType: UserType;

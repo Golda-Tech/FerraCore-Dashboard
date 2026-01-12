@@ -18,6 +18,7 @@ export interface CreatePaymentRequest {
   collectionRef: string;
   mobileNumber: string;
   initiatedBy: string;
+  initiationPartnerId: string;
   amount: number;
   currency: string;
   partyIdType: string;
