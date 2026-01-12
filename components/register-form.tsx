@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { register, clearAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getUser } from "@/lib/auth";
+
 import {
   Dialog,
   DialogContent,
@@ -54,6 +56,7 @@ interface RegisterRequest {
   firstname: string;
   lastname: string;
   email: string;
+  registeredBy: string;
   organizationName: string;
   mobileNumber: string;
   planType: PlanType;
@@ -65,6 +68,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
+  const [registeredBy, setRegisteredBy] = useState("");
   const [organizationName, setOrganizationName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [planType, setPlanType] = useState<PlanType | "">("");
@@ -76,6 +80,11 @@ export function RegisterForm() {
     error?: string;
     userData?: any;
   }>({ success: false });
+
+  useEffect(() => {
+      const user = getUser();
+      setRegisteredBy(user?.email);
+    }, []);
 
   const validateForm = () => {
     if (!firstname.trim() || !lastname.trim()) {
@@ -121,6 +130,7 @@ export function RegisterForm() {
         lastname: lastname.trim(),
         email,
         organizationName: organizationName.trim(),
+        registeredBy: registeredBy.trim(),
         mobileNumber: cleanMobileNumber(mobileNumber),
         planType: planType as PlanType,
          userType: userType as UserType,

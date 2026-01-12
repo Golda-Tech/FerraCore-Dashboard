@@ -110,7 +110,7 @@ return{
         collectionRef: formData.reference || `INV-${Date.now()}`,
         mobileNumber: fullMobileNumber,
         initiatedBy: user?.email ?? "", // or throw / return early if missing
-        initiationPartner: user?.organizationName ?? "Partner", //
+        initiationPartnerId: user?.organizationId ?? "", //
         amount: Number(formData.amount),
         currency: "GHS",                               // or "EUR" if applicable
         partyIdType: "MSISDN",
