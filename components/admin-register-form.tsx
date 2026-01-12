@@ -66,7 +66,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
-  const [registeredBy, setRegisteredBy] = useState("");
+  const [registeredBy, setRegisteredBy] =  useState<string>("");
   const [organizationName, setOrganizationName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [planType, setPlanType] = useState<PlanType | "">("");
@@ -81,7 +81,7 @@ export function RegisterForm() {
 
    useEffect(() => {
         const user = getUser();
-        setRegisteredBy(user?.email);
+        setRegisteredBy(user?.email ?? "");
       }, []);
 
 
