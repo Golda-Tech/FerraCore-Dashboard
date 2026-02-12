@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { useRouter } from "next/navigation";
 import api from "@/lib/api"
 import {
   AlertDialog,
@@ -109,6 +110,7 @@ export function UserManagementContent() {
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const router = useRouter();
 
   /* ---------- fetch partners ---------- */
   useEffect(() => {
@@ -212,10 +214,19 @@ export function UserManagementContent() {
           <Select value={roleFilter} onValueChange={setRoleFilter}><SelectTrigger className="w-[150px]"><SelectValue placeholder="All Roles" /></SelectTrigger><SelectContent><SelectItem value="all">All Roles</SelectItem><SelectItem value="SUPER_ADMIN">Super Admin</SelectItem><SelectItem value="GA_ADMIN">GA Admin</SelectItem><SelectItem value="BUSINESS_ADMIN">Business Admin</SelectItem><SelectItem value="BUSINESS_FINANCE">Business Finance</SelectItem><SelectItem value="BUSINESS_OPERATOR">Business Operator</SelectItem></SelectContent></Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[150px]"><SelectValue placeholder="All Status" /></SelectTrigger><SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="ACTIVE">Active</SelectItem><SelectItem value="INACTIVE">Inactive</SelectItem><SelectItem value="PENDING">Pending</SelectItem></SelectContent></Select>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm"><IconDownload className="mr-2 h-4 w-4" />Export</Button>
-          <Button size="sm"><IconPlus className="mr-2 h-4 w-4" />Add Partner</Button>
-        </div>
+       <div className="flex items-center space-x-2">
+         <Button variant="outline" size="sm">
+           <IconDownload className="mr-2 h-4 w-4" />
+           Export
+         </Button>
+         <Button
+           size="sm"
+           onClick={() => router.push("/admin-register")}
+         >
+           <IconPlus className="mr-2 h-4 w-4" />
+           Add Partner
+         </Button>
+       </div>
       </div>
 
       {/* table */}

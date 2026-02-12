@@ -34,6 +34,8 @@ import {
   IconUserPlus,
   IconMail,
   IconInfoCircle,
+  IconCalculator,
+  IconRuler,
 } from "@tabler/icons-react";
 
 enum PlanType {
@@ -60,6 +62,8 @@ interface RegisterRequest {
   mobileNumber: string;
   planType: PlanType;
   userType: UserType;
+  transactionFee?: number;
+  cappedAmount?: number;
 }
 export function RegisterForm() {
   const router = useRouter();
@@ -71,6 +75,8 @@ export function RegisterForm() {
   const [mobileNumber, setMobileNumber] = useState("");
   const [planType, setPlanType] = useState<PlanType | "">("");
   const [userType, setUserType] = useState<UserType | "">("");
+  const [transactionFee, setTransactionFee] = useState<string>("");
+  const [cappedAmount, setCappedAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [registerResult, setRegisterResult] = useState<{
@@ -131,6 +137,8 @@ export function RegisterForm() {
         mobileNumber: cleanMobileNumber(mobileNumber),
         planType: planType as PlanType,
         userType: userType as UserType,
+        transactionFee: transactionFee ? parseFloat(transactionFee) : undefined,
+        cappedAmount: cappedAmount ? parseFloat(cappedAmount) : undefined,
       } as RegisterRequest);
 
       setRegisterResult({
@@ -185,7 +193,7 @@ export function RegisterForm() {
     setShowResultDialog(false)
     if (registerResult.success) {
       /* reset form */
-      setEmail(""); setFirstname(""); setLastname(""); setOrganizationName(""); setMobileNumber(""); setPlanType("")
+      setEmail(""); setFirstname(""); setLastname(""); setOrganizationName(""); setMobileNumber(""); setPlanType(""); setTransactionFee(""); setCappedAmount("");
       /* show success banner */
       setShowBanner(true)
       /* auto-hide after 5 s */
@@ -201,6 +209,8 @@ export function RegisterForm() {
     setMobileNumber("");
     setPlanType("");
     setUserType("");
+    setTransactionFee("");
+    setCappedAmount("");
     setShowResultDialog(false);
     setRegisterResult({ success: false });
   };
@@ -359,6 +369,45 @@ export function RegisterForm() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            {/* Transaction Fee and Capped Amount - Side by Side */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="transactionFee">Transaction Fee (GHS)</Label>
+                <div className="relative">
+                  <IconCalculator className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="transactionFee"
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    max="1"
+                    placeholder="0.0175"
+                    className="pl-10"
+                    value={transactionFee}
+                    onChange={(e) => setTransactionFee(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cappedAmount">Capped Amount (GHS)</Label>
+                <div className="relative">
+                  <IconRuler className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="cappedAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="30"
+                    className="pl-10"
+                    value={cappedAmount}
+                    onChange={(e) => setCappedAmount(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
               </div>
             </div>
           </div>

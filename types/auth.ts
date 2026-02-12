@@ -26,6 +26,8 @@ export interface RegisterRequest {
   mobileNumber: string;
   planType: PlanType;
   userType: UserType;
+  transactionFee: number;
+  cappedAmount: number;
 }
 
 export interface WhitelistUpdateRequest {
