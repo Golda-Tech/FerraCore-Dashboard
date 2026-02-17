@@ -175,7 +175,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 
       <SidebarContent>
         <NavMain
-          items={navMain}
+          items={navMain as const}
           onNavigate={handleNavigation}
           currentPath={pathname}
         />
