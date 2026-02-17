@@ -41,7 +41,8 @@ const [fees, setFees] = useState<{
   percentage: number;
   fixed: number;
   cappedAmount: number
-} | null>(null)  const [showReference, setReference] = useState("")
+} | null>(null)
+   const [showReference, setReference] = useState("")
   const [showOtpDialog, setShowOtpDialog] = useState(false)
   const [otp, setOtp] = useState("")
   const [isOtpSending, setIsOtpSending] = useState(false)
