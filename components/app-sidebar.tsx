@@ -112,7 +112,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 
   // Build dynamic navigation based on user role
   const navMain = React.useMemo(() => {
-    const userRole = user?.userRoles;
+    const userRole = user?.role;
 
     const baseNav = [
       {
