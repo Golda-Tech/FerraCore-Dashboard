@@ -149,7 +149,7 @@ export function UserManagementContent() {
 
         console.log("Raw API response:", data) // Debug log
 
-        const isSuperAdmin = currentUser?.userRoles === "SUPER_ADMIN"
+        const isSuperAdmin = currentUser?.role === "SUPER_ADMIN"
         let filteredData = data
 
         if (!isSuperAdmin) {
