@@ -75,6 +75,7 @@ type Organization = {
   name: string
   businessType: string | null
   address: string | null
+  partnerId: string | null
   registrationNumber: string | null
   taxId: string | null
   website: string | null
