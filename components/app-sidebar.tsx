@@ -23,7 +23,7 @@ import {
 import { UserPlus } from "lucide-react";
 
 import { NavDocuments } from "@/components/nav-documents";
-import { NavMain } from "@/components/nav-main";
+import { NavMain, type Icon as NavIcon } from "@/components/nav-main"; // Import Icon type
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -42,14 +42,14 @@ import { LoginResponse } from "@/types/auth";
 
 /* ----------  NAVIGATION CONFIGURATION  ---------- */
 
-// Define icon type that accepts both Tabler and Lucide icons
-type IconType = React.ComponentType<{ className?: string; size?: number; stroke?: any }>;
+// Use the same Icon type as NavMain
+type Icon = NavIcon;
 
 // Define all possible pages in the "Rexhub Partners & Users" group
 type PartnersUsersPage = {
   title: string;
   page: PageName;
-  icon: IconType;
+  icon: Icon;
   allowedRoles: string[];
 };
 
@@ -57,25 +57,25 @@ const partnersUsersPages: PartnersUsersPage[] = [
   {
     title: "Register Partners",
     page: "admin-register" as PageName,
-    icon: UserPlus,
+    icon: UserPlus as Icon, // Cast to match NavMain's Icon type
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
   },
   {
     title: "Register Users",
     page: "user-register" as PageName,
-    icon: UserPlus,
+    icon: UserPlus as Icon,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
   },
   {
     title: "Manage Partners",
     page: "partner-management" as PageName,
-    icon: IconUsers,
+    icon: IconUsers as Icon,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
   },
   {
     title: "Manage Users",
     page: "user-management" as PageName,
-    icon: IconUserCircle,
+    icon: IconUserCircle as Icon,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
   },
 ];
@@ -84,7 +84,6 @@ const partnersUsersPages: PartnersUsersPage[] = [
 const getPartnersUsersPages = (userRole: string | undefined) => {
   if (!userRole) return [];
 
-  // BUSINESS_FINANCE and BUSINESS_OPERATOR don't see this group at all
   if (userRole === "BUSINESS_FINANCE" || userRole === "BUSINESS_OPERATOR") {
     return [];
   }
@@ -94,16 +93,16 @@ const getPartnersUsersPages = (userRole: string | undefined) => {
   );
 };
 
-// Navigation item types
+// Navigation item types using NavMain's Icon type
 type NavItemPage = {
   title: string;
   page: PageName;
-  icon: IconType;
+  icon: Icon;
 };
 
 type NavItemGroup = {
   title: string;
-  icon: IconType;
+  icon: Icon;
   isGroup: true;
   pages: NavItemPage[];
 };
@@ -111,7 +110,7 @@ type NavItemGroup = {
 type NavItem = NavItemGroup;
 
 const navSecondary: NavItemPage[] = [
-  { title: "Settings", page: "settings" as PageName, icon: IconSettings },
+  { title: "Settings", page: "settings" as PageName, icon: IconSettings as Icon },
 ];
 
 const documents: any[] = [];
@@ -136,22 +135,21 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     const baseNav: NavItem[] = [
       {
         title: "Rexhub Payments",
-        icon: IconFolder,
+        icon: IconFolder as Icon,
         isGroup: true,
         pages: [
-          { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard },
-          { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
+          { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard as Icon },
+          { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall as Icon },
         ],
       },
     ];
 
-    // Only add "Rexhub Partners & Users" group if user has access to any pages
     const partnersUsersPagesFiltered = getPartnersUsersPages(userRole);
 
     if (partnersUsersPagesFiltered.length > 0) {
       baseNav.push({
         title: "Rexhub Partners & Users",
-        icon: IconFolder,
+        icon: IconFolder as Icon,
         isGroup: true,
         pages: partnersUsersPagesFiltered.map((p) => ({
           title: p.title,
