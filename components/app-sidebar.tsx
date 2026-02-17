@@ -143,7 +143,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     }
 
     return baseNav;
-  }, [user?.userRoles]);
+  }, [user?.role]);
 
   const handleNavigation = (page: PageName) => router.push(`/${page}`);
 
