@@ -138,6 +138,7 @@ export function UserManagementContent() {
   // Get current logged-in user on mount
   useEffect(() => {
     const user = getUser()
+    console.log("Loaded current user:", user) // Debug log
     setCurrentUser(user)
   }, [])
 
@@ -150,7 +151,7 @@ export function UserManagementContent() {
 
         console.log("Raw API response:", data) // Debug log
 
-        const isSuperAdmin = currentUser?.role === "SUPER_ADMIN"
+        const isSuperAdmin = currentUser?.userRoles === "SUPER_ADMIN"
         let filteredData = data
 
         if (!isSuperAdmin) {

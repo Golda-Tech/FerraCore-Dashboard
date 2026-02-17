@@ -105,20 +105,26 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
   const pathname = usePathname();
 
   const [user, setUser] = useState<LoginResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setUser(getUser());
+    const userData = getUser();
+    console.log("Sidebar - Loaded user:", userData); // Debug log
+    setUser(userData);
+    setIsLoading(false);
   }, []);
 
   // Build dynamic navigation based on user role
   const navMain = React.useMemo(() => {
-    const userRole = user?.role;
+    const userRole = user?.userRoles;
 
-    const baseNav = [
+    console.log("Sidebar - Building nav for role:", userRole); // Debug log
+
+    const baseNav: any[] = [
       {
         title: "Rexhub Payments",
         icon: IconFolder,
-        isGroup: true as const, // ✅ Fixed: Force literal type
+        isGroup: true as const,
         pages: [
           { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard },
           { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
@@ -127,14 +133,16 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     ];
 
     // Only add "Rexhub Partners & Users" group if user has access to any pages
-    const partnersUsersPages = getPartnersUsersPages(userRole);
+    const accessiblePages = getPartnersUsersPages(userRole);
 
-    if (partnersUsersPages.length > 0) {
+    console.log("Sidebar - Accessible pages:", accessiblePages); // Debug log
+
+    if (accessiblePages.length > 0) {
       baseNav.push({
         title: "Rexhub Partners & Users",
         icon: IconFolder,
-        isGroup: true as const, // ✅ Fixed: Force literal type
-        pages: partnersUsersPages.map((p) => ({
+        isGroup: true as const,
+        pages: accessiblePages.map((p) => ({
           title: p.title,
           page: p.page,
           icon: p.icon,
@@ -143,7 +151,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     }
 
     return baseNav;
-  }, [user?.role]);
+  }, [user]); // ✅ Fixed: Depend on entire user object, not just user?.role
 
   const handleNavigation = (page: PageName) => router.push(`/${page}`);
 
@@ -151,6 +159,17 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     await logout();
     router.push("/login");
   };
+
+  // Don't render until user is loaded to prevent flash of wrong navigation
+  if (isLoading) {
+    return (
+      <Sidebar collapsible="offcanvas" {...props}>
+        <SidebarContent className="flex items-center justify-center">
+          <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+        </SidebarContent>
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>

@@ -11,7 +11,7 @@ export interface LoginResponse {
   email: string;
   organizationName: string;
   organizationId: string;
-  role: string;
+  userRoles: string;
   message: string;
   passwordResetRequired: boolean;
   firstTimeUser: boolean;
