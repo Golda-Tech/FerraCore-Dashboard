@@ -1,12 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState,useEffect } from "react";
-import { register, clearAuth } from "@/lib/auth";
+import { useState, useEffect } from "react";
+import { register, getUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getUser } from "@/lib/auth";
 
 import {
   Dialog,
@@ -25,15 +24,12 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   IconLoader,
   IconCheck,
   IconX,
-  IconUser,
   IconUserPlus,
   IconMail,
-  IconInfoCircle,
   IconCalculator,
   IconRuler,
 } from "@tabler/icons-react";
@@ -46,11 +42,11 @@ enum PlanType {
 }
 
 enum UserType {
-          SUPER_ADMIN = "SUPER_ADMIN",
-          GA_ADMIN = "GA_ADMIN",
-          BUSINESS_ADMIN = "BUSINESS_ADMIN",
-          BUSINESS_FINANCE ="BUSINESS_FINANCE",
-          BUSINESS_OPERATOR = "BUSINESS_OPERATOR",
+  SUPER_ADMIN = "SUPER_ADMIN",
+  GA_ADMIN = "GA_ADMIN",
+  BUSINESS_ADMIN = "BUSINESS_ADMIN",
+  BUSINESS_FINANCE = "BUSINESS_FINANCE",
+  BUSINESS_OPERATOR = "BUSINESS_OPERATOR",
 }
 
 interface RegisterRequest {
@@ -65,12 +61,14 @@ interface RegisterRequest {
   transactionFee?: number;
   cappedAmount?: number;
 }
+
 export function RegisterForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
-  const [registeredBy, setRegisteredBy] =  useState<string>("");
+  const [registeredBy, setRegisteredBy] = useState<string>("");
+  const [currentUserRole, setCurrentUserRole] = useState<string>("");
   const [organizationName, setOrganizationName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [planType, setPlanType] = useState<PlanType | "">("");
@@ -79,17 +77,33 @@ export function RegisterForm() {
   const [cappedAmount, setCappedAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
   const [registerResult, setRegisterResult] = useState<{
     success: boolean;
     error?: string;
     userData?: any;
   }>({ success: false });
 
-   useEffect(() => {
-        const user = getUser();
-        setRegisteredBy(user?.email ?? "");
-      }, []);
+  useEffect(() => {
+    const user = getUser();
+    setRegisteredBy(user?.email ?? "");
+    setCurrentUserRole(user?.userRoles ?? "");
+  }, []);
 
+  // Determine if a user type should be disabled based on current user's role
+  const isUserTypeDisabled = (type: UserType): boolean => {
+    switch (currentUserRole) {
+      case "SUPER_ADMIN":
+        // SUPER_ADMIN can create any user type - none disabled
+        return false;
+      case "GA_ADMIN":
+        // GA_ADMIN cannot create SUPER_ADMIN
+        return type === UserType.SUPER_ADMIN;
+      default:
+        // All other roles cannot create SUPER_ADMIN or GA_ADMIN
+        return type === UserType.SUPER_ADMIN || type === UserType.GA_ADMIN;
+    }
+  };
 
   const validateForm = () => {
     if (!firstname.trim() || !lastname.trim()) {
@@ -151,6 +165,7 @@ export function RegisterForm() {
       const problem = err.response?.data;
 
       const userMsg =
+       err.response?.data.message ||
         problem?.detail ||
         problem?.title ||
         problem?.message ||
@@ -169,37 +184,30 @@ export function RegisterForm() {
 
       setRegisterResult({
         success: false,
-        error: problem?.detail || "Registration failed. Please try again.",
+        error: userMsg || problem?.detail || "Registration failed. Please try again.",
       });
       setShowResultDialog(true);
     } finally {
       setLoading(false);
     }
   };
-  const [showBanner, setShowBanner] = useState(false)
-
-  {/** const handleCloseDialog = () => {
-    setShowResultDialog(false);
-    if (registerResult.success) {
-      if (typeof window !== "undefined") {
-        localStorage.clear();
-        console.log("Cleared all localStorage");
-        window.location.href = "/login?registered=true";
-      }
-    }
-  };**/}
 
   const handleCloseDialog = () => {
-    setShowResultDialog(false)
+    setShowResultDialog(false);
     if (registerResult.success) {
-      /* reset form */
-      setEmail(""); setFirstname(""); setLastname(""); setOrganizationName(""); setMobileNumber(""); setPlanType(""); setTransactionFee(""); setCappedAmount("");
-      /* show success banner */
-      setShowBanner(true)
-      /* auto-hide after 5 s */
-      setTimeout(() => setShowBanner(false), 5000)
+      setEmail("");
+      setFirstname("");
+      setLastname("");
+      setOrganizationName("");
+      setMobileNumber("");
+      setPlanType("");
+      setUserType("");
+      setTransactionFee("");
+      setCappedAmount("");
+      setShowBanner(true);
+      setTimeout(() => setShowBanner(false), 5000);
     }
-  }
+  };
 
   const resetForm = () => {
     setEmail("");
@@ -215,12 +223,23 @@ export function RegisterForm() {
     setRegisterResult({ success: false });
   };
 
+  // Helper to get helper text based on role
+  const getRoleHelperText = () => {
+      console.log("Current user role:", currentUserRole); // Debug log
+    switch (currentUserRole) {
+      case "SUPER_ADMIN":
+        return "As SUPER ADMIN, you can assign any role";
+      case "GA_ADMIN":
+        return "As GA ADMIN, you cannot create SUPER ADMIN users";
+      default:
+        return "You can only create Business-level roles (BUSINESS_ADMIN, BUSINESS_FINANCE, BUSINESS_OPERATOR)";
+    }
+  };
+
   return (
     <>
-      {/* Center container with max width */}
       <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Header Section */}
           <div className="text-center space-y-2">
             <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-gray-100">
               Onboard New Business Partner
@@ -228,11 +247,14 @@ export function RegisterForm() {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Provide the details below to register a new business in the system.
             </p>
+            {currentUserRole && (
+              <p className="text-xs text-muted-foreground">
+                Logged in as: <span className="font-medium">{currentUserRole.replace("_", " ")}</span>
+              </p>
+            )}
           </div>
 
-          {/* Form Fields */}
           <div className="space-y-4">
-            {/* Name Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstname">First Name</Label>
@@ -260,7 +282,6 @@ export function RegisterForm() {
               </div>
             </div>
 
-            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -274,7 +295,6 @@ export function RegisterForm() {
               />
             </div>
 
-            {/* Organization Name */}
             <div className="space-y-2">
               <Label htmlFor="organizationName">Organization Name</Label>
               <Input
@@ -288,7 +308,6 @@ export function RegisterForm() {
               />
             </div>
 
-            {/* Mobile Number */}
             <div className="space-y-2">
               <Label htmlFor="mobileNumber">Mobile Number</Label>
               <div className="flex items-center">
@@ -314,7 +333,6 @@ export function RegisterForm() {
               </div>
             </div>
 
-            {/* Plan Type and User Type - Side by Side */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="planType">Select Plan</Label>
@@ -352,45 +370,69 @@ export function RegisterForm() {
                     <SelectValue placeholder="Choose user type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={UserType.SUPER_ADMIN} disabled>
+                    <SelectItem
+                      value={UserType.SUPER_ADMIN}
+                      disabled={isUserTypeDisabled(UserType.SUPER_ADMIN)}
+                    >
                       SUPER ADMIN
+                      {isUserTypeDisabled(UserType.SUPER_ADMIN) && ""}
                     </SelectItem>
-                    <SelectItem value={UserType.GA_ADMIN}>
+                    <SelectItem
+                      value={UserType.GA_ADMIN}
+                      disabled={isUserTypeDisabled(UserType.GA_ADMIN)}
+                    >
                       GA ADMIN
+                      {isUserTypeDisabled(UserType.GA_ADMIN) && ""}
                     </SelectItem>
-                    <SelectItem value={UserType.BUSINESS_ADMIN}>
+                    <SelectItem
+                      value={UserType.BUSINESS_ADMIN}
+                      disabled={isUserTypeDisabled(UserType.BUSINESS_ADMIN)}
+                    >
                       BUSINESS ADMIN
                     </SelectItem>
-                    <SelectItem value={UserType.BUSINESS_FINANCE}>
+                    <SelectItem
+                      value={UserType.BUSINESS_FINANCE}
+                      disabled={isUserTypeDisabled(UserType.BUSINESS_FINANCE)}
+                    >
                       BUSINESS FINANCE
                     </SelectItem>
-                    <SelectItem value={UserType.BUSINESS_OPERATOR}>
+                    <SelectItem
+                      value={UserType.BUSINESS_OPERATOR}
+                      disabled={isUserTypeDisabled(UserType.BUSINESS_OPERATOR)}
+                    >
                       BUSINESS OPERATOR
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">{getRoleHelperText()}</p>
               </div>
             </div>
 
-            {/* Transaction Fee and Capped Amount - Side by Side */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="transactionFee">Transaction Fee (GHS)</Label>
+                <Label htmlFor="transactionFee">Transaction Fee (%)</Label>
                 <div className="relative">
                   <IconCalculator className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="transactionFee"
-                    type="number"
-                    step="0.0001"
-                    min="0"
-                    max="1"
-                    placeholder="0.0175"
-                    className="pl-10"
-                    value={transactionFee}
-                    onChange={(e) => setTransactionFee(e.target.value)}
-                    disabled={loading}
-                  />
+                                       id="transactionFee"
+                                       type="text"
+                                       inputMode="decimal"
+                                       pattern="[0-9]*\.?[0-9]*"
+                                       placeholder="1.75"
+                                       className="pl-10"
+                                        value={transactionFee}
+                                       onChange={(e) => {
+                                         const value = e.target.value.replace(/[^0-9.]/g, '');
+                                         const parts = value.split('.');
+                                         // Keep first part as is, keep everything after first decimal point
+                                         const sanitized = parts[0] + (parts.length > 1 ? '.' + parts.slice(1).join('') : '');
+                                         setTransactionFee(sanitized);
+                                       }}
+                                        disabled={loading}
+                                     />
+
                 </div>
+                <p className="text-xs text-muted-foreground">Enter as percentage (e.g., 1.75 for 1.75%)</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cappedAmount">Capped Amount (GHS)</Label>
@@ -398,21 +440,29 @@ export function RegisterForm() {
                   <IconRuler className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="cappedAmount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="30"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    placeholder="30.00"
                     className="pl-10"
                     value={cappedAmount}
-                    onChange={(e) => setCappedAmount(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                      const parts = value.split('.');
+                      // Keep first part as is, keep everything after first decimal point
+                      const sanitized = parts[0] + (parts.length > 1 ? '.' + parts.slice(1).join('') : '');
+//                       handleInputChange("amount", sanitized);
+                      setCappedAmount(sanitized);
+                    }}
                     disabled={loading}
                   />
+
                 </div>
+                <p className="text-xs text-muted-foreground">Maximum fee limit in GHS (e.g., 30)</p>
               </div>
             </div>
           </div>
 
-          {/* Submit Button - Centered with max width */}
           <div className="flex justify-center pt-2">
             <Button
               type="submit"
@@ -432,12 +482,9 @@ export function RegisterForm() {
               )}
             </Button>
           </div>
-
-
         </form>
       </div>
 
-      {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-sm mx-4">
@@ -463,7 +510,6 @@ export function RegisterForm() {
         </div>
       )}
 
-      {/* Result Dialog */}
       <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
         <DialogContent className="sm:max-w-md mx-4">
           <DialogHeader>
@@ -534,12 +580,11 @@ export function RegisterForm() {
         </DialogContent>
       </Dialog>
 
-
-          {showBanner && (
-            <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded shadow">
-              ✅ Account created successfully!
-            </div>
-          )}
+      {showBanner && (
+        <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded shadow">
+          ✅ Account created successfully!
+        </div>
+      )}
     </>
   );
 }

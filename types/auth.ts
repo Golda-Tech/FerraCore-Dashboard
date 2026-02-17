@@ -17,17 +17,27 @@ export interface LoginResponse {
   firstTimeUser: boolean;
 }
 
+export interface RegisterUserRequest {
+   firstname: string;
+   lastname: string;
+   email: string;
+   mobileNumber: string;
+   userType: UserType;
+   organizationName: string;
+   registeredBy: string;
+}
+
 export interface RegisterRequest {
-  firstname: string;
-  lastname: string;
-  email: string;
-  organizationName: string;
-  registeredBy: string;
-  mobileNumber: string;
-  planType: PlanType;
-  userType: UserType;
-  transactionFee?: number;
-  cappedAmount?: number;
+   firstname: string;
+     lastname: string;
+     email: string;
+     organizationName: string;
+     registeredBy: string;
+     mobileNumber: string;
+     planType: PlanType;
+     userType: UserType;
+     transactionFee?: number;
+     cappedAmount?: number;
 }
 
 export interface WhitelistUpdateRequest {

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Plus, Smartphone, CreditCard, AlertCircle, CheckCircle, Loader,ArrowRight, UserCheck, ClockIcon, User,Check, ShieldCheck, RefreshCw, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,7 @@ import { send } from "process"
 import { LoginResponse } from "@/types/auth";
 import { cn } from "@/lib/utils"
 import { getUser } from "@/lib/auth";
+import { getCommissionFees } from "@/lib/payment";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
 import { v4 as uuid } from "uuid";
 
@@ -32,16 +33,24 @@ export function RequestPaymentContent() {
   const [refreshedStatus, setRefreshedStatus] = useState<string | null>(null)
   const [selectedMethod, setSelectedMethod] = useState("mobile_money")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [isPending, setIsPending] = useState(true);   // true until you hear “success”
+  const [isPending, setIsPending] = useState(true);   // true until you hear "success"
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [fees, setFees] = useState<{ percentage: number; fixed: number } | null>(null)
   const [showReference, setReference] = useState("")
   const [showOtpDialog, setShowOtpDialog] = useState(false)
   const [otp, setOtp] = useState("")
   const [isOtpSending, setIsOtpSending] = useState(false)
   const [isOtpVerifying, setIsOtpVerifying] = useState(false)
   const [isOtpVerified, setIsOtpVerified] = useState(false)
+  const [organizationName, setOrganizationName] = useState<string>("");
+
+  // Debounce timer ref
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Ref for auto-focus
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
 
   const [user, setUser] = useState<LoginResponse | null>(null);
@@ -49,11 +58,59 @@ export function RequestPaymentContent() {
         const stored = getUser();
         console.log("Stored user:", stored);
         setUser(stored);
+         if (stored?.organizationName) {
+              setOrganizationName(stored.organizationName);
+            }
       }, []);
 
+   // Auto-focus phone input on mount
+   useEffect(() => {
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      phoneInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+   // Fetch commission fees when organizationName is available
+      useEffect(() => {
+        async function fetchFees() {
+          if (!organizationName) {
+            console.log("No organization name available yet");
+            return;
+          }
+
+          try {
+            console.log("Fetching commission fees for partner:", organizationName);
+            const data = await getCommissionFees(organizationName);
+
+            // Use exact values from API without rounding
+            // If API returns "1.10", we keep it as 1.10 (not 1.1)
+            const exactPercentage = parseFloat(data.transactionFee);
+            const exactCappedAmount = parseFloat(data.cappedAmount);
+
+            console.log("Fetched fees (exact):", {
+              percentage: exactPercentage,
+              cappedAmount: exactCappedAmount
+            });
+
+            setFees({
+              percentage: exactPercentage,
+              cappedAmount: exactCappedAmount
+            });
+          } catch (err) {
+            console.error("Failed to fetch fees:", err);
+            // Fallback to default fees if API fails
+            setFees({ percentage: 1.75, cappedAmount: 30.00 });
+          }
+        }
+
+        fetchFees();
+      }, [organizationName]);
 
 
-  const [formData, setFormData] = useState(()=>{
+
+const [formData, setFormData] = useState(()=>{
       const today = new Date().toISOString().split("T")[0];
 return{
     customerName: "",
@@ -64,7 +121,7 @@ return{
     reference: "",
     description: "",
     dueDate: today,
-    network: "",
+    network: "mtn", // Default to MTN
     };
   });
 
@@ -97,12 +154,70 @@ return{
    }
  ];
 
+  // Auto-fetch name when phone number changes (debounced)
+  const fetchNameAutomatically = useCallback(async (phoneNumber: string) => {
+    // Expect 9 digits (without the leading 0)
+    if (!phoneNumber || phoneNumber.length < 9) {
+      setFormData(prev => ({ ...prev, customerName: "" }));
+      return;
+    }
+
+    setIsFetchingName(true);
+    setFetchError(null);
+
+    try {
+      // Concatenate 233 + 9-digit number (e.g., 23324XXXXXXX)
+      const fullNumber = `233${phoneNumber}`;
+      const data: UserInfo = await getUserInfo(fullNumber);
+      setFormData(prev => ({ ...prev, customerName: data.accountName }));
+
+      // Optionally request OTP after successful name fetch
+      // requestOtpCode(fullNumber);
+    } catch (err: any) {
+      setFormData(prev => ({ ...prev, customerName: "" }));
+      setFetchError("Unable to fetch customer name");
+    } finally {
+      setIsFetchingName(false);
+    }
+  }, []);
+
+  const handlePhoneNumberChange = (value: string) => {
+    // Allow only digits, max 9 characters (without the 0 prefix)
+    const digitsOnly = value.replace(/\D/g, "").slice(0, 9);
+    handleInputChange("phoneNumber", digitsOnly);
+
+    // Clear existing timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    // Set new timer for auto-fetch (800ms delay after user stops typing)
+    if (digitsOnly.length === 9) {
+      const timer = setTimeout(() => {
+        fetchNameAutomatically(digitsOnly);
+      }, 800);
+      setDebounceTimer(timer);
+    } else {
+      setFormData(prev => ({ ...prev, customerName: "" }));
+    }
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, [debounceTimer]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
     try {
-      const fullMobileNumber = `${formData.countryCode.replace("+", "")}${formData.phoneNumber}`;
+      // Concatenate 233 + 9-digit number for API
+      const fullMobileNumber = `233${formData.phoneNumber}`;
 
       // Prepare payment request payload
       const paymentRequest = {
@@ -112,7 +227,7 @@ return{
         initiatedBy: user?.email ?? "", // or throw / return early if missing
         initiationPartnerId: user?.organizationId ?? "", //
         amount: Number(formData.amount),
-        currency: "GHS",                               // or "EUR" if applicable
+        currency: "GHS",
         partyIdType: "MSISDN",
         payerMessage: formData.description,
         payeeNote: "Thank you for your payment",
@@ -120,7 +235,7 @@ return{
 
       // Call the payment API
       const paymentResponse = await createPayment(paymentRequest, {
-        "X-Callback-Url": "https://ferracore.tech/api/v1/payments/mtn/callback",
+        "X-Callback-Url": "https://ferracore.tech/api/v1/payments/mtn/callback ",
         "X-Reference-Id": refId,
         "X-Target-Environment": "poc"
       });
@@ -138,16 +253,15 @@ return{
      setLastTransaction({ provider, transactionRef })
      setRefreshedStatus(null)
      setReference(transactionRef);
-
-
-
       setShowSuccess(true);
     } catch (err: any) {
         /*  RFC 7807 (Problem Details) shape  */
                             const problem = err.response?.data;
+                            console.log("Error response data:", err.response?.data.message);
 
                             // 1.  Prefer RFC 7807 fields
                             const userMsg =
+                            err.response?.data.message ||                 // some APIs put the message here
                               problem?.detail ||                       // "Invalid temporary password."
                               problem?.errors?.amount ||                       // "Invalid temporary password."
                               problem?.title ||                        // "Internal Server Error"
@@ -174,8 +288,25 @@ return{
     }
   };
 
+  // Calculate fee dynamically based on fetched fees
+    const calculateFee = (amount: number): number => {
+      if (!fees) return 0;
+
+      // Calculate percentage fee
+      const percentageFee = amount * (fees.percentage / 100);
+
+      // Apply cap if applicable
+      if (fees.cappedAmount > 0 && percentageFee > fees.cappedAmount) {
+        return fees.cappedAmount;
+      }
+
+  console.log(`Calculated fee for amount GHS ${amount}: GHS ${percentageFee} (Percentage: ${fees.percentage}%, Cap: GHS ${fees.cappedAmount})`);
+
+      return percentageFee;
+    };
+
   const amount = Number.parseFloat(formData.amount) || 0
-  const fee = amount * 0.0175// 1.75% fee
+  const fee = calculateFee(amount);
   const totalAmount = amount + fee
 
   const [isFetchingName, setIsFetchingName] = useState(false);
@@ -200,26 +331,6 @@ return{
       setStatusLoading(false)
     }
   }
-
-  const handleFetchName = async () => {
-    if (!formData.phoneNumber) return;
-    setIsFetchingName(true);
-    setFetchError(null);
-
-    try {
-      // Concatenate country code and phone number **without the '+'**
-      const fullNumber = `${formData.countryCode.replace("+", "")}${formData.phoneNumber}`;
-      const data: UserInfo = await getUserInfo(fullNumber); 
-      setFormData(prev => ({ ...prev, customerName: data.accountName }));
-
-      //Request OTP
-      requestOtpCode(fullNumber);
-    } catch (err: any) {
-      setFetchError("Unable to fetch customer name");
-    } finally {
-      setIsFetchingName(false);
-    }
-  };
 
 
   const requestOtpCode = async (fullNumber: string) => {
@@ -302,54 +413,53 @@ return{
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
                   <div className="space-y-2 sm:col-span-1">
                     <Label htmlFor="countryCode" className="text-sm">Country</Label>
-                    <Select
-                      value={formData.countryCode}
-                      onValueChange={(value) => handleInputChange("countryCode", value)}
-                    >
-                      <SelectTrigger className="h-10 sm:h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="+233">🇬🇭 Ghana (+233)</SelectItem>
-                        <SelectItem value="+234">🇳🇬 Nigeria (+234)</SelectItem>
-                        <SelectItem value="+254">🇰🇪 Kenya (+254)</SelectItem>
-                        <SelectItem value="+256">🇺🇬 Uganda (+256)</SelectItem>
-                        <SelectItem value="+255">🇹🇿 Tanzania (+255)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                   <Select
+                     value={formData.countryCode}
+                     onValueChange={(value) => handleInputChange("countryCode", value)}
+                     disabled={true} // Lock the select to prevent changes
+                   >
+                     <SelectTrigger className="h-10 sm:h-9">
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="+233">🇬🇭 Ghana (+233)</SelectItem>
+                       <SelectItem value="+234" disabled className="opacity-50 cursor-not-allowed">🇳🇬 Nigeria (+234)</SelectItem>
+                       <SelectItem value="+254" disabled className="opacity-50 cursor-not-allowed">🇰🇪 Kenya (+254)</SelectItem>
+                       <SelectItem value="+256" disabled className="opacity-50 cursor-not-allowed">🇺🇬 Uganda (+256)</SelectItem>
+                       <SelectItem value="+255" disabled className="opacity-50 cursor-not-allowed">🇹🇿 Tanzania (+255)</SelectItem>
+                     </SelectContent>
+                   </Select>
                   </div>
                   <div className="sm:col-span-2 space-y-2 relative">
                     <Label htmlFor="phoneNumber" className="text-sm">Mobile Number *</Label>
                     <div className="flex items-center gap-2">
-                      <Input
-                        id="phoneNumber"
-                        placeholder="24 XXX XXXX"
-                        value={formData.phoneNumber}
-                        onChange={(e) =>{
-                            const digitsOnly = e.target.value.replace(/\D/g, "").slice(0,10);
-                            handleInputChange("phoneNumber", digitsOnly)
-                            }}
-                         maxLength={10}
-                        required
-                        className="h-10 sm:h-9 flex-1"
-                      />
-                    <Button
-                      type="button"
-                      onClick={handleFetchName}
-                      disabled={!formData.phoneNumber || isFetchingName}
-                      size="sm"
-                      className="h-10 w-10 p-0 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {isFetchingName ? (
-                        <Loader className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ArrowRight className="h-5 w-5" />
-                      )}
-                    </Button>
+                      <div className="relative flex-1">
+                        <div className="flex items-center">
+                          <span className="absolute left-3 text-gray-500 text-sm font-medium select-none">233</span>
+                          <Input
+                            ref={phoneInputRef}
+                            id="phoneNumber"
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="24XXXXXXX"
+                            value={formData.phoneNumber}
+                            onChange={(e) => handlePhoneNumberChange(e.target.value)}
+                            maxLength={9}
+                            required
+                            className="h-10 sm:h-9 pl-12 pr-10"
+                          />
+                        </div>
+                        {isFetchingName && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <Loader className="h-4 w-4 animate-spin text-gray-400" />
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    <p className="text-xs text-gray-500">Enter 9 digits (e.g., 24XXXXXXX).</p>
                     {fetchError && <p className="text-xs text-red-600 mt-1">{fetchError}</p>}
                   </div>
-                  
+
                 </div>
               </div>
 
@@ -396,7 +506,7 @@ return{
                     <Label htmlFor="customerName" className="text-sm">Customer Name *</Label>
                     <Input
                       id="customerName"
-                      placeholder="Customer name will appear here"
+                      placeholder={isFetchingName ? "Fetching name..." : "Customer name will appear here"}
                       value={formData.customerName}
                       readOnly
                       required
@@ -423,19 +533,26 @@ return{
               <div className="space-y-4">
                 <h3 className="text-base sm:text-lg font-medium">Payment Details</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="amount" className="text-sm">Amount (GHS) *</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={formData.amount}
-                      onChange={(e) => handleInputChange("amount", e.target.value)}
-                      required
-                      className="h-10 sm:h-9"
-                    />
-                  </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="amount" className="text-sm">Amount (GHS) *</Label>
+                   <Input
+                     id="amount"
+                     type="text"
+                     inputMode="decimal"
+                     pattern="[0-9]*\.?[0-9]*"
+                     placeholder="0.00"
+                     className="h-10 sm:h-9"
+                     value={formData.amount}
+                     onChange={(e) => {
+                       const value = e.target.value.replace(/[^0-9.]/g, '');
+                       const parts = value.split('.');
+                       // Keep first part as is, keep everything after first decimal point
+                       const sanitized = parts[0] + (parts.length > 1 ? '.' + parts.slice(1).join('') : '');
+                       handleInputChange("amount", sanitized);
+                     }}
+                     required
+                   />
+                    </div>
                   <div className="space-y-2">
                     <Label htmlFor="dueDate" className="text-sm">Due Date</Label>
                     <Input
@@ -489,36 +606,40 @@ return{
                   </div>
                 </div>
               </div>
+            {/* Payment Summary - Updated with dynamic fees */}
+                 {amount > 0 && (
+                              <>
+                                <Separator />
+                                <div className="space-y-4">
+                                  <h3 className="text-base sm:text-lg font-medium">Payment Summary</h3>
+                                  <div className="bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-3 sm:p-4 space-y-3">
+                                    <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
+                                      <span>Payment Amount:</span>
+                                      <span className="font-medium">GHS {amount.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
+                                      <span>Service Fee ({fees ? `${fees.percentage}%` : '...'}):</span>
+                                      <span className="font-medium">GHS {fee.toFixed(2)}</span>
+                                    </div>
+                                    {fees && fee >= fees.cappedAmount && (
+                                      <div className="text-xs text-amber-600 dark:text-amber-400">
+                                        * Fee capped at GHS {fees.cappedAmount.toFixed(2)}
+                                      </div>
+                                    )}
+                                    <Separator />
+                                    <div className="flex justify-between text-sm text-muted-foreground dark:text-gray-400">
+                                       <span>Customer Pays:</span>
+                                       <span>GHS {(amount + fee).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-medium text-green-600 dark:text-green-400">
+                                      <span>You Receive:</span>
+                                      <span>GHS {(amount - fee).toFixed(2)}</span>
+                                    </div>
 
-              {/* Payment Summary */}
-              {amount > 0 && (
-                <>
-                  <Separator />
-                  <div className="space-y-4">
-                    <h3 className="text-base sm:text-lg font-medium">Payment Summary</h3>
-                    <div className="bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-3 sm:p-4 space-y-3">
-                      <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
-                        <span>Payment Amount:</span>
-                        <span className="font-medium">GHS {amount.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
-                        <span>Service Fee (1.75%):</span>
-                        <span className="font-medium">GHS {fee.toFixed(2)}</span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between font-medium text-green-600 dark:text-green-400">
-                        <span>You Receive:</span>
-                        <span>GHS {(amount - fee).toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-muted-foreground dark:text-gray-400">
-                        <span>Customer Pays:</span>
-                        <span>GHS {amount.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                  </div>
-                </>
-              )}
+                                  </div>
+                                </div>
+                              </>
+                            )}
 
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.back()} className="order-2 sm:order-1">
@@ -601,7 +722,7 @@ return{
          >
            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
              <div className="flex justify-between"><span>Customer:</span><span className="font-medium">{formData.customerName}</span></div>
-             <div className="flex justify-between"><span>Phone:</span><span className="font-medium">{formData.countryCode} {formData.phoneNumber}</span></div>
+             <div className="flex justify-between"><span>Phone:</span><span className="font-medium">233 {formData.phoneNumber}</span></div>
              <div className="flex justify-between"><span>Amount:</span><span className="font-medium">GHS {amount.toFixed(2)}</span></div>
              <div className="flex justify-between"><span>Network:</span><span className="font-medium uppercase">{formData.network}</span></div>
              <div className="flex justify-between items-center"><span>Reference:</span><span className="font-mono text-xs tracking-tight">{showReference}</span></div>
@@ -676,7 +797,7 @@ return{
                     reference: "",
                     description: "",
                       dueDate: new Date().toISOString().split("T")[0],
-                    network: "",
+                    network: "mtn", // Reset to MTN default
                   })
                 }}
               >
@@ -706,7 +827,7 @@ return{
           <DialogHeader>
             <DialogTitle>Enter OTP</DialogTitle>
             <DialogDescription>
-              We’ve sent a one-time password to {formData.phoneNumber}. Please enter it below.
+              We've sent a one-time password to 233{formData.phoneNumber}. Please enter it below.
             </DialogDescription>
           </DialogHeader>
 
@@ -734,7 +855,7 @@ return{
               onClick={async () => {
                 setIsOtpVerifying(true)
                 try {
-                  const fullNumber = `${formData.countryCode.replace("+", "")}${formData.phoneNumber}`
+                  const fullNumber = `233${formData.phoneNumber}`
                   await verifyOtp(fullNumber, "SMS", otp) // <-- your backend OTP API
                   setIsOtpVerified(true)
                   setShowOtpDialog(false)
@@ -754,7 +875,6 @@ return{
       </Dialog>
 
     </div>
-
 
              
   )

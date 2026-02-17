@@ -33,7 +33,7 @@ export async function getPayments(
   page: number = 0,
   size: number = 20
 ): Promise<Payment[]> {
-  const params: any = { initiatedBy, page, size };
+  const params: any = { initiatedBy};
   if (initiatedBy !== undefined) params.initiatedBy = initiatedBy;
 
   const response = await api.get<Payment[]>("/api/v1/payments", { params });
@@ -64,6 +64,18 @@ export async function getUserInfo(mobileNumber: string): Promise<UserInfo> {
   });
   return response.data;
 }
+
+//fetch commission fees with partnerId as request parameter and transactionFee and cappedAmount as response parameters
+export async function getCommissionFees(partnerName: string): Promise<{ transactionFee: string; cappedAmount: string }> {
+  const response = await api.get<{ transactionFee: string; cappedAmount: string }>(
+    "/api/v1/payments/fees",
+    {
+      params: { partnerName },
+    }
+  );
+  return response.data;
+}
+
 
 
 export async function sendOtp(

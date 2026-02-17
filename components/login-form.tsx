@@ -195,7 +195,7 @@ export function LoginForm() {
     } catch (err: any) {
       setLoginResult({
         success: false,
-        error: err.message || "Failed to resend OTP. Please try again.",
+        error: "Invalid username or password"|| "Failed to resend OTP. Please try again.",
       });
       setShowResultDialog(true);
     } finally {

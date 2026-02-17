@@ -6,6 +6,8 @@ import {
   RegisterRequest,
   RegisterResponse,
   ResetPasswordRequest,
+  RegisterRequest,
+  RegisterUserRequest,
   WhitelistUpdateRequest,
   ProfileResponse,
   ResetPasswordResponse,
@@ -195,6 +197,11 @@ export async function verifyResetOtp(
       params: { identifier, channel, otp },
     }
   );
+  return response.data;
+}
+
+export async function registerUser(data: RegisterUserRequest) {
+  const response = await api.post("/api/v1/auth/create/user", data);
   return response.data;
 }
 
