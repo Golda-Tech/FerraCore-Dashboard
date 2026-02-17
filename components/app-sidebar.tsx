@@ -42,11 +42,14 @@ import { LoginResponse } from "@/types/auth";
 
 /* ----------  NAVIGATION CONFIGURATION  ---------- */
 
+// Define icon type that accepts both Tabler and Lucide icons
+type IconType = React.ComponentType<{ className?: string; size?: number; stroke?: number }>;
+
 // Define all possible pages in the "Rexhub Partners & Users" group
 type PartnersUsersPage = {
   title: string;
   page: PageName;
-  icon: any;
+  icon: IconType;
   allowedRoles: string[];
 };
 
@@ -91,7 +94,23 @@ const getPartnersUsersPages = (userRole: string | undefined) => {
   );
 };
 
-const navSecondary = [
+// Navigation item types
+type NavItemPage = {
+  title: string;
+  page: PageName;
+  icon: IconType;
+};
+
+type NavItemGroup = {
+  title: string;
+  icon: IconType;
+  isGroup: true;
+  pages: NavItemPage[];
+};
+
+type NavItem = NavItemGroup;
+
+const navSecondary: NavItemPage[] = [
   { title: "Settings", page: "settings" as PageName, icon: IconSettings },
 ];
 
@@ -111,10 +130,10 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
   }, []);
 
   // Build dynamic navigation based on user role
-  const navMain = React.useMemo(() => {
+  const navMain: NavItem[] = React.useMemo(() => {
     const userRole = user?.role;
 
-    const baseNav = [
+    const baseNav: NavItem[] = [
       {
         title: "Rexhub Payments",
         icon: IconFolder,
@@ -127,14 +146,14 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     ];
 
     // Only add "Rexhub Partners & Users" group if user has access to any pages
-    const partnersUsersPages = getPartnersUsersPages(userRole);
+    const partnersUsersPagesFiltered = getPartnersUsersPages(userRole);
 
-    if (partnersUsersPages.length > 0) {
+    if (partnersUsersPagesFiltered.length > 0) {
       baseNav.push({
         title: "Rexhub Partners & Users",
         icon: IconFolder,
-        isGroup: true as const,
-        pages: partnersUsersPages.map((p) => ({
+        isGroup: true,
+        pages: partnersUsersPagesFiltered.map((p) => ({
           title: p.title,
           page: p.page,
           icon: p.icon,
