@@ -37,8 +37,11 @@ export function RequestPaymentContent() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [fees, setFees] = useState<{ percentage: number; fixed: number } | null>(null)
-  const [showReference, setReference] = useState("")
+const [fees, setFees] = useState<{
+  percentage: number;
+  fixed: number;
+  cappedAmount: number
+} | null>(null)  const [showReference, setReference] = useState("")
   const [showOtpDialog, setShowOtpDialog] = useState(false)
   const [otp, setOtp] = useState("")
   const [isOtpSending, setIsOtpSending] = useState(false)
