@@ -42,16 +42,19 @@ import { LoginResponse } from "@/types/auth";
 
 /* ----------  NAVIGATION CONFIGURATION  ---------- */
 
-// Match the Icon type from nav-main.tsx exactly
-// If nav-main uses this:
+// Match NavMain's Icon type exactly - size can be string or number
 type Icon = React.ForwardRefExoticComponent<{
   className?: string;
-  size?: number;
+  size?: string | number;
   stroke?: string;
 } & React.RefAttributes<SVGSVGElement>>;
 
-// Or simpler - use any if types are incompatible
-// type Icon = any;
+// Or use FunctionComponent if that's what NavMain expects
+// type Icon = React.FunctionComponent<{
+//   className?: string;
+//   size?: string | number;
+//   stroke?: string;
+// }>;
 
 // Define all possible pages in the "Rexhub Partners & Users" group
 type PartnersUsersPage = {
@@ -115,7 +118,17 @@ type NavItemGroup = {
   pages: NavItemPage[];
 };
 
-type NavItem = NavItemGroup;
+// Use type that matches NavMain's expected readonly structure
+type NavItem = {
+  readonly title: string;
+  readonly icon?: Icon;
+  readonly isGroup: true;
+  readonly pages: readonly {
+    readonly title: string;
+    readonly page: PageName;
+    readonly icon?: Icon;
+  }[];
+};
 
 const navSecondary: NavItemPage[] = [
   { title: "Settings", page: "settings" as PageName, icon: IconSettings as unknown as Icon },
@@ -137,7 +150,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
   }, []);
 
   // Build dynamic navigation based on user role
-  const navMain: NavItem[] = React.useMemo(() => {
+  const navMain: readonly NavItem[] = React.useMemo(() => {
     const userRole = user?.role;
 
     const baseNav: NavItem[] = [
@@ -167,7 +180,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       });
     }
 
-    return baseNav;
+    return baseNav as readonly NavItem[];
   }, [user?.role]);
 
   const handleNavigation = (page: PageName) => router.push(`/${page}`);
