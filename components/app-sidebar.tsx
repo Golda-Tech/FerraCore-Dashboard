@@ -23,7 +23,7 @@ import {
 import { UserPlus } from "lucide-react";
 
 import { NavDocuments } from "@/components/nav-documents";
-import { NavMain, type Icon as NavIcon } from "@/components/nav-main"; // Import Icon type
+import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -42,8 +42,16 @@ import { LoginResponse } from "@/types/auth";
 
 /* ----------  NAVIGATION CONFIGURATION  ---------- */
 
-// Use the same Icon type as NavMain
-type Icon = NavIcon;
+// Match the Icon type from nav-main.tsx exactly
+// If nav-main uses this:
+type Icon = React.ForwardRefExoticComponent<{
+  className?: string;
+  size?: number;
+  stroke?: string;
+} & React.RefAttributes<SVGSVGElement>>;
+
+// Or simpler - use any if types are incompatible
+// type Icon = any;
 
 // Define all possible pages in the "Rexhub Partners & Users" group
 type PartnersUsersPage = {
@@ -57,25 +65,25 @@ const partnersUsersPages: PartnersUsersPage[] = [
   {
     title: "Register Partners",
     page: "admin-register" as PageName,
-    icon: UserPlus as Icon, // Cast to match NavMain's Icon type
+    icon: UserPlus as unknown as Icon,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
   },
   {
     title: "Register Users",
     page: "user-register" as PageName,
-    icon: UserPlus as Icon,
+    icon: UserPlus as unknown as Icon,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
   },
   {
     title: "Manage Partners",
     page: "partner-management" as PageName,
-    icon: IconUsers as Icon,
+    icon: IconUsers as unknown as Icon,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
   },
   {
     title: "Manage Users",
     page: "user-management" as PageName,
-    icon: IconUserCircle as Icon,
+    icon: IconUserCircle as unknown as Icon,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
   },
 ];
@@ -93,7 +101,7 @@ const getPartnersUsersPages = (userRole: string | undefined) => {
   );
 };
 
-// Navigation item types using NavMain's Icon type
+// Navigation item types
 type NavItemPage = {
   title: string;
   page: PageName;
@@ -110,7 +118,7 @@ type NavItemGroup = {
 type NavItem = NavItemGroup;
 
 const navSecondary: NavItemPage[] = [
-  { title: "Settings", page: "settings" as PageName, icon: IconSettings as Icon },
+  { title: "Settings", page: "settings" as PageName, icon: IconSettings as unknown as Icon },
 ];
 
 const documents: any[] = [];
@@ -135,11 +143,11 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     const baseNav: NavItem[] = [
       {
         title: "Rexhub Payments",
-        icon: IconFolder as Icon,
+        icon: IconFolder as unknown as Icon,
         isGroup: true,
         pages: [
-          { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard as Icon },
-          { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall as Icon },
+          { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard as unknown as Icon },
+          { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall as unknown as Icon },
         ],
       },
     ];
@@ -149,7 +157,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     if (partnersUsersPagesFiltered.length > 0) {
       baseNav.push({
         title: "Rexhub Partners & Users",
-        icon: IconFolder as Icon,
+        icon: IconFolder as unknown as Icon,
         isGroup: true,
         pages: partnersUsersPagesFiltered.map((p) => ({
           title: p.title,
