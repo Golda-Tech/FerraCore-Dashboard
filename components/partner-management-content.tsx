@@ -261,7 +261,7 @@ export function UserManagementContent() {
     const tableData = filteredUsers.map((u) => [
       u.organizationName,
       u.email,
-      u.userRoles.replace("_", " "),
+      u.role.replace("_", " "),
       u.status,
       u.transactionCount.toLocaleString(),
       u.totalVolume.toLocaleString()
