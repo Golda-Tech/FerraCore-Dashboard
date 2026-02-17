@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy } from "lucide-react";
+import { Trophy, Eye } from "lucide-react";
 import {
   IconUsers,
   IconBuilding,
@@ -620,7 +620,7 @@ export function PartnersDashboardContent() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleViewPartnerDetails(partner.organizationId)}>
-                              <IconEye className="mr-2 h-4 w-4" />
+                              <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setSelectedPartner(partner)}>
