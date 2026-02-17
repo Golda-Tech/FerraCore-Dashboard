@@ -77,7 +77,7 @@ export function RegisterUserForm() {
     const user = getUser();
     setRegisteredBy(user?.email ?? "");
     setOrganizationName(user?.organizationName ?? "");
-    setCurrentUserRole(user?.userRoles ?? "");
+    setCurrentUserRole(user?.role ?? "");
   }, []);
 
   // Determine if a role should be disabled based on current user's role
