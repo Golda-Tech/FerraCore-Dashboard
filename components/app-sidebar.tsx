@@ -42,25 +42,11 @@ import { LoginResponse } from "@/types/auth";
 
 /* ----------  NAVIGATION CONFIGURATION  ---------- */
 
-// Match NavMain's Icon type exactly - size can be string or number
-type Icon = React.ForwardRefExoticComponent<{
-  className?: string;
-  size?: string | number;
-  stroke?: string;
-} & React.RefAttributes<SVGSVGElement>>;
-
-// Or use FunctionComponent if that's what NavMain expects
-// type Icon = React.FunctionComponent<{
-//   className?: string;
-//   size?: string | number;
-//   stroke?: string;
-// }>;
-
 // Define all possible pages in the "Rexhub Partners & Users" group
 type PartnersUsersPage = {
   title: string;
   page: PageName;
-  icon: Icon;
+  icon: any;
   allowedRoles: string[];
 };
 
@@ -68,25 +54,25 @@ const partnersUsersPages: PartnersUsersPage[] = [
   {
     title: "Register Partners",
     page: "admin-register" as PageName,
-    icon: UserPlus as unknown as Icon,
+    icon: UserPlus,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
   },
   {
     title: "Register Users",
     page: "user-register" as PageName,
-    icon: UserPlus as unknown as Icon,
+    icon: UserPlus,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
   },
   {
     title: "Manage Partners",
     page: "partner-management" as PageName,
-    icon: IconUsers as unknown as Icon,
+    icon: IconUsers,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
   },
   {
     title: "Manage Users",
     page: "user-management" as PageName,
-    icon: IconUserCircle as unknown as Icon,
+    icon: IconUserCircle,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
   },
 ];
@@ -95,6 +81,7 @@ const partnersUsersPages: PartnersUsersPage[] = [
 const getPartnersUsersPages = (userRole: string | undefined) => {
   if (!userRole) return [];
 
+  // BUSINESS_FINANCE and BUSINESS_OPERATOR don't see this group at all
   if (userRole === "BUSINESS_FINANCE" || userRole === "BUSINESS_OPERATOR") {
     return [];
   }
@@ -104,34 +91,8 @@ const getPartnersUsersPages = (userRole: string | undefined) => {
   );
 };
 
-// Navigation item types
-type NavItemPage = {
-  title: string;
-  page: PageName;
-  icon: Icon;
-};
-
-type NavItemGroup = {
-  title: string;
-  icon: Icon;
-  isGroup: true;
-  pages: NavItemPage[];
-};
-
-// Use type that matches NavMain's expected readonly structure
-type NavItem = {
-  readonly title: string;
-  readonly icon?: Icon;
-  readonly isGroup: true;
-  readonly pages: readonly {
-    readonly title: string;
-    readonly page: PageName;
-    readonly icon?: Icon;
-  }[];
-};
-
-const navSecondary: NavItemPage[] = [
-  { title: "Settings", page: "settings" as PageName, icon: IconSettings as unknown as Icon },
+const navSecondary = [
+  { title: "Settings", page: "settings" as PageName, icon: IconSettings },
 ];
 
 const documents: any[] = [];
@@ -150,29 +111,30 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
   }, []);
 
   // Build dynamic navigation based on user role
-  const navMain: readonly NavItem[] = React.useMemo(() => {
+  const navMain = React.useMemo(() => {
     const userRole = user?.role;
 
-    const baseNav: NavItem[] = [
+    const baseNav = [
       {
         title: "Rexhub Payments",
-        icon: IconFolder as unknown as Icon,
+        icon: IconFolder,
         isGroup: true,
         pages: [
-          { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard as unknown as Icon },
-          { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall as unknown as Icon },
+          { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard },
+          { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
         ],
       },
     ];
 
-    const partnersUsersPagesFiltered = getPartnersUsersPages(userRole);
+    // Only add "Rexhub Partners & Users" group if user has access to any pages
+    const partnersUsersPages = getPartnersUsersPages(userRole);
 
-    if (partnersUsersPagesFiltered.length > 0) {
+    if (partnersUsersPages.length > 0) {
       baseNav.push({
         title: "Rexhub Partners & Users",
-        icon: IconFolder as unknown as Icon,
+        icon: IconFolder,
         isGroup: true,
-        pages: partnersUsersPagesFiltered.map((p) => ({
+        pages: partnersUsersPages.map((p) => ({
           title: p.title,
           page: p.page,
           icon: p.icon,
@@ -180,7 +142,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       });
     }
 
-    return baseNav as readonly NavItem[];
+    return baseNav;
   }, [user?.role]);
 
   const handleNavigation = (page: PageName) => router.push(`/${page}`);
