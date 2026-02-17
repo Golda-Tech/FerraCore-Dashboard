@@ -133,7 +133,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       baseNav.push({
         title: "Rexhub Partners & Users",
         icon: IconFolder,
-        isGroup: true,
+        isGroup: true as const,
         pages: partnersUsersPages.map((p) => ({
           title: p.title,
           page: p.page,
@@ -175,7 +175,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 
       <SidebarContent>
         <NavMain
-          items={navMain as const}
+          items={navMain}
           onNavigate={handleNavigation}
           currentPath={pathname}
         />
