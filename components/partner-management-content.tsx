@@ -388,7 +388,7 @@ export function UserManagementContent() {
           <h2 className="text-3xl font-bold tracking-tight">Partner Management</h2>
           <p className="text-muted-foreground">
             Manage partners and their roles
-            {currentUser?.role === "SUPER_ADMIN" && (
+            {currentUser?.userRoles === "SUPER_ADMIN" && (
               <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">SUPER_ADMIN View</span>
             )}
           </p>
