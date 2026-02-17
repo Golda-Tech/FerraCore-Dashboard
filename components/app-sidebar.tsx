@@ -118,7 +118,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       {
         title: "Rexhub Payments",
         icon: IconFolder,
-        isGroup: true,
+        isGroup: true as const, // ✅ Fixed: Force literal type
         pages: [
           { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard },
           { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
@@ -133,7 +133,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       baseNav.push({
         title: "Rexhub Partners & Users",
         icon: IconFolder,
-        isGroup: true,
+        isGroup: true as const, // ✅ Fixed: Force literal type
         pages: partnersUsersPages.map((p) => ({
           title: p.title,
           page: p.page,
