@@ -39,8 +39,8 @@ export function RequestPaymentContent() {
   const [errorMessage, setErrorMessage] = useState("")
 const [fees, setFees] = useState<{
   percentage: number;
-  fixed: number;
-  cappedAmount: number
+  fixed?: number; // Make optional
+  cappedAmount: number;
 } | null>(null)
    const [showReference, setReference] = useState("")
   const [showOtpDialog, setShowOtpDialog] = useState(false)
