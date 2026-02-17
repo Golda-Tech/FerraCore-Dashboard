@@ -18,6 +18,7 @@ import {
   IconCircleCheck,
   IconCircleX,
   IconClock,
+  IconX,
   IconBuildingBank,
   IconCreditCard,
   IconCash,
