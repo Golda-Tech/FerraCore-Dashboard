@@ -46,7 +46,7 @@ import { LoginResponse } from "@/types/auth";
 type PartnersUsersPage = {
   title: string;
   page: PageName;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: any;
   allowedRoles: string[];
 };
 
