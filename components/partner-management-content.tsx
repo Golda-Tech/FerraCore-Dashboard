@@ -226,7 +226,7 @@ export function UserManagementContent() {
     const matchesSearch = `${u.firstName} ${u.lastName} ${u.email} ${u.organizationName}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
-    const matchesRole = roleFilter === "all" || u.userRoles === roleFilter
+    const matchesRole = roleFilter === "all" || u.role === roleFilter
     const matchesStatus = statusFilter === "all" || u.status === statusFilter
     return matchesSearch && matchesRole && matchesStatus
   })
