@@ -87,7 +87,7 @@ export function RegisterForm() {
   useEffect(() => {
     const user = getUser();
     setRegisteredBy(user?.email ?? "");
-    setCurrentUserRole(user?.userRoles ?? "");
+    setCurrentUserRole(user?.role ?? "");
   }, []);
 
   // Determine if a user type should be disabled based on current user's role
