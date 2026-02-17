@@ -6,7 +6,6 @@ import {
   RegisterRequest,
   RegisterResponse,
   ResetPasswordRequest,
-  RegisterRequest,
   RegisterUserRequest,
   WhitelistUpdateRequest,
   ProfileResponse,
