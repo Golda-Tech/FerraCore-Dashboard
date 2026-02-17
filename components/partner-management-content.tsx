@@ -98,7 +98,7 @@ type BackendUser = {
 /* ---- API Request Type ---- */
 interface SubscriptionManagementRequest {
   organizationId: string
-  action: "ACTIVATE" | "DEACTIVATE" | "CANCEL"
+  action: "activate" | "deactivate" | "cancel"
 }
 
 /* ---- table row shape ---- */
