@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { Trophy } from "lucide-react";
 import {
   IconUsers,
   IconBuilding,
@@ -422,7 +423,7 @@ export function PartnersDashboardContent() {
             <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <IconTrophy className="h-5 w-5 text-yellow-500" />
+                  <Trophy className="h-5 w-5 text-yellow-500" />
                   <CardTitle className="text-lg">Top Performer</CardTitle>
                 </div>
                 <CardDescription>Highest transaction volume</CardDescription>
