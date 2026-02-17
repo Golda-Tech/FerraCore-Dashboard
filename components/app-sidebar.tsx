@@ -43,7 +43,7 @@ import { LoginResponse } from "@/types/auth";
 /* ----------  NAVIGATION CONFIGURATION  ---------- */
 
 // Define icon type that accepts both Tabler and Lucide icons
-type IconType = React.ComponentType<{ className?: string; size?: number; stroke?: number }>;
+type IconType = React.ComponentType<{ className?: string; size?: number; stroke?: any }>;
 
 // Define all possible pages in the "Rexhub Partners & Users" group
 type PartnersUsersPage = {
