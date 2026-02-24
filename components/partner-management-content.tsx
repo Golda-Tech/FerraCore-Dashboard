@@ -27,6 +27,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -279,6 +281,33 @@ export function UserManagementContent() {
     doc.save(`partners-report-${new Date().toISOString().split("T")[0]}.pdf`)
   }
 
+  /* ---------- export to CSV ---------- */
+  const handleExportCSV = () => {
+    const csvContent = [
+      "Partner,Email,Role,Status,Transactions,Volume (GHS)",
+      ...filteredUsers.map((u) =>
+        [
+          u.organizationName,
+          u.email,
+          u.role.replace("_", " "),
+          u.status,
+          u.transactionCount.toLocaleString(),
+          u.totalVolume.toLocaleString(),
+        ].join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `partners-report-${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   /* ---------- check if specific action is loading ---------- */
   const isActionLoading = (organizationId: string, action: "activate" | "deactivate" | "cancel" | "view") => {
     return loadingAction?.organizationId === organizationId && loadingAction?.action === action
@@ -477,10 +506,26 @@ export function UserManagementContent() {
           </Select>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handleExportPDF}>
-            <IconDownload className="mr-2 h-4 w-4" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <IconDownload className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <IconDownload className="mr-2 h-4 w-4" />
+                Export as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <IconDownload className="mr-2 h-4 w-4" />
+                Export as CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button size="sm" onClick={() => router.push("/admin-register")}>
             <IconPlus className="mr-2 h-4 w-4" />
             Add Partner
@@ -538,17 +583,17 @@ export function UserManagementContent() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                       {/*  <DropdownMenuItem
-                          onClick={() => handleViewDetails(u.organizationId)}
-                          disabled={isActionLoading(u.organizationId, "view")}
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(
+                              `/partner-transactions/${encodeURIComponent(u.email)}?name=${encodeURIComponent(u.organizationName)}`
+                            )
+                          }
                         >
-                          {isActionLoading(u.organizationId, "view") ? (
-                            <IconLoader className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <IconEye className="mr-2 h-4 w-4" />
-                          )}
-                          View Details
-                        </DropdownMenuItem> */}
+                          <IconEye className="mr-2 h-4 w-4" />
+                          View Transactions
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
 
                         {u.status === "PENDING" && (
                           <DropdownMenuItem

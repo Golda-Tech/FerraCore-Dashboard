@@ -10,6 +10,8 @@ import {
   IconSearch,
   IconX,
 } from "@tabler/icons-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -265,18 +275,59 @@ export function TransactionsContent() {
     document.body.removeChild(link);
   };
 
+  const exportTransactionsPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.text("TRANSACTIONS REPORT", 14, 16);
+
+    const body = filteredTransactions.map((t) => [
+      t.reference,
+      t.recipientName,
+      t.recipientType,
+      t.network,
+      `₵${t.amount}`,
+      t.status,
+      new Date(t.dateInitiated).toLocaleDateString(),
+    ]);
+
+    autoTable(doc, {
+      head: [["Reference", "Recipient", "Type", "Network", "Amount", "Status", "Date"]],
+      body,
+      startY: 24,
+      theme: "grid",
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: "#22c55e" },
+    });
+
+    doc.save(`transactions_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Transactions</h1>
-        <Button
-          variant="outline"
-          onClick={exportTransactions}
-          className="flex items-center gap-2 bg-transparent"
-        >
-          <IconDownload className="h-4 w-4" />
-          Export CSV
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 bg-transparent"
+            >
+              <IconDownload className="h-4 w-4" />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={exportTransactionsPDF}>
+              <IconDownload className="mr-2 h-4 w-4" />
+              Export as PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={exportTransactions}>
+              <IconDownload className="mr-2 h-4 w-4" />
+              Export as CSV
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Summary Cards */}

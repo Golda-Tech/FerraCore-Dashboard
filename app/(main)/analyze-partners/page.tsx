@@ -1,6 +1,6 @@
-import { PartnersDashboardContent } from "@/components/analyze-partners-content";
+import { PartnersContent } from "@/components/analytics-partner-content";
 
 
 export default function AnalyticsPage() {
-   return <PartnersDashboardContent />;
+   return <PartnersContent />;
 }

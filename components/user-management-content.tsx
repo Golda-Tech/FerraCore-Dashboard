@@ -9,12 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import api from "@/lib/api"
-import { LoginResponse } from "@/types/auth";
 import { getUser } from "@/lib/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 
 /* ---- shape that matches backend ---- */
 type BackendUser = {
@@ -75,16 +76,7 @@ interface User {
 }
 
 export function UserManagementContent() {
- const [orgName, setOrgName] = useState<string>("");
- const [user, setUser] = useState<LoginResponse | null>(null);
-
-    useEffect(() => {
-      const stored = getUser();
-      setUser(stored);
-      console.log("user response:", stored?.organizationName);
-      setOrgName(stored?.organizationName ?? "");
-    }, []);
-
+  const [orgName, setOrgName] = useState<string>("");
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -94,51 +86,64 @@ export function UserManagementContent() {
   const [isEditUserOpen, setIsEditUserOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
-
-
-
-  /* ---------- fetch partners ---------- */
+  /* ---------- read user from localStorage on mount ---------- */
   useEffect(() => {
+    const stored = getUser();
+    console.log("user response:", stored?.organizationName);
+    setOrgName(stored?.organizationName ?? "");
+  }, []);
+
+  /* ---------- fetch partners (only once orgName is ready) ---------- */
+  useEffect(() => {
+    // Don't fetch until orgName is populated
+    if (!orgName) return;
+
+    let cancelled = false;
+
     async function loadPartners() {
+      setLoading(true);
       try {
+        const res = await api.get<BackendUser[]>(
+          `/api/v1/auth/profile/users?organizationName=${encodeURIComponent(orgName)}`
+        );
+        const data = res.data;
 
-          // 1. Axios puts the result directly in 'data'
-            const res = await api.get<BackendUser[]>(`/api/v1/auth/profile/users?organizationName=${encodeURIComponent(orgName)}`);
-
-            // 2. Axios doesn't use .ok or .json().
-            // If the request fails, it jumps straight to the catch block.
-            const data = res.data;
-
-        setUsers(data.map((u) => ({
-          id: u.id,
-          firstName: u.firstName,
-          lastName: u.lastName,
-          email: u.email,
-          role: u.userRoles,
-          status: u.subscription.status,
-          lastLogin: "Never", // backend does not provide it
-          createdAt: new Date().toISOString().split("T")[0], // placeholder
-          transactionCount: Number(u.summary?.totalCountTransactions ?? 0),
-          totalVolume: u.summary?.totalSuccessfulAmountTransactions ?? 0,
-        })))
-      } catch (err:any) {
+        if (!cancelled) {
+          setUsers(data.map((u) => ({
+            id: u.id,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            email: u.email,
+            role: u.userRoles,
+            status: u.subscription.status,
+            lastLogin: "Never",
+            createdAt: new Date().toISOString().split("T")[0],
+            transactionCount: Number(u.summary?.totalCountTransactions ?? 0),
+            totalVolume: u.summary?.totalSuccessfulAmountTransactions ?? 0,
+          })));
+        }
+      } catch (err: any) {
+        if (!cancelled) {
           const problem = err.response?.data;
-
-                                      // 1.  Prefer RFC 7807 fields
-                                      const userMsg =
-                                        problem?.detail ||                       // "Invalid temporary password."
-                                        problem?.title ||                        // "Internal Server Error"
-                                        problem?.message ||                      // fallback
-                                        err.response?.statusText ||              // "Internal Server Error"
-                                        err.message ||                           // final fallback
-                                        "Failed to fetch partners";
-
-console.error(userMsg);
+          const userMsg =
+            problem?.detail ||
+            problem?.title ||
+            problem?.message ||
+            err.response?.statusText ||
+            err.message ||
+            "Failed to fetch partners";
+          console.error(userMsg);
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
-    loadPartners()
+
+    loadPartners();
+
+    return () => { cancelled = true; };
   }, [orgName])
 
   /* ---------- loading ---------- */
@@ -173,6 +178,66 @@ console.error(userMsg);
   const getRoleBadgeVariant = (r: string) => (r === "SUPER_ADMIN" ? "destructive" : r === "GA_ADMIN" ? "default" : "secondary")
   const getStatusBadgeVariant = (s: string) =>
     s === "ACTIVE" ? "default" : s === "INACTIVE" ? "secondary" : "outline"
+
+  /* ---------- export to PDF ---------- */
+  const handleExportPDF = () => {
+    const doc = new jsPDF()
+    doc.setFontSize(16)
+    doc.text("Users Management Report", 14, 20)
+    doc.setFontSize(10)
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30)
+    doc.text(`Organization: ${orgName || "Unknown"}`, 14, 36)
+    doc.setFontSize(12)
+    doc.text(`Total Users: ${users.length}`, 14, 46)
+    doc.text(`Active Users: ${users.filter((u) => u.status === "ACTIVE").length}`, 14, 54)
+
+    const tableData = filteredUsers.map((u) => [
+      `${u.firstName} ${u.lastName}`,
+      u.email,
+      u.role.replace("_", " "),
+      u.status,
+      u.transactionCount.toLocaleString(),
+      `₵${u.totalVolume.toLocaleString()}`,
+    ])
+
+    autoTable(doc, {
+      startY: 62,
+      head: [["Name", "Email", "Role", "Status", "Transactions", "Volume (GHS)"]],
+      body: tableData,
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
+      alternateRowStyles: { fillColor: [240, 240, 240] },
+    })
+
+    doc.save(`users-report-${new Date().toISOString().split("T")[0]}.pdf`)
+  }
+
+  /* ---------- export to CSV ---------- */
+  const handleExportCSV = () => {
+    const csvContent = [
+      "Name,Email,Role,Status,Transactions,Volume (GHS)",
+      ...filteredUsers.map((u) =>
+        [
+          `${u.firstName} ${u.lastName}`,
+          u.email,
+          u.role.replace("_", " "),
+          u.status,
+          u.transactionCount.toLocaleString(),
+          u.totalVolume.toLocaleString(),
+        ].join(",")
+      ),
+    ].join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    link.setAttribute("href", url)
+    link.setAttribute("download", `users-report-${new Date().toISOString().split("T")[0]}.csv`)
+    link.style.visibility = "hidden"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   /* ---------- actions ---------- */
   const handleAddUser = () => { /* stub */ }
@@ -209,7 +274,26 @@ console.error(userMsg);
           <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[150px]"><SelectValue placeholder="All Status" /></SelectTrigger><SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="ACTIVE">Active</SelectItem><SelectItem value="INACTIVE">Inactive</SelectItem><SelectItem value="PENDING">Pending</SelectItem></SelectContent></Select>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm"><IconDownload className="mr-2 h-4 w-4" />Export</Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <IconDownload className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <IconDownload className="mr-2 h-4 w-4" />
+                Export as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <IconDownload className="mr-2 h-4 w-4" />
+                Export as CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
          {/* <Button size="sm"><IconPlus className="mr-2 h-4 w-4" />Add Partner</Button> **/}
         </div>
       </div>

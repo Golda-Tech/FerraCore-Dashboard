@@ -635,10 +635,10 @@ return{
                                        <span>Customer Pays:</span>
                                        <span>GHS {(amount + fee).toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between font-medium text-green-600 dark:text-green-400">
-                                      <span>You Receive:</span>
-                                      <span>GHS {(amount - fee).toFixed(2)}</span>
-                                    </div>
+                                    {/*<div className="flex justify-between font-medium text-green-600 dark:text-green-400">*/}
+                                    {/*  <span>You Receive:</span>*/}
+                                    {/*  <span>GHS {(amount - fee).toFixed(2)}</span>*/}
+                                    {/*</div>*/}
 
                                   </div>
                                 </div>

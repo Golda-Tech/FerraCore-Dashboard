@@ -33,7 +33,7 @@ export async function getPayments(
   page: number = 0,
   size: number = 20
 ): Promise<Payment[]> {
-  const params: any = { initiatedBy};
+  const params: any = {};
   if (initiatedBy !== undefined) params.initiatedBy = initiatedBy;
 
   const response = await api.get<Payment[]>("/api/v1/payments", { params });

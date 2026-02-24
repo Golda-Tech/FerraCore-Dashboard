@@ -22,15 +22,30 @@ api.interceptors.request.use(
 );
 
 
-// Response interceptor to handle 401
+// Response interceptor to handle invalid/expired token
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== "undefined") {
-      // Clear token
-      localStorage.removeItem("token");
-      // Redirect to login
-      window.location.href = "/login";
+    if (typeof window !== "undefined") {
+      const status = error.response?.status;
+      const message =
+        (error.response?.data?.message || error.response?.data?.error || "")
+          .toLowerCase();
+
+      const isAuthError =
+        status === 401 ||
+        status === 403 ||
+        message.includes("invalid token") ||
+        message.includes("expired token") ||
+        message.includes("jwt expired") ||
+        message.includes("token expired") ||
+        message.includes("invalid/expired");
+
+      if (isAuthError) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }

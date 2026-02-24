@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { getUser } from "@/lib/auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -21,7 +20,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Plus,
   Search,
   Filter,
   Download,
@@ -35,14 +33,16 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getPayment, getPayments, getTransactionStatus } from "@/lib/payment";
+import { getPayment, getPayments, getTransactionStatus, getPaymentsStatusSummary } from "@/lib/payment";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { LoginResponse } from "@/types/auth";
-import { getPaymentsStatusSummary } from "@/lib/payment";
 
+/* ------------------------------------------------------------------ */
+/*  Status helpers                                                     */
+/* ------------------------------------------------------------------ */
 const getStatusIcon = (status: string) => {
   switch (status) {
     case "SUCCESSFUL":
@@ -73,90 +73,80 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-export function PaymentsContent() {
+const mapApiStatus = (status: string) => {
+  switch (status.toUpperCase()) {
+    case "SUCCESSFUL":
+      return "completed";
+    case "ONGOING":
+    case "PENDING":
+      return "pending";
+    case "FAILED":
+      return "failed";
+    default:
+      return "expired";
+  }
+};
+
+/* ------------------------------------------------------------------ */
+/*  Props                                                              */
+/* ------------------------------------------------------------------ */
+interface PartnerTransactionsContentProps {
+  partnerEmail: string;
+  partnerName?: string;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
+export function PartnerTransactionsContent({
+  partnerEmail,
+  partnerName,
+}: PartnerTransactionsContentProps) {
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [payments, setPayments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [user, setUser] = useState<LoginResponse | null>(null);
 
   /* ---------- date range filter (client-side) ---------- */
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isFiltering, setIsFiltering] = useState(false);
 
-  // Use ref to store interval ID for cleanup
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
   const router = useRouter();
 
-  // Debug wrapper for fetchPayments
-  const fetchPayments = useCallback(async (email: string, showLoading = true, source = "unknown") => {
-    console.log(`[${new Date().toISOString()}] fetchPayments called from: ${source}`, { email, showLoading });
+  const displayName = partnerName || partnerEmail;
 
-    if (!email) {
-      console.error("fetchPayments: No email provided");
-      setError("No user email available");
-      return;
-    }
+  /* ---------- fetch payments for the selected partner ---------- */
+  const fetchPayments = useCallback(
+    async (showLoading = true) => {
+      if (!partnerEmail) return;
+      if (showLoading) setLoading(true);
 
-    if (showLoading) {
-      setLoading(true);
-    }
-    setError(null);
-
-    try {
-      console.log(`[${new Date().toISOString()}] Calling getPayments API...`);
-      const data = await getPayments(email);
-      console.log(`[${new Date().toISOString()}] getPayments returned:`, { count: data?.length || 0, data });
-
-      setPayments(data || []);
-      setLastRefresh(new Date());
-    } catch (err: any) {
-      console.error(`[${new Date().toISOString()}] Failed to fetch payments:`, err);
-      setError(err.message || "Failed to fetch payments");
-    } finally {
-      if (showLoading) {
-        setLoading(false);
+      try {
+        const data = await getPayments(partnerEmail);
+        setPayments(data || []);
+        setLastRefresh(new Date());
+      } catch (err: any) {
+        console.error("Failed to fetch partner payments:", err);
+      } finally {
+        if (showLoading) setLoading(false);
       }
-    }
-  }, []);
+    },
+    [partnerEmail]
+  );
 
-  // Get user on mount - CRITICAL: This must run first
+  /* ---------- initial fetch ---------- */
   useEffect(() => {
-    console.log("Component mounted, getting user...");
-    const stored = getUser();
-    console.log("getUser returned:", stored);
-    setUser(stored);
-  }, []);
+    fetchPayments(true);
+  }, [fetchPayments]);
 
-  // IMMEDIATE fetch when user is available - don't wait for interval
+  /* ---------- auto-refresh ---------- */
   useEffect(() => {
-    console.log("User effect triggered:", { user, email: user?.email });
-    if (user?.email) {
-      console.log("User available, fetching payments immediately...");
-      fetchPayments(user.email, true, "user-effect");
-    } else {
-      console.log("No user email yet, skipping fetch");
-    }
-  }, [user, fetchPayments]);
-
-  // Setup auto-refresh interval
-  useEffect(() => {
-    console.log("Interval setup effect triggered:", { isAutoRefreshEnabled, userEmail: user?.email });
-
-    if (!user?.email) {
-      console.log("No user email, not setting up interval");
-      return;
-    }
-
-    if (!isAutoRefreshEnabled) {
-      console.log("Auto-refresh disabled, clearing interval");
+    if (!partnerEmail || !isAutoRefreshEnabled) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -164,156 +154,21 @@ export function PaymentsContent() {
       return;
     }
 
-    // Clear any existing interval
-    if (intervalRef.current) {
-      console.log("Clearing existing interval");
-      clearInterval(intervalRef.current);
-    }
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
-    console.log("Setting up new 8-second interval");
-    // Set up new interval
     intervalRef.current = setInterval(() => {
-      console.log(`[${new Date().toISOString()}] Interval tick - fetching payments`);
-      fetchPayments(user.email, false, "interval");
+      fetchPayments(false);
     }, 8000);
 
-    // Cleanup
     return () => {
-      console.log("Cleaning up interval");
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [user?.email, isAutoRefreshEnabled, fetchPayments]);
+  }, [partnerEmail, isAutoRefreshEnabled, fetchPayments]);
 
-  // Manual refresh handler
-  const handleManualRefresh = () => {
-    console.log("Manual refresh clicked");
-    if (user?.email) {
-      fetchPayments(user.email, true, "manual-refresh");
-    } else {
-      console.error("Cannot refresh - no user email");
-      setError("Please log in to refresh payments");
-    }
-  };
-
-  // Toggle auto-refresh
-  const toggleAutoRefresh = () => {
-    setIsAutoRefreshEnabled((prev) => {
-      const newValue = !prev;
-      console.log("Auto-refresh toggled:", newValue);
-      return newValue;
-    });
-  };
-
-  /* ---------- apply date range (client-side visual feedback) ---------- */
-  const handleApplyDateFilter = () => {
-    setIsFiltering(true);
-    // Brief visual feedback — filtering is already reactive via filteredPayments
-    setTimeout(() => setIsFiltering(false), 400);
-  };
-
-  const handleClearDateFilter = () => {
-    setStartDate("");
-    setEndDate("");
-  };
-
-  const downloadPDF = () => {
-    if (!user) return;
-
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.text(user?.organizationName || "PAYMENTS REPORT", 14, 16);
-
-    const body = filteredPayments.map((p) => [
-      p.mobileNumber,
-      p.externalRef,
-      mapApiStatus(p.status),
-      p.provider,
-      Number(p.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
-      formatDate(p.initiatedAt),
-    ]);
-
-    autoTable(doc, {
-      head: [["Phone", "Reference", "Status", "Network", "Amount(GHS)", "Date"]],
-      body,
-      startY: 24,
-      theme: "grid",
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: "#22c55e" },
-    });
-
-    doc.save(`payments_${new Date().toISOString().slice(0, 10)}.pdf`);
-  };
-
-  const downloadCSV = () => {
-    const csvContent = [
-      "Phone,Reference,Status,Network,Amount(GHS),Date",
-      ...filteredPayments.map((p) =>
-        [
-          p.mobileNumber,
-          p.externalRef,
-          mapApiStatus(p.status),
-          p.provider,
-          Number(p.amount).toFixed(2),
-          formatDate(p.initiatedAt),
-        ].join(",")
-      ),
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `payments_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleViewDetails = async (transactionRef: string) => {
-    setLoading(true);
-    try {
-      const data = await getPayment(transactionRef);
-      setSelectedPayment(data);
-    } catch (err) {
-      console.error("Failed to fetch payment details:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefreshStatus = async () => {
-    if (!selectedPayment) return;
-    setLoading(true);
-    try {
-      const statusData = await getTransactionStatus(
-        selectedPayment.provider,
-        selectedPayment.transactionRef
-      );
-      setSelectedPayment((prev: any) => ({ ...prev, ...statusData }));
-    } catch (err) {
-      console.error("Failed to refresh payment status:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const mapApiStatus = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "SUCCESSFUL":
-        return "completed";
-      case "ONGOING":
-      case "PENDING":
-        return "pending";
-      case "FAILED":
-        return "failed";
-      default:
-        return "expired";
-    }
-  };
-
+  /* ---------- status summary for delta cards ---------- */
   const [lastMonth, setLastMonth] = useState<{
     total: number;
     completed: number;
@@ -322,28 +177,24 @@ export function PaymentsContent() {
   }>({ total: 0, completed: 0, pending: 0, amount: 0 });
 
   useEffect(() => {
-    if (!user?.email) return;
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 30);
-
-    getPaymentsStatusSummary(user.email)
+    if (!partnerEmail) return;
+    getPaymentsStatusSummary(partnerEmail)
       .then((res) => {
         const completed = res.SUCCESS ?? 0;
         const pending = res.ONGOING ?? 0;
         const total = Object.values(res).reduce((a, b) => a + (b ?? 0), 0);
-        const amount = 0;
-        setLastMonth({ total, completed, pending, amount });
+        setLastMonth({ total, completed, pending, amount: 0 });
       })
       .catch(() => setLastMonth({ total: 0, completed: 0, pending: 0, amount: 0 }));
-  }, [user?.email]);
+  }, [partnerEmail]);
 
+  /* ---------- telco logos ---------- */
   const telcos = [
     { name: "mtn", logo: "/mtn-momo.png" },
     { name: "telecel", logo: "/telecel-cash.webp" },
     { name: "airteltigo", logo: "/airtel-tigo.png" },
     { name: "gmoney", logo: "/gmoney.jpg" },
-    ];
+  ];
   const getTelcoLogo = (provider = "") => {
     const src =
       telcos.find((t) => provider.toLowerCase().includes(t.name))?.logo ??
@@ -357,16 +208,7 @@ export function PaymentsContent() {
     );
   };
 
-  const delta = (current: number, previous: number) => {
-    if (previous === 0) return { pct: 0, arrow: "→", color: "text-gray-500" };
-    const pct = ((current - previous) / previous) * 100;
-    return {
-      pct: Math.abs(pct).toFixed(1),
-      arrow: pct > 0 ? "↗" : pct < 0 ? "↘" : "→",
-      color: pct > 0 ? "text-green-600" : pct < 0 ? "text-red-600" : "text-gray-500",
-    };
-  };
-
+  /* ---------- filtering (including client-side date range) ---------- */
   const filteredPayments = payments.filter((payment) => {
     const mappedStatus = mapApiStatus(payment.status);
     const term = searchTerm.toLowerCase();
@@ -396,6 +238,7 @@ export function PaymentsContent() {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
+  /* ---------- summary stats ---------- */
   const completedStatuses = ["SUCCESSFUL"];
   const pendingStatuses = ["PENDING"];
 
@@ -412,60 +255,175 @@ export function PaymentsContent() {
     .filter((p) => completedStatuses.includes(p.status))
     .reduce((sum, p) => sum + p.amount, 0);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-GH", {
-      style: "currency",
-      currency: "GHS",
-    }).format(amount);
-  };
+  /* ---------- helpers ---------- */
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-GH", { style: "currency", currency: "GHS" }).format(amount);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-GB", {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
+
+  const delta = (current: number, previous: number) => {
+    if (previous === 0) return { pct: 0, arrow: "→", color: "text-gray-500" };
+    const pct = ((current - previous) / previous) * 100;
+    return {
+      pct: Math.abs(pct).toFixed(1),
+      arrow: pct > 0 ? "↗" : pct < 0 ? "↘" : "→",
+      color: pct > 0 ? "text-green-600" : pct < 0 ? "text-red-600" : "text-gray-500",
+    };
   };
 
-  const formatLastRefresh = () => {
-    return lastRefresh.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
+  /* ---------- export ---------- */
+  const downloadPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.text(`${displayName} — Payments Report`, 14, 16);
+
+    const body = filteredPayments.map((p) => [
+      p.mobileNumber,
+      p.externalRef,
+      mapApiStatus(p.status),
+      p.provider,
+      Number(p.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
+      formatDate(p.initiatedAt),
+    ]);
+
+    autoTable(doc, {
+      head: [["Phone", "Reference", "Status", "Network", "Amount(GHS)", "Date"]],
+      body,
+      startY: 24,
+      theme: "grid",
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: "#22c55e" },
     });
+
+    doc.save(`partner-payments_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
+  const downloadCSV = () => {
+    const csvContent = [
+      "Phone,Reference,Status,Network,Amount(GHS),Date",
+      ...filteredPayments.map((p) =>
+        [
+          p.mobileNumber,
+          p.externalRef,
+          mapApiStatus(p.status),
+          p.provider,
+          Number(p.amount).toFixed(2),
+          formatDate(p.initiatedAt),
+        ].join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `partner-payments_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  /* ---------- detail & refresh handlers ---------- */
+  const handleViewDetails = async (transactionRef: string) => {
+    setLoading(true);
+    try {
+      const data = await getPayment(transactionRef);
+      setSelectedPayment(data);
+    } catch (err) {
+      console.error("Failed to fetch payment details:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefreshStatus = async () => {
+    if (!selectedPayment) return;
+    setLoading(true);
+    try {
+      const statusData = await getTransactionStatus(
+        selectedPayment.provider,
+        selectedPayment.transactionRef
+      );
+      setSelectedPayment((prev: any) => ({ ...prev, ...statusData }));
+    } catch (err) {
+      console.error("Failed to refresh payment status:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManualRefresh = () => fetchPayments(true);
+
+  const toggleAutoRefresh = () => setIsAutoRefreshEnabled((prev) => !prev);
+
+  /* ---------- apply date range (client-side visual feedback) ---------- */
+  const handleApplyDateFilter = () => {
+    setIsFiltering(true);
+    // Brief visual feedback — filtering is already reactive via filteredPayments
+    setTimeout(() => setIsFiltering(false), 400);
+  };
+
+  const handleClearDateFilter = () => {
+    setStartDate("");
+    setEndDate("");
+  };
+
+  /* ================================================================ */
+  /*  Render                                                           */
+  /* ================================================================ */
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Payments Summary</h2>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              {displayName}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Transactions for {partnerEmail}
+            </p>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2 items-center">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mr-2">
-            <div className={`h-2 w-2 rounded-full ${isAutoRefreshEnabled ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+            <div
+              className={`h-2 w-2 rounded-full ${
+                isAutoRefreshEnabled ? "bg-green-500 animate-pulse" : "bg-gray-400"
+              }`}
+            />
             <span className="hidden sm:inline">
               {isAutoRefreshEnabled ? "Auto-refresh ON" : "Auto-refresh OFF"}
             </span>
-            {/*<span className="text-xs">({formatLastRefresh()})</span>*/}
           </div>
 
           <Button variant="outline" size="sm" onClick={toggleAutoRefresh}>
             {isAutoRefreshEnabled ? "Pause" : "Resume"}
           </Button>
 
-          <Button variant="outline" size="sm" onClick={handleManualRefresh} disabled={loading}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleManualRefresh}
+            disabled={loading}
+          >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
-          </Button>
-
-          <Button size="sm" onClick={() => router.push("/request-payment")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Request Payment
           </Button>
         </div>
       </div>
 
+      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -476,9 +434,8 @@ export function PaymentsContent() {
             <div className="text-2xl font-bold">{totalRequests}</div>
             <p className={cn("text-xs flex items-center", delta(totalRequests, lastMonth.total).color)}>
               <TrendingUp className="h-3 w-3 mr-1" />
-              {delta(totalRequests, lastMonth.total).pct}%
-              {delta(totalRequests, lastMonth.total).arrow}
-              from last month
+              {delta(totalRequests, lastMonth.total).pct}%{" "}
+              {delta(totalRequests, lastMonth.total).arrow} from summary
             </p>
           </CardContent>
         </Card>
@@ -492,7 +449,8 @@ export function PaymentsContent() {
             <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
             <p className={cn("text-xs flex items-center", delta(totalAmount, lastMonth.amount).color)}>
               <TrendingUp className="h-3 w-3 mr-1" />
-              {delta(totalAmount, lastMonth.amount).pct}% {delta(totalAmount, lastMonth.amount).arrow} from last month
+              {delta(totalAmount, lastMonth.amount).pct}%{" "}
+              {delta(totalAmount, lastMonth.amount).arrow} from summary
             </p>
           </CardContent>
         </Card>
@@ -506,7 +464,8 @@ export function PaymentsContent() {
             <div className="text-2xl font-bold">{pendingRequests}</div>
             <p className={cn("text-xs flex items-center", delta(pendingRequests, lastMonth.pending).color)}>
               <Clock className="h-3 w-3 mr-1" />
-              {delta(pendingRequests, lastMonth.pending).pct}% {delta(pendingRequests, lastMonth.pending).arrow} from last month
+              {delta(pendingRequests, lastMonth.pending).pct}%{" "}
+              {delta(pendingRequests, lastMonth.pending).arrow} from summary
             </p>
           </CardContent>
         </Card>
@@ -521,30 +480,44 @@ export function PaymentsContent() {
             <p
               className={cn(
                 "text-xs flex items-center",
-                delta(successRate, (lastMonth.completed / lastMonth.total) * 100).color
+                delta(
+                  successRate,
+                  lastMonth.total > 0 ? (lastMonth.completed / lastMonth.total) * 100 : 0
+                ).color
               )}
             >
               <TrendingUp className="h-3 w-3 mr-1" />
-              {delta(successRate, (lastMonth.completed / lastMonth.total) * 100).pct}%{" "}
-              {delta(successRate, (lastMonth.completed / lastMonth.total) * 100).arrow} from last month
+              {delta(
+                successRate,
+                lastMonth.total > 0 ? (lastMonth.completed / lastMonth.total) * 100 : 0
+              ).pct}
+              %{" "}
+              {delta(
+                successRate,
+                lastMonth.total > 0 ? (lastMonth.completed / lastMonth.total) * 100 : 0
+              ).arrow}{" "}
+              from summary
             </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Main Table Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Payments </CardTitle>
-          <CardDescription>Track all payment requests </CardDescription>
+          <CardTitle>Partner Transactions</CardTitle>
+          <CardDescription>Payment transactions initiated by {displayName}</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Filters row */}
           <div className="flex flex-col gap-4 mb-4">
+            {/* Search + status + export */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
               <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                 <div className="relative flex-1 sm:flex-initial">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search requests..."
+                    placeholder="Search by phone or reference..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-8 w-full sm:w-[300px]"
@@ -589,11 +562,11 @@ export function PaymentsContent() {
             {/* Date range filter */}
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 p-3 rounded-lg border bg-muted/30">
               <div className="space-y-1">
-                <Label htmlFor="payStartDate" className="text-xs text-muted-foreground">
+                <Label htmlFor="startDate" className="text-xs text-muted-foreground">
                   Start Date
                 </Label>
                 <Input
-                  id="payStartDate"
+                  id="startDate"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
@@ -601,11 +574,11 @@ export function PaymentsContent() {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="payEndDate" className="text-xs text-muted-foreground">
+                <Label htmlFor="endDate" className="text-xs text-muted-foreground">
                   End Date
                 </Label>
                 <Input
-                  id="payEndDate"
+                  id="endDate"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
@@ -633,6 +606,7 @@ export function PaymentsContent() {
             </div>
           </div>
 
+          {/* Table */}
           <div className="rounded-md border overflow-x-auto">
             <Table className="min-w-[700px]">
               <TableHeader>
@@ -651,18 +625,29 @@ export function PaymentsContent() {
                 {filteredPayments.length === 0 && !loading ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No payments found. {user?.email ? "" : "Please log in to view payments."}
+                      No transactions found for this partner.
+                    </TableCell>
+                  </TableRow>
+                ) : loading && payments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="flex items-center justify-center gap-2">
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Loading transactions…
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell>
-                        <div>
-                          <div className="text-sm text-muted-foreground">{payment.mobileNumber}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {payment.mobileNumber}
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{formatCurrency(payment.amount)}</TableCell>
+                      <TableCell className="font-medium">
+                        {formatCurrency(payment.amount)}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getStatusIcon(payment.status)}
@@ -670,10 +655,16 @@ export function PaymentsContent() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">{getTelcoLogo(payment.provider)}</div>
+                        <div className="flex items-center gap-2">
+                          {getTelcoLogo(payment.provider)}
+                        </div>
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{payment.mtnFinancialTransactionId}</TableCell>
-                      <TableCell className="font-mono text-sm">{payment.externalRef}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {payment.mtnFinancialTransactionId}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {payment.externalRef}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
@@ -690,7 +681,9 @@ export function PaymentsContent() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleViewDetails(payment.transactionRef)}>
+                            <DropdownMenuItem
+                              onClick={() => handleViewDetails(payment.transactionRef)}
+                            >
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
@@ -717,9 +710,10 @@ export function PaymentsContent() {
             </Table>
           </div>
 
+          {/* Total footer */}
           <div className="flex items-center justify-between text-sm text-muted-foreground mt-4">
             <div>
-              Showing {filteredPayments.length} of {payments.length} payments
+              Showing {filteredPayments.length} of {payments.length} transactions
             </div>
             <div className="text-green-600 dark:text-green-400 text-lg font-semibold">
               Total: {formatCurrency(filteredTotalAmount)}
@@ -728,11 +722,14 @@ export function PaymentsContent() {
         </CardContent>
       </Card>
 
+      {/* Payment Detail Dialog */}
       <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Payment Request Details</DialogTitle>
-            <DialogDescription>Complete information about this payment request</DialogDescription>
+            <DialogDescription>
+              Complete information about this payment request
+            </DialogDescription>
           </DialogHeader>
           {selectedPayment && (
             <div className="space-y-6">
@@ -744,7 +741,6 @@ export function PaymentsContent() {
                     {getStatusBadge(selectedPayment.status)}
                   </div>
                 </div>
-
                 <div className="flex flex-col">
                   <Label className="text-sm font-medium text-muted-foreground">Status Reason</Label>
                   <p className="text-sm text-gray-700 dark:text-gray-300 leading-5 mt-1">
@@ -779,18 +775,22 @@ export function PaymentsContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
-                    <p className="text-lg font-semibold">{formatCurrency(selectedPayment.amount)}</p>
+                    <p className="text-lg font-semibold">
+                      {formatCurrency(selectedPayment.amount)}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">External Reference</Label>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-sans text-gray-900 dark:text-gray-100 truncate">
-                        {selectedPayment.externalRef}
-                      </p>
-                    </div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      External Reference
+                    </Label>
+                    <p className="text-sm font-sans text-gray-900 dark:text-gray-100 truncate">
+                      {selectedPayment.externalRef}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Transaction Reference</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Transaction Reference
+                    </Label>
                     <p className="text-sm font-sans text-gray-900 dark:text-gray-100 truncate">
                       {selectedPayment.mtnFinancialTransactionId}
                     </p>
@@ -841,3 +841,4 @@ export function PaymentsContent() {
     </div>
   );
 }
+
