@@ -5,23 +5,24 @@ import { PeriodSelector } from "@/components/period-selector";
 import { getUser } from "@/lib/auth";
 import { LoginResponse } from "@/types/auth";
 
-// Import icons individually to avoid potential issues
-import IconBuilding from "@tabler/icons-react/dist/esm/icons/IconBuilding";
-import IconArrowLeft from "@tabler/icons-react/dist/esm/icons/IconArrowLeft";
-import IconUsers from "@tabler/icons-react/dist/esm/icons/IconUsers";
-import IconCreditCard from "@tabler/icons-react/dist/esm/icons/IconCreditCard";
-import IconTrendingUp from "@tabler/icons-react/dist/esm/icons/IconTrendingUp";
-import IconTrendingDown from "@tabler/icons-react/dist/esm/icons/IconTrendingDown";
-import IconCircleCheck from "@tabler/icons-react/dist/esm/icons/IconCircleCheck";
-import IconCircleX from "@tabler/icons-react/dist/esm/icons/IconCircleX";
-import IconClock from "@tabler/icons-react/dist/esm/icons/IconClock";
-import IconSearch from "@tabler/icons-react/dist/esm/icons/IconSearch";
-import IconChevronRight from "@tabler/icons-react/dist/esm/icons/IconChevronRight";
-import IconMail from "@tabler/icons-react/dist/esm/icons/IconMail";
-import IconClipboard from "@tabler/icons-react/dist/esm/icons/IconClipboard";
-import IconPhone from "@tabler/icons-react/dist/esm/icons/IconPhone";
-import IconCurrencyDollar from "@tabler/icons-react/dist/esm/icons/IconCurrencyDollar";
-import IconRefresh from "@tabler/icons-react/dist/esm/icons/IconRefresh";
+import {
+  IconBuilding,
+  IconArrowLeft,
+  IconUsers,
+  IconCreditCard,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconCircleCheck,
+  IconCircleX,
+  IconClock,
+  IconSearch,
+  IconChevronRight,
+  IconMail,
+  IconClipboard,
+  IconPhone,
+  IconCurrencyDollar,
+  IconRefresh,
+} from "@tabler/icons-react";
 
 /* ---------- TYPES ---------- */
 
