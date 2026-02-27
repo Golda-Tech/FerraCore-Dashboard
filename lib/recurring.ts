@@ -7,6 +7,7 @@ import type {
   AuthorizeOtpResponse,
   FirstInstallmentPaymentRequest,
   FirstInstallmentPaymentResponse,
+  RecurringPaymentStatusResponse,
 } from "@/types/recurring";
 
 const RECURRING_BASE = "/api/v1/recurring-payments";
@@ -51,6 +52,37 @@ export async function requestFirstPayment(
   const response = await api.post<FirstInstallmentPaymentResponse>(
     `${RECURRING_BASE}/installment/request-first-payment`,
     data
+  );
+  return response.data;
+}
+
+/** Fetch all recurring payment subscriptions for a user */
+export async function getSubscriptions(
+    userEmail: string
+): Promise<RecurringPaymentSubscriptionResponse[]> {
+  const response = await api.get<RecurringPaymentSubscriptionResponse[]>(
+    `${RECURRING_BASE}/subscriptions`,
+    { params: { userEmail } }
+  );
+  return response.data;
+}
+
+/** Fetch a single subscription by ID */
+export async function getSubscription(
+  subscriptionId: string
+): Promise<RecurringPaymentSubscriptionResponse> {
+  const response = await api.get<RecurringPaymentSubscriptionResponse>(
+    `${RECURRING_BASE}/subscriptions/${subscriptionId}`
+  );
+  return response.data;
+}
+
+/** Get subscription status (profile + transactions) */
+export async function getSubscriptionStatus(
+  subscriptionId: string
+): Promise<RecurringPaymentStatusResponse> {
+  const response = await api.get<RecurringPaymentStatusResponse>(
+    `${RECURRING_BASE}/${subscriptionId}/status`
   );
   return response.data;
 }

@@ -47,11 +47,13 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { getUser } from "@/lib/auth";
 import { getUserInfo } from "@/lib/payment";
+import { useRouter } from "next/navigation";
 import {
   createSubscription,
   authorizeOtp,
   resendOtp,
   requestFirstPayment,
+  getSubscriptionStatus,
 } from "@/lib/recurring";
 import type { UserInfo } from "@/types/payment";
 import type { LoginResponse } from "@/types/auth";
@@ -170,7 +172,7 @@ export function RecurringPaymentsContent() {
   const [networkProvider, setNetworkProvider] = useState<"MTN" | "VOD" | "AIR">(
     "MTN"
   );
-  const [reference, setReference] = useState(() => uuid().slice(0, 12));
+  const [reference, setReference] = useState("");
   const [resumable, setResumable] = useState<"Y" | "N">("Y");
   const [cycleSkip, setCycleSkip] = useState<"Y" | "N">("N");
   const [isCreating, setIsCreating] = useState(false);
@@ -187,6 +189,12 @@ export function RecurringPaymentsContent() {
   /* ---------- step 3 state ---------- */
   const [payReference, setPayReference] = useState(() => uuid().slice(0, 12));
   const [isPaying, setIsPaying] = useState(false);
+  const [firstPaymentRes, setFirstPaymentRes] =
+    useState<FirstInstallmentPaymentResponse | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [latestTransId, setLatestTransId] = useState<string | null>(null);
+
+  const router = useRouter();
 
   /* ---------- dialogs ---------- */
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -250,7 +258,7 @@ export function RecurringPaymentsContent() {
   /* ================================================================ */
   const handleCreateMandate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !amount || !endDate) return;
+    if (!customerName || !amount || !endDate || !reference) return;
     setIsCreating(true);
     try {
       const res = await createSubscription({
@@ -265,6 +273,8 @@ export function RecurringPaymentsContent() {
         returnUrl: RETURN_URL,
         resumable,
         cycleSkip,
+        createdBy: user?.email || "",
+        partnerId: user?.organizationId || "",
       });
       setSubscriptionRes(res);
       showDialog("success", "Mandate Created", res.message || "OTP has been sent to the customer.");
@@ -348,11 +358,7 @@ export function RecurringPaymentsContent() {
         invoiceId: "",
         reference: payReference,
       });
-      showDialog(
-        "success",
-        "Payment Initiated",
-        res.responseDescription || res.message || "First payment request submitted."
-      );
+      setFirstPaymentRes(res);
     } catch (err: any) {
       const msg =
         err.response?.data?.message ||
@@ -366,10 +372,44 @@ export function RecurringPaymentsContent() {
   };
 
   /* ================================================================ */
+  /*  Check subscription status                                        */
+  /* ================================================================ */
+  const handleCheckStatus = async () => {
+    if (!firstPaymentRes?.subscriptionId) return;
+    setIsCheckingStatus(true);
+    try {
+      const res = await getSubscriptionStatus(firstPaymentRes.subscriptionId);
+      console.log("Subscription status response:", res);
+      // Find the transaction whose transId matches the exttrid from the first payment
+      if (res.transactions && res.transactions.length > 0) {
+        const match = res.transactions.find(
+          (t) => t.transId === firstPaymentRes.exttrid
+        );
+        if (match) {
+          setLatestTransId(match.transStatus);
+        } else {
+          // No matching transId found — show the last transaction's status as fallback
+          const latest = res.transactions[res.transactions.length - 1];
+          setLatestTransId(latest.transStatus);
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to check status:", err);
+      showDialog(
+        "error",
+        "Status Check Failed",
+        err.response?.data?.message || err.message || "Could not fetch status"
+      );
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
+
+  /* ================================================================ */
   /*  Render                                                           */
   /* ================================================================ */
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8">
+    <div className="mx-auto w-full max-w-5xl px-4 py-8">
       <StepperHeader current={step} />
 
       {/* -------- STEP 1 -------- */}
@@ -532,6 +572,7 @@ export function RecurringPaymentsContent() {
                     <Label htmlFor="reference">Reference</Label>
                     <Input
                       id="reference"
+                      placeholder="Enter a unique reference"
                       value={reference}
                       onChange={(e) => setReference(e.target.value)}
                       required
@@ -571,7 +612,7 @@ export function RecurringPaymentsContent() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={isCreating || !amount || !endDate}
+                    disabled={isCreating || !amount || !endDate || !reference}
                   >
                     {isCreating ? (
                       <>
@@ -633,7 +674,7 @@ export function RecurringPaymentsContent() {
               <Label>Enter OTP</Label>
               <div className="flex justify-center">
                 <InputOTP
-                  maxLength={6}
+                  maxLength={5}
                   value={otpValue}
                   onChange={setOtpValue}
                 >
@@ -643,7 +684,6 @@ export function RecurringPaymentsContent() {
                     <InputOTPSlot index={2} />
                     <InputOTPSlot index={3} />
                     <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
@@ -652,7 +692,7 @@ export function RecurringPaymentsContent() {
             <div className="flex gap-3">
               <Button
                 className="flex-1"
-                disabled={isAuthorizing || otpValue.length < 4}
+                disabled={isAuthorizing || otpValue.length < 5}
                 onClick={handleAuthorizeOtp}
               >
                 {isAuthorizing ? (
@@ -688,76 +728,172 @@ export function RecurringPaymentsContent() {
 
       {/* -------- STEP 3 -------- */}
       {step === 2 && subscriptionRes && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">First Payment</CardTitle>
-            <CardDescription>
-              Trigger the first installment for this subscription.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ReadOnlyField
-                label="Subscription ID"
-                value={subscriptionRes.subscriptionId}
-              />
-              <ReadOnlyField
-                label="Network"
-                value={
-                  NETWORKS.find(
-                    (n) => n.value === subscriptionRes.networkProvider
-                  )?.label ?? subscriptionRes.networkProvider
-                }
-              />
-              <ReadOnlyField
-                label="Customer Number"
-                value={subscriptionRes.customerNumber}
-              />
-              <ReadOnlyField
-                label="Customer Name"
-                value={subscriptionRes.customerName}
-              />
-              <ReadOnlyField
-                label="Amount (GHS)"
-                value={String(subscriptionRes.amount)}
-              />
-              <ReadOnlyField
-                label="Status"
-                value={subscriptionRes.status}
-                badge
-              />
-            </div>
+        <div className={cn("grid gap-6 items-stretch", firstPaymentRes ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 max-w-3xl mx-auto")}>
+          <Card className="flex flex-col">
+            <CardHeader>
+              <CardTitle className="text-xl">First Payment</CardTitle>
+              <CardDescription>
+                Trigger the first installment for this subscription.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 flex flex-col flex-1">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ReadOnlyField
+                  label="Subscription ID"
+                  value={subscriptionRes.subscriptionId}
+                />
+                <ReadOnlyField
+                  label="Network"
+                  value={
+                    NETWORKS.find(
+                      (n) => n.value === subscriptionRes.networkProvider
+                    )?.label ?? subscriptionRes.networkProvider
+                  }
+                />
+                <ReadOnlyField
+                  label="Customer Number"
+                  value={subscriptionRes.customerNumber}
+                />
+                <ReadOnlyField
+                  label="Customer Name"
+                  value={subscriptionRes.customerName}
+                />
+                <ReadOnlyField
+                  label="Amount (GHS)"
+                  value={String(subscriptionRes.amount)}
+                />
+                <ReadOnlyField
+                  label="Status"
+                  value={subscriptionRes.status}
+                  badge
+                />
+              </div>
 
-            <Separator />
+              <Separator />
 
-            <div className="space-y-2">
-              <Label htmlFor="payRef">Payment Reference</Label>
-              <Input
-                id="payRef"
-                value={payReference}
-                onChange={(e) => setPayReference(e.target.value)}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="payRef">Payment Reference</Label>
+                <Input
+                  id="payRef"
+                  value={payReference}
+                  onChange={(e) => setPayReference(e.target.value)}
+                  disabled={!!firstPaymentRes}
+                />
+              </div>
 
-            <Button
-              className="w-full"
-              disabled={isPaying || !payReference}
-              onClick={handleFirstPayment}
-            >
-              {isPaying ? (
-                <>
-                  <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  Processing Payment…
-                </>
-              ) : (
-                <>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Pay
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+              <div className="flex-1" />
+
+              <Button
+                className="w-full"
+                disabled={isPaying || !payReference || !!firstPaymentRes}
+                onClick={handleFirstPayment}
+              >
+                {isPaying ? (
+                  <>
+                    <Loader className="mr-2 h-4 w-4 animate-spin" />
+                    Processing Payment…
+                  </>
+                ) : firstPaymentRes ? (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Payment Submitted
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Pay
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* -------- Payment Response Card -------- */}
+          {firstPaymentRes && (
+            <Card className="flex flex-col border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/40 dark:via-emerald-950/30 dark:to-teal-950/20 shadow-lg">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg text-green-800 dark:text-green-200">
+                      Payment Initiated
+                    </CardTitle>
+                    <CardDescription className="text-green-600 dark:text-green-400">
+                      {firstPaymentRes.responseDescription || firstPaymentRes.message}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 flex flex-col flex-1">
+                <div className="space-y-3">
+                  <PaymentDetailRow
+                    label="Payment ID"
+                    value={firstPaymentRes.paymentId}
+                  />
+                  <PaymentDetailRow
+                    label="Subscription ID"
+                    value={firstPaymentRes.subscriptionId}
+                  />
+                  <PaymentDetailRow
+                    label="External Trans. ID"
+                    value={firstPaymentRes.exttrid}
+                  />
+                  <PaymentDetailRow
+                    label="Amount (GHS)"
+                    value={
+                      new Intl.NumberFormat("en-GH", {
+                        style: "currency",
+                        currency: "GHS",
+                      }).format(firstPaymentRes.amount)
+                    }
+                    bold
+                  />
+                  {/* Status row with Check Status button */}
+                  <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-transparent">
+                    <span className="text-xs font-medium text-green-800 dark:text-green-200 shrink-0 mr-3">Status</span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {latestTransId || firstPaymentRes.status}
+                      </Badge>
+                      {/* Check Status button — commented out for now
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-xs border-green-300 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900"
+                        disabled={isCheckingStatus}
+                        onClick={handleCheckStatus}
+                      >
+                        {isCheckingStatus ? (
+                          <Loader className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Check Status
+                          </>
+                        )}
+                      </Button>
+                      */}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1" />
+
+                <Separator className="bg-green-200 dark:bg-green-800" />
+
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => { window.location.href = "/recurring-payment-summary"; }}
+                >
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  View Recurring Payment Summary
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* -------- DIALOG -------- */}
@@ -797,10 +933,6 @@ export function RecurringPaymentsContent() {
               </Button>
             )}
 
-            {/* After step 3 success → just close */}
-            {dialogType === "success" && step === 2 && (
-              <Button onClick={() => setDialogOpen(false)}>Done</Button>
-            )}
 
             {/* Error → close only */}
             {dialogType === "error" && (
@@ -839,6 +971,40 @@ function ReadOnlyField({
         </div>
       ) : (
         <Input value={value} readOnly className="bg-muted" />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Payment detail row helper (colourful)                              */
+/* ------------------------------------------------------------------ */
+function PaymentDetailRow({
+  label,
+  value,
+  color,
+  bgColor,
+  bold,
+  isBadge,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+  bgColor?: string;
+  bold?: boolean;
+  isBadge?: boolean;
+}) {
+  return (
+    <div className={cn("flex items-center justify-between rounded-lg px-3 py-2", bgColor || "bg-transparent")}>
+      <span className="text-xs font-medium text-green-800 dark:text-green-200 shrink-0 mr-3">{label}</span>
+      {isBadge ? (
+        <Badge variant="secondary" className={cn("text-xs", color)}>
+          {value}
+        </Badge>
+      ) : (
+        <span className={cn("text-sm font-mono text-right break-all text-green-950 dark:text-green-50", color, bold && "font-bold text-base")}>
+          {value || "—"}
+        </span>
       )}
     </div>
   );

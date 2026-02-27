@@ -81,19 +81,19 @@ export function NavMain({
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          {/*<SidebarMenuItem className="flex items-center gap-2">*/}
-          {/*  <SidebarMenuButton*/}
-          {/*    tooltip="Recurring Payments"*/}
-          {/*    className="cursor-pointer bg-primary/80 text-primary-foreground*/}
-          {/*                          hover:bg-primary/70 hover:text-primary-foreground*/}
-          {/*                          active:bg-primary/70 active:text-primary-foreground*/}
-          {/*                          min-w-8 duration-200 ease-linear"*/}
-          {/*    onClick={() => onNavigate("recurring-payments")}*/}
-          {/*  >*/}
-          {/*    <IconRepeat />*/}
-          {/*    <span>Recurring Payments</span>*/}
-          {/*  </SidebarMenuButton>*/}
-          {/*</SidebarMenuItem>*/}
+          <SidebarMenuItem className="flex items-center gap-2">
+            <SidebarMenuButton
+              tooltip="Recurring Payment"
+              className="cursor-pointer bg-primary/80 text-primary-foreground
+                                    hover:bg-primary/70 hover:text-primary-foreground
+                                    active:bg-primary/70 active:text-primary-foreground
+                                    min-w-8 duration-200 ease-linear"
+              onClick={() => onNavigate("recurring-payments")}
+            >
+              <IconRepeat />
+              <span>Recurring Payment</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
 
           {items.map((item) =>
             "isGroup" in item ? (

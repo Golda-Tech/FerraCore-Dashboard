@@ -12,7 +12,6 @@ import {
   ResetPasswordResponse,
 } from "@/types/auth";
 
-import { redirect } from "next/navigation";
 
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
@@ -215,5 +214,7 @@ export function getUser(): LoginResponse | null {
 
 export function logout(): void {
   clearAuth();
-  redirect("/login");
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
 }

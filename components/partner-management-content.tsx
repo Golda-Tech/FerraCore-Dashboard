@@ -70,6 +70,7 @@ type Subscription = {
   whitelistedNumber4: string | null
   amount: number
   currency: string
+  createdBy: string | null
 }
 
 type Organization = {
@@ -159,6 +160,12 @@ export function UserManagementContent() {
         if (!isSuperAdmin) {
           filteredData = data.filter((u) => u.organization?.name !== "Ferracore Technologies")
         }
+
+        // Exclude partners created by specific internal accounts
+        const excludedCreators = ["ferracoretech@gmail.com", "scronfinkle@gmail.com"]
+        filteredData = filteredData.filter(
+          (u) => !excludedCreators.includes(u.subscription?.createdBy?.toLowerCase() ?? "")
+        )
 
         // Map to User format - ensure organizationId is extracted from organization.id
         const mappedData = filteredData.map((u) => {

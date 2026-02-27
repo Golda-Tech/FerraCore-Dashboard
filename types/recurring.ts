@@ -22,6 +22,8 @@ export interface RecurringPaymentSubscriptionRequest {
   returnUrl: string;
   resumable: "Y" | "N";
   cycleSkip: "Y" | "N";
+  createdBy: string;
+  partnerId: string;
 }
 
 export interface RecurringPaymentSubscriptionResponse {
@@ -69,5 +71,39 @@ export interface FirstInstallmentPaymentResponse {
   message: string;
   responseCode: string;
   responseDescription: string;
+}
+
+export interface ProfileDto {
+  amount: string;
+  callbackUrl: string;
+  cancelDate: string;
+  completed: boolean;
+  customerNumber: string;
+  cycle: string;
+  cycleSkip: string;
+  endDate: string;
+  nw: string;
+  resumable: string;
+  serviceId: string;
+  serviceName: string;
+  startDate: string;
+  status: string;
+  subscriptionDate: string;
+  uniqRefId: string;
+}
+
+export interface TransactionDto {
+  prevSchedule: string;
+  processingId: string;
+  transDate: string;
+  transId: string;
+  transMsg: string;
+  transRef: string;
+  transStatus: string;
+}
+
+export interface RecurringPaymentStatusResponse {
+  profile: ProfileDto;
+  transactions: TransactionDto[];
 }
 

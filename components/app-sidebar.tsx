@@ -19,6 +19,7 @@ import {
   IconSettings,
   IconUsers,
   IconFolder,
+  IconRepeat,
 } from "@tabler/icons-react";
 import { UserPlus } from "lucide-react";
 
@@ -75,12 +76,12 @@ const partnersUsersPages: PartnersUsersPage[] = [
     icon: IconUserCircle,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
   },
-  // {
-  //   title: "Analyze Partners",
-  //   page: "analyze-partners" as PageName,
-  //   icon: IconUserCircle,
-  //   allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
-  // }
+  {
+    title: "Analyze Partners",
+    page: "analyze-partners" as PageName,
+    icon: IconUserCircle,
+    allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
+  }
 ];
 
 // Filter pages based on user role
@@ -126,15 +127,21 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
 
     console.log("Sidebar - Building nav for role:", userRole); // Debug log
 
+    const basePages = [
+          { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard },
+          { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
+        ];
+
+        if (userRole === "SUPER_ADMIN") {
+          basePages.push({ title: "Recurring Summary", page: "recurring-payment-summary" as PageName, icon: IconRepeat });
+        }
+
     const baseNav: any[] = [
       {
         title: "Rexhub Payments",
         icon: IconFolder,
         isGroup: true as const,
-        pages: [
-          { title: "Dashboard", page: "dashboard" as PageName, icon: IconDashboard },
-          { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
-        ],
+        pages: basePages,
       },
     ];
 
