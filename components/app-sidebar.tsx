@@ -75,13 +75,14 @@ const partnersUsersPages: PartnersUsersPage[] = [
     page: "user-management" as PageName,
     icon: IconUserCircle,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
-  },
-  {
-    title: "Analyze Partners",
-    page: "analyze-partners" as PageName,
-    icon: IconUserCircle,
-    allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
   }
+  // ,
+  // {
+  //   title: "Analyze Partners",
+  //   page: "analyze-partners" as PageName,
+  //   icon: IconUserCircle,
+  //   allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
+  // }
 ];
 
 // Filter pages based on user role
