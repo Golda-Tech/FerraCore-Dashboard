@@ -132,14 +132,11 @@ export function RecurringPaymentSummaryContent() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
-  /* ---------- role guard: SUPER_ADMIN only ---------- */
+  /* ---------- load user ---------- */
   useEffect(() => {
     const stored = getUser();
     setUser(stored);
-    if (stored && stored.userRoles !== "SUPER_ADMIN") {
-      router.replace("/dashboard");
-    }
-  }, [router]);
+  }, []);
 
   /* ---------- fetch subscriptions ---------- */
   const fetchSubscriptions = useCallback(async (email: string, showLoading = true) => {

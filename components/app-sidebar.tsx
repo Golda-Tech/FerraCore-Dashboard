@@ -133,9 +133,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
           { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
         ];
 
-        if (userRole === "SUPER_ADMIN") {
-          basePages.push({ title: "Recurring Summary", page: "recurring-payment-summary" as PageName, icon: IconRepeat });
-        }
+        basePages.push({ title: "Recurring Summary", page: "recurring-payment-summary" as PageName, icon: IconRepeat });
 
     const baseNav: any[] = [
       {

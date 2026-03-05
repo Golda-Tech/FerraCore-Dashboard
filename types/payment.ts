@@ -41,6 +41,8 @@ export interface Payment {
   provider: string;
   mobileNumber: string;
   amount: number;
+  amountCustomerPays: number;
+  transactionFee: number;
   currency: string;
   status: string;
   message?: string | null;

@@ -17,4 +17,5 @@ export type PageName =
   | "payments"
   | "request-payment"
   | "recurring-payments"
-  | "recurring-payment-summary";
+  | "recurring-payment-summary"
+  | "user-audit-trail";

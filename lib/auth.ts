@@ -212,9 +212,15 @@ export function getUser(): LoginResponse | null {
   return null;
 }
 
-export function logout(): void {
-  clearAuth();
-  if (typeof window !== "undefined") {
-    window.location.href = "/login";
+export async function logout(): Promise<void> {
+  try {
+    await api.post("/api/v1/auth/logout");
+  } catch (err) {
+    console.error("Logout API call failed:", err);
+  } finally {
+    clearAuth();
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
   }
 }

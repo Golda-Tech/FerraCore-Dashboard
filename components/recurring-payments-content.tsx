@@ -900,10 +900,12 @@ export function RecurringPaymentsContent() {
       <Dialog
         open={dialogOpen}
         onOpenChange={(open) => {
+          // Prevent dismissing success dialogs by clicking outside — user must click the action button
+          if (!open && dialogType === "success") return;
           if (!open) setDialogOpen(false);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" hideClose={dialogType === "success"} onPointerDownOutside={(e) => { if (dialogType === "success") e.preventDefault(); }} onEscapeKeyDown={(e) => { if (dialogType === "success") e.preventDefault(); }}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {dialogType === "success" ? (

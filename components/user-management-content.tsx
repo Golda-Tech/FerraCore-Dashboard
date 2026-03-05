@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { IconPlus, IconSearch, IconDownload, IconEdit, IconTrash, IconUserPlus, IconShield, IconUser, IconCrown } from "@tabler/icons-react"
+import { IconPlus, IconSearch, IconDownload, IconEdit, IconTrash, IconUserPlus, IconShield, IconUser, IconCrown, IconLoader, IconBan } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { useRouter } from "next/navigation"
+import { Shield } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
@@ -76,6 +79,7 @@ interface User {
 }
 
 export function UserManagementContent() {
+  const router = useRouter();
   const [orgName, setOrgName] = useState<string>("");
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,6 +89,8 @@ export function UserManagementContent() {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false)
   const [isEditUserOpen, setIsEditUserOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [loadingAction, setLoadingAction] = useState<{ email: string; action: string } | null>(null)
+  const [alertOpen, setAlertOpen] = useState<string | null>(null)
 
   /* ---------- read user from localStorage on mount ---------- */
   useEffect(() => {
@@ -239,12 +245,64 @@ export function UserManagementContent() {
     document.body.removeChild(link)
   }
 
+  /* ---------- check if specific action is loading ---------- */
+  const isActionLoading = (email: string, action: string) => {
+    return loadingAction?.email === email && loadingAction?.action === action
+  }
+
+  /* ---------- manage user via API ---------- */
+  const handleManageAction = async (email: string, action: "activate" | "deactivate" | "cancel") => {
+    if (!email) {
+      toast({ title: "Error", description: "Invalid user email", variant: "destructive" })
+      return
+    }
+
+    setLoadingAction({ email, action })
+
+    try {
+      await api.post("/api/v1/auth/profile/manage", { email, action })
+
+      // Update local state based on action
+      let newStatus: "ACTIVE" | "INACTIVE" | "PENDING"
+      switch (action) {
+        case "activate":
+          newStatus = "ACTIVE"
+          break
+        case "deactivate":
+          newStatus = "INACTIVE"
+          break
+        case "cancel":
+          setUsers((prev) => prev.filter((u) => u.email !== email))
+          toast({ title: "Success", description: "User has been cancelled and removed from the list." })
+          setAlertOpen(null)
+          setLoadingAction(null)
+          return
+        default:
+          newStatus = "PENDING"
+      }
+
+      setUsers((prev) =>
+        prev.map((u) => (u.email === email ? { ...u, status: newStatus } : u))
+      )
+
+      toast({ title: "Success", description: `User has been ${action}d successfully.` })
+      setAlertOpen(null)
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.detail ||
+        err.response?.data?.title ||
+        err.message ||
+        `Failed to ${action} user`
+      console.error(`Failed to ${action} user:`, err)
+      toast({ title: "Error", description: msg, variant: "destructive" })
+    } finally {
+      setLoadingAction(null)
+    }
+  }
+
   /* ---------- actions ---------- */
   const handleAddUser = () => { /* stub */ }
   const handleEditUser = () => { /* stub */ }
-  const handleDeleteUser = (id: string) => setUsers((u) => u.filter((x) => x.id !== id))
-  const handleStatusChange = (id: string, status: "ACTIVE" | "INACTIVE") =>
-    setUsers((u) => u.map((x) => (x.id === id ? { ...x, status } : x)))
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -313,13 +371,73 @@ export function UserManagementContent() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="sm">Actions</Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => router.push(`/user-audit-trail?email=${encodeURIComponent(u.email)}&name=${encodeURIComponent(`${u.firstName} ${u.lastName}`)}`)}><Shield className="mr-2 h-4 w-4" />View Audit Trail</DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => { setSelectedUser(u); setIsEditUserOpen(true) }}><IconEdit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                      {u.status === "PENDING" && <DropdownMenuItem onClick={() => handleStatusChange(u.id, "ACTIVE")}><IconUserPlus className="mr-2 h-4 w-4" />Activate</DropdownMenuItem>}
-                      {u.status === "ACTIVE" && <DropdownMenuItem onClick={() => handleStatusChange(u.id, "INACTIVE")}><IconUser className="mr-2 h-4 w-4" />Deactivate</DropdownMenuItem>}
-                      <AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => e.preventDefault()}><IconTrash className="mr-2 h-4 w-4" />Delete</DropdownMenuItem></AlertDialogTrigger>
-                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete Partner</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete {u.firstName} {u.lastName}?</AlertDialogDescription></AlertDialogHeader>
-                          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteUser(u.id)}>Delete</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent></AlertDialog>
+                      <DropdownMenuSeparator />
+
+                      {(u.status === "PENDING" || u.status === "INACTIVE") && (
+                        <DropdownMenuItem
+                          onClick={() => handleManageAction(u.email, "activate")}
+                          disabled={isActionLoading(u.email, "activate")}
+                        >
+                          {isActionLoading(u.email, "activate") ? (
+                            <IconLoader className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <IconUserPlus className="mr-2 h-4 w-4" />
+                          )}
+                          Activate
+                        </DropdownMenuItem>
+                      )}
+
+                      {u.status === "ACTIVE" && (
+                        <DropdownMenuItem
+                          onClick={() => handleManageAction(u.email, "deactivate")}
+                          disabled={isActionLoading(u.email, "deactivate")}
+                        >
+                          {isActionLoading(u.email, "deactivate") ? (
+                            <IconLoader className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <IconBan className="mr-2 h-4 w-4" />
+                          )}
+                          Deactivate
+                        </DropdownMenuItem>
+                      )}
+
+                      <AlertDialog
+                        open={alertOpen === u.email}
+                        onOpenChange={(open) => setAlertOpen(open ? u.email : null)}
+                      >
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <IconTrash className="mr-2 h-4 w-4" />
+                            Cancel
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to cancel {u.firstName} {u.lastName}? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setAlertOpen(null)}>
+                              Keep User
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleManageAction(u.email, "cancel")}
+                              className="bg-red-600 hover:bg-red-700"
+                              disabled={isActionLoading(u.email, "cancel")}
+                            >
+                              {isActionLoading(u.email, "cancel") ? (
+                                <IconLoader className="h-4 w-4 animate-spin mr-2" />
+                              ) : null}
+                              Confirm Cancel
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

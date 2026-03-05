@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import { getUser } from "@/lib/auth";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -35,13 +34,16 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getPayment, getPayments, getTransactionStatus } from "@/lib/payment";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { LoginResponse } from "@/types/auth";
-import { getPaymentsStatusSummary } from "@/lib/payment";
 
 const getStatusIcon = (status: string) => {
   switch (status) {
@@ -82,6 +84,7 @@ export function PaymentsContent() {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
 
   const [user, setUser] = useState<LoginResponse | null>(null);
 
@@ -89,6 +92,10 @@ export function PaymentsContent() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isFiltering, setIsFiltering] = useState(false);
+
+  /* ---------- pagination ---------- */
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   // Use ref to store interval ID for cleanup
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -286,7 +293,7 @@ export function PaymentsContent() {
 
   const handleRefreshStatus = async () => {
     if (!selectedPayment) return;
-    setLoading(true);
+    setRefreshingStatus(true);
     try {
       const statusData = await getTransactionStatus(
         selectedPayment.provider,
@@ -296,7 +303,7 @@ export function PaymentsContent() {
     } catch (err) {
       console.error("Failed to refresh payment status:", err);
     } finally {
-      setLoading(false);
+      setRefreshingStatus(false);
     }
   };
 
@@ -313,30 +320,6 @@ export function PaymentsContent() {
         return "expired";
     }
   };
-
-  const [lastMonth, setLastMonth] = useState<{
-    total: number;
-    completed: number;
-    pending: number;
-    amount: number;
-  }>({ total: 0, completed: 0, pending: 0, amount: 0 });
-
-  useEffect(() => {
-    if (!user?.email) return;
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 30);
-
-    getPaymentsStatusSummary(user.email)
-      .then((res) => {
-        const completed = res.SUCCESS ?? 0;
-        const pending = res.ONGOING ?? 0;
-        const total = Object.values(res).reduce((a, b) => a + (b ?? 0), 0);
-        const amount = 0;
-        setLastMonth({ total, completed, pending, amount });
-      })
-      .catch(() => setLastMonth({ total: 0, completed: 0, pending: 0, amount: 0 }));
-  }, [user?.email]);
 
   const telcos = [
     { name: "mtn", logo: "/mtn-momo.png" },
@@ -355,16 +338,6 @@ export function PaymentsContent() {
         className="h-12 w-12 rounded-lg object-contain bg-white p-1"
       />
     );
-  };
-
-  const delta = (current: number, previous: number) => {
-    if (previous === 0) return { pct: 0, arrow: "→", color: "text-gray-500" };
-    const pct = ((current - previous) / previous) * 100;
-    return {
-      pct: Math.abs(pct).toFixed(1),
-      arrow: pct > 0 ? "↗" : pct < 0 ? "↘" : "→",
-      color: pct > 0 ? "text-green-600" : pct < 0 ? "text-red-600" : "text-gray-500",
-    };
   };
 
   const filteredPayments = payments.filter((payment) => {
@@ -398,19 +371,58 @@ export function PaymentsContent() {
 
   const completedStatuses = ["SUCCESSFUL"];
   const pendingStatuses = ["PENDING"];
+  const failedStatuses = ["FAILED"];
 
+  /* ---------- helper: is today ---------- */
+  const isToday = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
+  };
+
+  const todayPayments = payments.filter((p) => isToday(p.initiatedAt));
+
+  /* All-time counts */
   const totalRequests = payments.length;
   const completedRequests = payments.filter((p) => completedStatuses.includes(p.status)).length;
   const pendingRequests = payments.filter((p) => pendingStatuses.includes(p.status)).length;
-  const totalAmount = payments
+  const failedRequests = payments.filter((p) => failedStatuses.includes(p.status)).length;
+
+  /* Today counts */
+  const todaySuccessful = todayPayments.filter((p) => completedStatuses.includes(p.status)).length;
+  const todayPending = todayPayments.filter((p) => pendingStatuses.includes(p.status)).length;
+  const todayFailed = todayPayments.filter((p) => failedStatuses.includes(p.status)).length;
+
+  /* Amounts — use amountCustomerPays */
+  const todayAmountCollected = todayPayments
     .filter((p) => completedStatuses.includes(p.status))
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => sum + (p.amountCustomerPays ?? p.amount), 0);
+  const allTimeAmountCollected = payments
+    .filter((p) => completedStatuses.includes(p.status))
+    .reduce((sum, p) => sum + (p.amountCustomerPays ?? p.amount), 0);
+
   const successRate = totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0;
 
   /* total based on the currently visible (filtered) list */
   const filteredTotalAmount = filteredPayments
     .filter((p) => completedStatuses.includes(p.status))
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => sum + (p.amountCustomerPays ?? p.amount), 0);
+
+  /* ---------- pagination ---------- */
+  const totalPages = Math.max(1, Math.ceil(filteredPayments.length / pageSize));
+  const paginatedPayments = filteredPayments.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, startDate, endDate, payments.length]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-GH", {
@@ -420,13 +432,17 @@ export function PaymentsContent() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-GB", {
+    const d = new Date(dateString);
+    const base = d.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
     });
+    const ms = String(d.getMilliseconds()).padStart(3, "0");
+    return `${base}.${ms}`;
   };
 
   const formatLastRefresh = () => {
@@ -466,47 +482,30 @@ export function PaymentsContent() {
         </div>
       </div>
 
+      {/* Summary Cards — Row 1: Amounts */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-            <Smartphone className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Today&apos;s Collections</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalRequests}</div>
-            <p className={cn("text-xs flex items-center", delta(totalRequests, lastMonth.total).color)}>
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {delta(totalRequests, lastMonth.total).pct}%
-              {delta(totalRequests, lastMonth.total).arrow}
-              from last month
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(todayAmountCollected)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {todaySuccessful} successful transaction{todaySuccessful !== 1 ? "s" : ""} today
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Amount Collected</CardTitle>
+            <CardTitle className="text-sm font-medium">All-Time Collections</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
-            <p className={cn("text-xs flex items-center", delta(totalAmount, lastMonth.amount).color)}>
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {delta(totalAmount, lastMonth.amount).pct}% {delta(totalAmount, lastMonth.amount).arrow} from last month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingRequests}</div>
-            <p className={cn("text-xs flex items-center", delta(pendingRequests, lastMonth.pending).color)}>
-              <Clock className="h-3 w-3 mr-1" />
-              {delta(pendingRequests, lastMonth.pending).pct}% {delta(pendingRequests, lastMonth.pending).arrow} from last month
+            <div className="text-2xl font-bold">{formatCurrency(allTimeAmountCollected)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {completedRequests} successful of {totalRequests} total
             </p>
           </CardContent>
         </Card>
@@ -518,16 +517,52 @@ export function PaymentsContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{successRate.toFixed(1)}%</div>
-            <p
-              className={cn(
-                "text-xs flex items-center",
-                delta(successRate, (lastMonth.completed / lastMonth.total) * 100).color
-              )}
-            >
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {delta(successRate, (lastMonth.completed / lastMonth.total) * 100).pct}%{" "}
-              {delta(successRate, (lastMonth.completed / lastMonth.total) * 100).arrow} from last month
+            <p className="text-xs text-muted-foreground mt-1">
+              Based on {totalRequests} total request{totalRequests !== 1 ? "s" : ""}
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Transaction Breakdown</CardTitle>
+            <Smartphone className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                Successful
+              </span>
+              <span className="tabular-nums font-medium">
+                <span className="text-green-600">{todaySuccessful}</span>
+                <span className="text-muted-foreground mx-1">/</span>
+                <span>{completedRequests}</span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-yellow-500" />
+                Pending
+              </span>
+              <span className="tabular-nums font-medium">
+                <span className="text-yellow-600">{todayPending}</span>
+                <span className="text-muted-foreground mx-1">/</span>
+                <span>{pendingRequests}</span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-red-500" />
+                Failed
+              </span>
+              <span className="tabular-nums font-medium">
+                <span className="text-red-600">{todayFailed}</span>
+                <span className="text-muted-foreground mx-1">/</span>
+                <span>{failedRequests}</span>
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground pt-1 border-t">Today / All-time</p>
           </CardContent>
         </Card>
       </div>
@@ -655,14 +690,14 @@ export function PaymentsContent() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredPayments.map((payment) => (
+                  paginatedPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell>
                         <div>
                           <div className="text-sm text-muted-foreground">{payment.mobileNumber}</div>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{formatCurrency(payment.amount)}</TableCell>
+                      <TableCell className="font-medium">{formatCurrency(payment.amountCustomerPays ?? payment.amount)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getStatusIcon(payment.status)}
@@ -717,10 +752,45 @@ export function PaymentsContent() {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between text-sm text-muted-foreground mt-4">
-            <div>
-              Showing {filteredPayments.length} of {payments.length} payments
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>
+                Showing {Math.min((currentPage - 1) * pageSize + 1, filteredPayments.length)}–
+                {Math.min(currentPage * pageSize, filteredPayments.length)} of {filteredPayments.length} payments
+              </span>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="payPageSize" className="text-xs whitespace-nowrap">Rows</Label>
+                <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setCurrentPage(1); }}>
+                  <SelectTrigger id="payPageSize" className="h-8 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[10, 20, 50, 100].map((s) => (
+                      <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage <= 1} onClick={() => setCurrentPage(1)}>
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm px-2 tabular-nums">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)}>
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+
             <div className="text-green-600 dark:text-green-400 text-lg font-semibold">
               Total: {formatCurrency(filteredTotalAmount)}
             </div>
@@ -779,7 +849,15 @@ export function PaymentsContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
-                    <p className="text-lg font-semibold">{formatCurrency(selectedPayment.amount)}</p>
+                    <p className="text-lg font-semibold">{formatCurrency(selectedPayment.amountCustomerPays ?? selectedPayment.amount)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Fee</Label>
+                    <p className="text-sm font-semibold text-orange-600">{formatCurrency(selectedPayment.transactionFee ?? 0)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Total Amount</Label>
+                    <p className="text-lg font-bold text-green-600">{formatCurrency(selectedPayment.amount)}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">External Reference</Label>
@@ -828,9 +906,9 @@ export function PaymentsContent() {
                   Close
                 </Button>
                 {selectedPayment.status === "PENDING" && (
-                  <Button onClick={handleRefreshStatus}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh Status
+                  <Button onClick={handleRefreshStatus} disabled={refreshingStatus}>
+                    <RefreshCw className={`h-4 w-4 mr-2 ${refreshingStatus ? "animate-spin" : ""}`} />
+                    {refreshingStatus ? "Refreshing…" : "Refresh Status"}
                   </Button>
                 )}
               </div>
