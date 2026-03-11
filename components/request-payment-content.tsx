@@ -22,6 +22,7 @@ import { LoginResponse } from "@/types/auth";
 import { cn } from "@/lib/utils"
 import { getUser } from "@/lib/auth";
 import { getCommissionFees } from "@/lib/payment";
+import { detectNetworkProvider, providerCodeToRadioValue } from "@/lib/helpers";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
 import { v4 as uuid } from "uuid";
 
@@ -189,6 +190,13 @@ return{
     // Allow only digits, max 9 characters (without the 0 prefix)
     const digitsOnly = value.replace(/\D/g, "").slice(0, 9);
     handleInputChange("phoneNumber", digitsOnly);
+
+    // Auto-detect network provider from MSISDN prefix
+    const detected = detectNetworkProvider(digitsOnly);
+    const radioValue = providerCodeToRadioValue(detected);
+    if (radioValue) {
+      handleInputChange("network", radioValue);
+    }
 
     // Clear existing timer
     if (debounceTimer) {

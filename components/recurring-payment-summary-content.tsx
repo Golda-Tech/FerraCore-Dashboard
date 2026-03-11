@@ -209,7 +209,7 @@ export function RecurringPaymentSummaryContent() {
       s.customerNumber,
       CYCLE_LABELS[s.cycle] || s.cycle,
       NETWORK_LABELS[s.networkProvider] || s.networkProvider,
-      Number(s.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
+      Number(s.billingAmount ?? s.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
       s.status,
       formatDate(s.startDate),
       formatDate(s.endDate),
@@ -237,7 +237,7 @@ export function RecurringPaymentSummaryContent() {
           s.customerNumber,
           CYCLE_LABELS[s.cycle] || s.cycle,
           NETWORK_LABELS[s.networkProvider] || s.networkProvider,
-          Number(s.amount).toFixed(2),
+          Number(s.billingAmount ?? s.amount).toFixed(2),
           s.status,
           formatDate(s.startDate),
           formatDate(s.endDate),
@@ -301,8 +301,8 @@ export function RecurringPaymentSummaryContent() {
       s.status === RecurringPaymentStatus.FIRST_PAYMENT_PENDING ||
       s.status === RecurringPaymentStatus.CREATED
   ).length;
-  const totalAmount = subscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
-  const filteredTotalAmount = filteredSubscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
+  const totalAmount = subscriptions.reduce((sum, s) => sum + Number(s.billingAmount ?? s.amount), 0);
+  const filteredTotalAmount = filteredSubscriptions.reduce((sum, s) => sum + Number(s.billingAmount ?? s.amount), 0);
 
   /* ---------- helpers ---------- */
   const formatCurrency = (amount: number) =>
@@ -567,7 +567,7 @@ export function RecurringPaymentSummaryContent() {
                           <div className="text-sm text-muted-foreground font-mono">{sub.customerNumber}</div>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{formatCurrency(Number(sub.amount))}</TableCell>
+                      <TableCell className="font-medium">{formatCurrency(Number(sub.billingAmount ?? sub.amount))}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{CYCLE_LABELS[sub.cycle] || sub.cycle}</Badge>
                       </TableCell>
@@ -672,7 +672,7 @@ export function RecurringPaymentSummaryContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
-                    <p className="text-lg font-semibold">{formatCurrency(Number(selectedSub.amount))}</p>
+                    <p className="text-lg font-semibold">{formatCurrency(Number(selectedSub.billingAmount ?? selectedSub.amount))}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Cycle</Label>

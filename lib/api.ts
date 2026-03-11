@@ -27,6 +27,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (typeof window !== "undefined") {
+      // Skip auth redirect for name-enquiry — a failed lookup should not log the user out
+      const requestUrl = error.config?.url || "";
+      const isNameEnquiry = requestUrl.includes("name-enquiry");
+
       const status = error.response?.status;
       const message =
         (error.response?.data?.message || error.response?.data?.error || "")
@@ -41,7 +45,7 @@ api.interceptors.response.use(
         message.includes("token expired") ||
         message.includes("invalid/expired");
 
-      if (isAuthError) {
+      if (isAuthError && !isNameEnquiry) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         window.location.href = "/login";

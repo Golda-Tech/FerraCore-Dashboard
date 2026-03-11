@@ -46,6 +46,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { getUser } from "@/lib/auth";
 import { getUserInfo, getCommissionFees } from "@/lib/payment";
+import { detectNetworkProvider } from "@/lib/helpers";
 import { useRouter } from "next/navigation";
 import {
   createSubscription,
@@ -161,7 +162,7 @@ export function RecurringPaymentsContent() {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const [amount, setAmount] = useState("");
-  const [cycle, setCycle] = useState<"DLY" | "WKL" | "MON">("MON");
+  const [cycle, setCycle] = useState<"" | "DLY" | "WKL" | "MON">("");
   const [startDate, setStartDate] = useState(
     () => new Date().toISOString().split("T")[0]
   );
@@ -272,6 +273,13 @@ export function RecurringPaymentsContent() {
   const handlePhoneChange = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 9);
     setPhoneNumber(digits);
+
+    // Auto-detect network provider from MSISDN prefix
+    const detected = detectNetworkProvider(digits);
+    if (detected && detected !== "GMO") {
+      setNetworkProvider(detected as "MTN" | "VOD" | "AIR");
+    }
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (digits.length === 9) {
       debounceRef.current = setTimeout(() => fetchCustomerName(digits), 800);
@@ -293,6 +301,10 @@ export function RecurringPaymentsContent() {
   const handleCreateMandate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !amount || !endDate || !reference) return;
+    if (!cycle) {
+      showDialog("error", "Validation Error", "Please select a payment cycle before continuing.");
+      return;
+    }
     setIsCreating(true);
     try {
       const res = await createSubscription({
@@ -513,7 +525,7 @@ export function RecurringPaymentsContent() {
 
                   {/* -- Cycle -- */}
                   <div className="space-y-2">
-                    <Label>Cycle</Label>
+                    <Label>Cycle <span className="text-destructive">*</span></Label>
                     <Select
                       value={cycle}
                       onValueChange={(v) =>
@@ -521,7 +533,7 @@ export function RecurringPaymentsContent() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select a cycle" />
                       </SelectTrigger>
                       <SelectContent>
                         {CYCLES.map((c) => (
@@ -635,7 +647,7 @@ export function RecurringPaymentsContent() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={isCreating || !amount || !endDate || !reference}
+                    disabled={isCreating || !amount || !endDate || !reference || !cycle}
                   >
                     {isCreating ? (
                       <>
@@ -783,7 +795,7 @@ export function RecurringPaymentsContent() {
                 />
                 <ReadOnlyField
                   label="Amount (GHS)"
-                  value={String(subscriptionRes.amount)}
+                  value={totalCustomerPays > 0 ? totalCustomerPays.toFixed(2) : String(subscriptionRes.billingAmount || subscriptionRes.amount)}
                 />
                 <ReadOnlyField
                   label="Current Status"
