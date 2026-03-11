@@ -65,9 +65,9 @@ export async function getUserInfo(mobileNumber: string): Promise<UserInfo> {
   return response.data;
 }
 
-//fetch commission fees with partnerId as request parameter and transactionFee and cappedAmount as response parameters
-export async function getCommissionFees(partnerName: string): Promise<{ transactionFee: string; cappedAmount: string }> {
-  const response = await api.get<{ transactionFee: string; cappedAmount: string }>(
+//fetch commission fees with partnerId as request parameter and transactionFee, recurringFee and cappedAmount as response parameters
+export async function getCommissionFees(partnerName: string): Promise<{ transactionFee: string; cappedAmount: string; recurringFee: string }> {
+  const response = await api.get<{ transactionFee: string; cappedAmount: string; recurringFee: string }>(
     "/api/v1/payments/fees",
     {
       params: { partnerName },

@@ -449,26 +449,26 @@ export function PartnerTransactionsContent({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 items-stretch">
+        <Card className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-4 px-4">
             <CardTitle className="text-sm font-medium">Today&apos;s Collections</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex flex-col px-4 pb-4 pt-1">
             <div className="text-2xl font-bold text-green-600">{formatCurrency(todayAmountCollected)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {todaySuccessful} successful transaction{todaySuccessful !== 1 ? "s" : ""} today
+              {todaySuccessful} successful of {todayPayments.length} today
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-4 px-4">
             <CardTitle className="text-sm font-medium">All-Time Collections</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex flex-col px-4 pb-4 pt-1">
             <div className="text-2xl font-bold">{formatCurrency(allTimeAmountCollected)}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {completedRequests} successful of {totalRequests} total
@@ -476,59 +476,74 @@ export function PartnerTransactionsContent({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-4 px-4">
             <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex flex-col px-4 pb-4 pt-1">
             <div className="text-2xl font-bold">{successRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Based on {totalRequests} total request{totalRequests !== 1 ? "s" : ""}
+              All-time ({completedRequests}/{totalRequests})
+            </p>
+            <div className="flex-1" />
+            <Separator className="my-2" />
+            <p className="text-xs font-medium text-muted-foreground mb-1">Today&apos;s Rate</p>
+            <div className="text-lg font-semibold text-green-600">
+              {todayPayments.length > 0
+                ? ((todaySuccessful / todayPayments.length) * 100).toFixed(1)
+                : "0.0"}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {todaySuccessful} successful of {todayPayments.length} today
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-4 px-4">
             <CardTitle className="text-sm font-medium">Transaction Breakdown</CardTitle>
             <Smartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                Successful
-              </span>
-              <span className="tabular-nums font-medium">
-                <span className="text-green-600">{todaySuccessful}</span>
-                <span className="text-muted-foreground mx-1">/</span>
-                <span>{completedRequests}</span>
-              </span>
+          <CardContent className="flex-1 flex flex-col px-4 pb-4 pt-1">
+            <div className="flex-1" />
+            <Separator className="mb-2" />
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                  Successful
+                </span>
+                <span className="tabular-nums font-medium">
+                  <span className="text-green-600">{todaySuccessful}</span>
+                  <span className="text-muted-foreground mx-1">/</span>
+                  <span>{completedRequests}</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-yellow-500" />
+                  Pending
+                </span>
+                <span className="tabular-nums font-medium">
+                  <span className="text-yellow-600">{todayPending}</span>
+                  <span className="text-muted-foreground mx-1">/</span>
+                  <span>{pendingRequests}</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-red-500" />
+                  Failed
+                </span>
+                <span className="tabular-nums font-medium">
+                  <span className="text-red-600">{todayFailed}</span>
+                  <span className="text-muted-foreground mx-1">/</span>
+                  <span>{failedRequests}</span>
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground pt-1">Today / All-time</p>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-yellow-500" />
-                Pending
-              </span>
-              <span className="tabular-nums font-medium">
-                <span className="text-yellow-600">{todayPending}</span>
-                <span className="text-muted-foreground mx-1">/</span>
-                <span>{pendingRequests}</span>
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-red-500" />
-                Failed
-              </span>
-              <span className="tabular-nums font-medium">
-                <span className="text-red-600">{todayFailed}</span>
-                <span className="text-muted-foreground mx-1">/</span>
-                <span>{failedRequests}</span>
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground pt-1 border-t">Today / All-time</p>
           </CardContent>
         </Card>
       </div>
@@ -567,6 +582,12 @@ export function PartnerTransactionsContent({
                     <SelectItem value="expired">Expired</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
+                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <span className="text-sm font-semibold text-green-700 dark:text-green-300">
+                  Total: {formatCurrency(filteredTotalAmount)}
+                </span>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

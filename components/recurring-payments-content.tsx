@@ -9,7 +9,6 @@ import {
   RefreshCw,
   User,
   ShieldCheck,
-  CreditCard,
   CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,13 +45,12 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { getUser } from "@/lib/auth";
-import { getUserInfo } from "@/lib/payment";
+import { getUserInfo, getCommissionFees } from "@/lib/payment";
 import { useRouter } from "next/navigation";
 import {
   createSubscription,
   authorizeOtp,
   resendOtp,
-  requestFirstPayment,
   getSubscriptionStatus,
 } from "@/lib/recurring";
 import type { UserInfo } from "@/types/payment";
@@ -60,9 +58,8 @@ import type { LoginResponse } from "@/types/auth";
 import type {
   RecurringPaymentSubscriptionResponse,
   AuthorizeOtpResponse,
-  FirstInstallmentPaymentResponse,
+  RecurringPaymentStatusResponse,
 } from "@/types/recurring";
-import { v4 as uuid } from "uuid";
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -72,7 +69,7 @@ const RETURN_URL = "https://ferracore.tech/api/v1/recurring-payments/callback";
 const STEPS = [
   { label: "Customer & Mandate", icon: User },
   { label: "OTP Authorization", icon: ShieldCheck },
-  { label: "First Payment", icon: CreditCard },
+  { label: "Check Status", icon: RefreshCw },
 ] as const;
 
 const CYCLES = [
@@ -180,6 +177,47 @@ export function RecurringPaymentsContent() {
   const [subscriptionRes, setSubscriptionRes] =
     useState<RecurringPaymentSubscriptionResponse | null>(null);
 
+  /* ---------- fee state ---------- */
+  const [fees, setFees] = useState<{
+    percentage: number;
+    cappedAmount: number;
+    recurringFee: number;
+  } | null>(null);
+
+  // Fetch commission fees when user is available
+  useEffect(() => {
+    async function fetchFees() {
+      const orgName = user?.organizationName;
+      if (!orgName) return;
+      try {
+        const data = await getCommissionFees(orgName);
+        setFees({
+          percentage: parseFloat(data.transactionFee),
+          cappedAmount: parseFloat(data.cappedAmount),
+          recurringFee: parseFloat(data.recurringFee || "0"),
+        });
+      } catch (err) {
+        console.error("Failed to fetch fees:", err);
+        setFees({ percentage: 1.75, cappedAmount: 30.0, recurringFee: 0 });
+      }
+    }
+    fetchFees();
+  }, [user?.organizationName]);
+
+  // Calculate recurring fee dynamically (percentage-based, capped by cappedAmount)
+  const parsedAmount = Number.parseFloat(amount) || 0;
+  const calculateRecurringFee = (amt: number) => {
+    if (!fees || amt <= 0) return { recurringFee: 0, isCapped: false };
+    const rawRecurringFee = amt * (fees.recurringFee / 100);
+    const isCapped = fees.cappedAmount > 0 && rawRecurringFee > fees.cappedAmount;
+    return {
+      recurringFee: isCapped ? fees.cappedAmount : rawRecurringFee,
+      isCapped,
+    };
+  };
+  const { recurringFee, isCapped } = calculateRecurringFee(parsedAmount);
+  const totalCustomerPays = parsedAmount + recurringFee;
+
   /* ---------- step 2 state ---------- */
   const [otpValue, setOtpValue] = useState("");
   const [isAuthorizing, setIsAuthorizing] = useState(false);
@@ -187,12 +225,8 @@ export function RecurringPaymentsContent() {
   const [otpRes, setOtpRes] = useState<AuthorizeOtpResponse | null>(null);
 
   /* ---------- step 3 state ---------- */
-  const [payReference, setPayReference] = useState(() => uuid().slice(0, 12));
-  const [isPaying, setIsPaying] = useState(false);
-  const [firstPaymentRes, setFirstPaymentRes] =
-    useState<FirstInstallmentPaymentResponse | null>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
-  const [latestTransId, setLatestTransId] = useState<string | null>(null);
+  const [statusRes, setStatusRes] = useState<RecurringPaymentStatusResponse | null>(null);
 
   const router = useRouter();
 
@@ -346,53 +380,15 @@ export function RecurringPaymentsContent() {
   };
 
   /* ================================================================ */
-  /*  Step 3 — First payment                                           */
-  /* ================================================================ */
-  const handleFirstPayment = async () => {
-    if (!subscriptionRes) return;
-    setIsPaying(true);
-    try {
-      const res: FirstInstallmentPaymentResponse = await requestFirstPayment({
-        subscriptionId: subscriptionRes.subscriptionId,
-        amount: subscriptionRes.amount,
-        invoiceId: "",
-        reference: payReference,
-      });
-      setFirstPaymentRes(res);
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.detail ||
-        err.message ||
-        "Payment request failed";
-      showDialog("error", "Payment Failed", msg);
-    } finally {
-      setIsPaying(false);
-    }
-  };
-
-  /* ================================================================ */
   /*  Check subscription status                                        */
   /* ================================================================ */
   const handleCheckStatus = async () => {
-    if (!firstPaymentRes?.subscriptionId) return;
+    if (!subscriptionRes?.subscriptionId) return;
     setIsCheckingStatus(true);
     try {
-      const res = await getSubscriptionStatus(firstPaymentRes.subscriptionId);
+      const res = await getSubscriptionStatus(subscriptionRes.subscriptionId);
       console.log("Subscription status response:", res);
-      // Find the transaction whose transId matches the exttrid from the first payment
-      if (res.transactions && res.transactions.length > 0) {
-        const match = res.transactions.find(
-          (t) => t.transId === firstPaymentRes.exttrid
-        );
-        if (match) {
-          setLatestTransId(match.transStatus);
-        } else {
-          // No matching transId found — show the last transaction's status as fallback
-          const latest = res.transactions[res.transactions.length - 1];
-          setLatestTransId(latest.transStatus);
-        }
-      }
+      setStatusRes(res);
     } catch (err: any) {
       console.error("Failed to check status:", err);
       showDialog(
@@ -487,6 +483,33 @@ export function RecurringPaymentsContent() {
                         required
                     />
                   </div>
+
+                  {/* -- Payment Summary (fee breakdown) -- */}
+                  {parsedAmount > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-base sm:text-lg font-medium">Payment Summary</h3>
+                      <div className="bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-3 sm:p-4 space-y-3">
+                        <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
+                          <span>Payment Amount:</span>
+                          <span className="font-medium">GHS {parsedAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
+                          <span>Recurring Fee ({fees ? `${fees.recurringFee}%` : '...'}):</span>
+                          <span className="font-medium">GHS {recurringFee.toFixed(2)}</span>
+                        </div>
+                        {isCapped && fees && (
+                          <div className="text-xs text-amber-600 dark:text-amber-400">
+                            * Fee capped at GHS {fees.cappedAmount.toFixed(2)}
+                          </div>
+                        )}
+                        <Separator />
+                        <div className="flex justify-between text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          <span>Customer Pays:</span>
+                          <span>GHS {totalCustomerPays.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* -- Cycle -- */}
                   <div className="space-y-2">
@@ -728,12 +751,12 @@ export function RecurringPaymentsContent() {
 
       {/* -------- STEP 3 -------- */}
       {step === 2 && subscriptionRes && (
-        <div className={cn("grid gap-6 items-stretch", firstPaymentRes ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 max-w-3xl mx-auto")}>
+        <div className={cn("grid gap-6 items-stretch", statusRes ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 max-w-3xl mx-auto")}>
           <Card className="flex flex-col">
             <CardHeader>
-              <CardTitle className="text-xl">First Payment</CardTitle>
+              <CardTitle className="text-xl">Check Status</CardTitle>
               <CardDescription>
-                Trigger the first installment for this subscription.
+                Retrieve the current subscription status and transaction details.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 flex flex-col flex-1">
@@ -763,21 +786,9 @@ export function RecurringPaymentsContent() {
                   value={String(subscriptionRes.amount)}
                 />
                 <ReadOnlyField
-                  label="Status"
+                  label="Current Status"
                   value={subscriptionRes.status}
                   badge
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="payRef">Payment Reference</Label>
-                <Input
-                  id="payRef"
-                  value={payReference}
-                  onChange={(e) => setPayReference(e.target.value)}
-                  disabled={!!firstPaymentRes}
                 />
               </div>
 
@@ -785,31 +796,31 @@ export function RecurringPaymentsContent() {
 
               <Button
                 className="w-full"
-                disabled={isPaying || !payReference || !!firstPaymentRes}
-                onClick={handleFirstPayment}
+                disabled={isCheckingStatus}
+                onClick={handleCheckStatus}
               >
-                {isPaying ? (
+                {isCheckingStatus ? (
                   <>
                     <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    Processing Payment…
+                    Fetching Status…
                   </>
-                ) : firstPaymentRes ? (
+                ) : statusRes ? (
                   <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Payment Submitted
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh Subscription Status
                   </>
                 ) : (
                   <>
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Pay
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Get Subscription Status
                   </>
                 )}
               </Button>
             </CardContent>
           </Card>
 
-          {/* -------- Payment Response Card -------- */}
-          {firstPaymentRes && (
+          {/* -------- Status Response Card -------- */}
+          {statusRes && (
             <Card className="flex flex-col border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/40 dark:via-emerald-950/30 dark:to-teal-950/20 shadow-lg">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
@@ -818,66 +829,106 @@ export function RecurringPaymentsContent() {
                   </div>
                   <div>
                     <CardTitle className="text-lg text-green-800 dark:text-green-200">
-                      Payment Initiated
+                      Subscription Status
                     </CardTitle>
                     <CardDescription className="text-green-600 dark:text-green-400">
-                      {firstPaymentRes.responseDescription || firstPaymentRes.message}
+                      {statusRes.profile.status || "Retrieved"}
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 flex flex-col flex-1">
+                {/* Profile details */}
                 <div className="space-y-3">
                   <PaymentDetailRow
-                    label="Payment ID"
-                    value={firstPaymentRes.paymentId}
-                  />
-                  <PaymentDetailRow
                     label="Subscription ID"
-                    value={firstPaymentRes.subscriptionId}
+                    value={statusRes.profile.uniqRefId}
                   />
                   <PaymentDetailRow
-                    label="External Trans. ID"
-                    value={firstPaymentRes.exttrid}
+                    label="Customer Number"
+                    value={statusRes.profile.customerNumber}
                   />
                   <PaymentDetailRow
-                    label="Amount (GHS)"
+                    label="Amount"
                     value={
-                      new Intl.NumberFormat("en-GH", {
-                        style: "currency",
-                        currency: "GHS",
-                      }).format(firstPaymentRes.amount)
+                      statusRes.profile.amount
+                        ? new Intl.NumberFormat("en-GH", {
+                            style: "currency",
+                            currency: "GHS",
+                          }).format(Number(statusRes.profile.amount))
+                        : "—"
                     }
                     bold
                   />
-                  {/* Status row with Check Status button */}
-                  <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-transparent">
-                    <span className="text-xs font-medium text-green-800 dark:text-green-200 shrink-0 mr-3">Status</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {latestTransId || firstPaymentRes.status}
-                      </Badge>
-                      {/* Check Status button — commented out for now
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs border-green-300 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900"
-                        disabled={isCheckingStatus}
-                        onClick={handleCheckStatus}
-                      >
-                        {isCheckingStatus ? (
-                          <Loader className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <>
-                            <RefreshCw className="h-3 w-3 mr-1" />
-                            Check Status
-                          </>
-                        )}
-                      </Button>
-                      */}
-                    </div>
-                  </div>
+                  <PaymentDetailRow
+                    label="Cycle"
+                    value={
+                      CYCLES.find((c) => c.value === statusRes.profile.cycle)
+                        ?.label ?? statusRes.profile.cycle
+                    }
+                  />
+                  <PaymentDetailRow
+                    label="Network"
+                    value={
+                      NETWORKS.find((n) => n.value === statusRes.profile.nw)
+                        ?.label ?? statusRes.profile.nw
+                    }
+                  />
+                  <PaymentDetailRow
+                    label="Start Date"
+                    value={statusRes.profile.startDate}
+                  />
+                  <PaymentDetailRow
+                    label="End Date"
+                    value={statusRes.profile.endDate}
+                  />
+                  <PaymentDetailRow
+                    label="Status"
+                    value={statusRes.profile.status}
+                    isBadge
+                  />
+                  <PaymentDetailRow
+                    label="Completed"
+                    value={statusRes.profile.completed ? "Yes" : "No"}
+                  />
                 </div>
+
+                {/* Transactions */}
+                {statusRes.transactions && statusRes.transactions.length > 0 && (
+                  <>
+                    <Separator className="bg-green-200 dark:bg-green-800" />
+                    <div>
+                      <h4 className="text-sm font-semibold text-green-800 dark:text-green-200 mb-2">
+                        Transactions ({statusRes.transactions.length})
+                      </h4>
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {statusRes.transactions.map((tx, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-lg border border-green-200 dark:border-green-800 p-2 text-xs space-y-1"
+                          >
+                            <div className="flex justify-between">
+                              <span className="text-green-700 dark:text-green-300 font-medium">Trans ID</span>
+                              <span className="font-mono text-green-950 dark:text-green-50">{tx.transId || "—"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-green-700 dark:text-green-300 font-medium">Status</span>
+                              <Badge variant="secondary" className="text-xs">{tx.transStatus || "—"}</Badge>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-green-700 dark:text-green-300 font-medium">Date</span>
+                              <span className="font-mono text-green-950 dark:text-green-50">{tx.transDate || "—"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-green-700 dark:text-green-300 font-medium">Message</span>
+                              <span className="text-right text-green-950 dark:text-green-50">{tx.transMsg || "—"}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex-1" />
 
