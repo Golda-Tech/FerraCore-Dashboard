@@ -50,3 +50,24 @@ export function providerCodeToRadioValue(
   return map[code] ?? null;
 }
 
+/**
+ * Map a radio-group value back to the standard provider code
+ * expected by the API: "MTN" | "VOD" | "AIR" | "GMO".
+ *
+ * "mtn"         → "MTN"
+ * "telecelcash" → "VOD"
+ * "airteltigo"  → "AIR"
+ * "g-money"     → "GMO"
+ */
+export function radioValueToProviderCode(
+  radioValue: string
+): string {
+  const map: Record<string, string> = {
+    mtn: "MTN",
+    telecelcash: "VOD",
+    airteltigo: "AIR",
+    "g-money": "GMO",
+  };
+  return map[radioValue] ?? radioValue.toUpperCase();
+}
+

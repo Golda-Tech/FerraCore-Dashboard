@@ -22,7 +22,7 @@ import { LoginResponse } from "@/types/auth";
 import { cn } from "@/lib/utils"
 import { getUser } from "@/lib/auth";
 import { getCommissionFees } from "@/lib/payment";
-import { detectNetworkProvider, providerCodeToRadioValue } from "@/lib/helpers";
+import { detectNetworkProvider, providerCodeToRadioValue, radioValueToProviderCode } from "@/lib/helpers";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
 import { v4 as uuid } from "uuid";
 
@@ -233,7 +233,7 @@ return{
 
       // Prepare payment request payload
       const paymentRequest = {
-        provider: formData.network.toUpperCase(),      // e.g., "MTN"
+        provider: radioValueToProviderCode(formData.network),      // e.g., "MTN", "VOD", "AIR", "GMO"
         collectionRef: formData.reference || `INV-${Date.now()}`,
         mobileNumber: fullMobileNumber,
         initiatedBy: user?.email ?? "", // or throw / return early if missing

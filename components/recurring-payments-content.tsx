@@ -312,8 +312,8 @@ export function RecurringPaymentsContent() {
         customerName,
         amount: Number(amount),
         cycle,
-        startDate: startDate.includes("T") ? startDate : `${startDate}T00:00:00`,
-        endDate: endDate.includes("T") ? endDate : `${endDate}T00:00:00`,
+        startDate: startDate.includes("T") ? startDate : `${startDate} ${new Date().toTimeString().split(" ")[0]}`,
+        endDate: endDate.includes("T") ? endDate : `${endDate} ${new Date().toTimeString().split(" ")[0]}`,
         networkProvider,
         reference,
         returnUrl: RETURN_URL,
@@ -706,22 +706,27 @@ export function RecurringPaymentsContent() {
 
             {/* OTP input */}
             <div className="space-y-3">
-              <Label>Enter OTP</Label>
+              <Label className="text-sm font-semibold">Enter OTP</Label>
               <div className="flex justify-center">
                 <InputOTP
                   maxLength={5}
                   value={otpValue}
                   onChange={setOtpValue}
                 >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
+                  <InputOTPGroup className="gap-2">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <InputOTPSlot
+                        key={i}
+                        index={i}
+                        className="h-14 w-14 text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-md first:rounded-l-md last:rounded-r-md shadow-sm"
+                      />
+                    ))}
                   </InputOTPGroup>
                 </InputOTP>
               </div>
+              <p className="text-center text-xs text-muted-foreground">
+                Enter the 5-digit OTP sent to the customer
+              </p>
             </div>
 
             <div className="flex gap-3">
@@ -963,12 +968,10 @@ export function RecurringPaymentsContent() {
       <Dialog
         open={dialogOpen}
         onOpenChange={(open) => {
-          // Prevent dismissing success dialogs by clicking outside — user must click the action button
-          if (!open && dialogType === "success") return;
           if (!open) setDialogOpen(false);
         }}
       >
-        <DialogContent className="sm:max-w-md" hideClose={dialogType === "success"} onPointerDownOutside={(e) => { if (dialogType === "success") e.preventDefault(); }} onEscapeKeyDown={(e) => { if (dialogType === "success") e.preventDefault(); }}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {dialogType === "success" ? (
@@ -982,24 +985,30 @@ export function RecurringPaymentsContent() {
           </DialogHeader>
 
           <div className="flex justify-end gap-2 pt-2">
-            {/* After step 1 success → go to step 2 */}
-            {dialogType === "success" && step === 0 && subscriptionRes && (
+            {/* OTP Resend success → just dismiss */}
+            {dialogType === "success" && dialogMessage.toLowerCase().includes("otp") && dialogMessage.toLowerCase().includes("resend") && (
+              <Button onClick={() => setDialogOpen(false)}>
+                OK
+              </Button>
+            )}
+
+            {/* After step 1 success → go to step 2 (skip if OTP resend) */}
+            {dialogType === "success" && step === 0 && subscriptionRes && !(dialogMessage.toLowerCase().includes("otp") && dialogMessage.toLowerCase().includes("resend")) && (
               <Button onClick={goToStep2}>
                 OK &amp; Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}
 
-            {/* After step 2 success → go to step 3 */}
-            {dialogType === "success" && step === 1 && otpRes && (
+            {/* After step 2 success → go to step 3 (skip if OTP resend) */}
+            {dialogType === "success" && step === 1 && otpRes && !(dialogMessage.toLowerCase().includes("otp") && dialogMessage.toLowerCase().includes("resend")) && (
               <Button onClick={goToStep3}>
                 OK &amp; Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}
 
-
-            {/* Error → close only */}
+            {/* Error → show close button */}
             {dialogType === "error" && (
               <Button
                 variant="outline"

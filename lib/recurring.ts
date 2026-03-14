@@ -87,3 +87,15 @@ export async function getSubscriptionStatus(
   return response.data;
 }
 
+/** Manage a subscription (suspend, cancel, or resume) */
+export async function manageSubscription(
+  subscriptionId: string,
+  action: "suspend" | "cancel" | "resume"
+): Promise<RecurringPaymentSubscriptionResponse> {
+  const response = await api.post<RecurringPaymentSubscriptionResponse>(
+    `${RECURRING_BASE}/manage`,
+    { subscriptionId, action }
+  );
+  return response.data;
+}
+

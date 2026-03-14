@@ -533,7 +533,7 @@ export function PartnersDashboardContent() {
                 <SelectContent>
                   <SelectItem value="all">All Plans</SelectItem>
                   <SelectItem value="PAYMENT_REQUEST">Payment Request</SelectItem>
-                  <SelectItem value="PAYOUTS">Payouts</SelectItem>
+                  <SelectItem value="ACCOUNT_ENQUIRY_ACCESS">Account Enquiry</SelectItem>
                   <SelectItem value="RECURRING_PAYMENTS">Recurring</SelectItem>
                   <SelectItem value="ENTERPRISE_FULL_ACCESS">Enterprise</SelectItem>
                 </SelectContent>

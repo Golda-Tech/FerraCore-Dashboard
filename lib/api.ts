@@ -21,31 +21,45 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-
 // Response interceptor to handle invalid/expired token
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (typeof window !== "undefined") {
-      // Skip auth redirect for name-enquiry — a failed lookup should not log the user out
       const requestUrl = error.config?.url || "";
-      const isNameEnquiry = requestUrl.includes("name-enquiry");
+
+      // These endpoints handle their own errors in the UI — never force a login redirect
+      const businessEndpoints = [
+        "name-enquiry",
+        "recurring-payments",
+        "payment/request",
+        "collections",
+        "installment",
+        "authorize-otp",
+        "resend-otp",
+        "subscriptions",
+      ];
+      const isBusinessEndpoint = businessEndpoints.some((ep) =>
+        requestUrl.includes(ep)
+      );
 
       const status = error.response?.status;
       const message =
         (error.response?.data?.message || error.response?.data?.error || "")
           .toLowerCase();
 
-      const isAuthError =
-        status === 401 ||
-        status === 403 ||
+      // Only treat as a true auth/token error when the message explicitly
+      // references a token problem — not generic "invalid" business errors.
+      const isTokenError =
         message.includes("invalid token") ||
         message.includes("expired token") ||
         message.includes("jwt expired") ||
         message.includes("token expired") ||
-        message.includes("invalid/expired");
+        message.includes("invalid/expired token");
 
-      if (isAuthError && !isNameEnquiry) {
+      // Redirect to login only for genuine token issues on non-business endpoints,
+      // OR if status is 401 on a non-business endpoint (likely a session expiry).
+      if (!isBusinessEndpoint && (isTokenError || status === 401)) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         window.location.href = "/login";
@@ -54,6 +68,5 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
 
 export default api;

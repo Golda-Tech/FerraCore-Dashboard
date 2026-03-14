@@ -36,7 +36,7 @@ import {
 
 enum PlanType {
   PAYMENT_REQUEST = "PAYMENT_REQUEST",
-  PAYOUTS = "PAYOUTS",
+  ACCOUNT_ENQUIRY_ACCESS = "ACCOUNT_ENQUIRY_ACCESS",
   RECURRING_PAYMENTS = "RECURRING_PAYMENTS",
   ENTERPRISE_FULL_ACCESS = "ENTERPRISE_FULL_ACCESS",
 }
@@ -349,7 +349,7 @@ export function RegisterForm() {
                     <SelectItem value={PlanType.PAYMENT_REQUEST}>
                       PAYMENT REQUEST
                     </SelectItem>
-                    <SelectItem value={PlanType.PAYOUTS}>PAYOUTS</SelectItem>
+                    <SelectItem value={PlanType.ACCOUNT_ENQUIRY_ACCESS}>ACCOUNT_ENQUIRY_ACCESS</SelectItem>
                     <SelectItem value={PlanType.RECURRING_PAYMENTS}>
                       RECURRING PAYMENTS
                     </SelectItem>

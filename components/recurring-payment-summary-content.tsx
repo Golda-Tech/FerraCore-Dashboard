@@ -21,6 +21,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus,
   Search,
   Filter,
@@ -35,9 +44,13 @@ import {
   XCircle,
   AlertCircle,
   Repeat,
+  Loader,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getSubscriptions } from "@/lib/recurring";
+import { getSubscriptions, manageSubscription } from "@/lib/recurring";
+import { toast } from "@/components/ui/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { LoginResponse } from "@/types/auth";
@@ -60,6 +73,8 @@ const getStatusIcon = (status: string) => {
     case "FAILED":
     case "CANCELLED":
       return <XCircle className="h-4 w-4 text-red-500" />;
+    case "SUSPENDED":
+      return <PauseCircle className="h-4 w-4 text-orange-500" />;
     case "IN_GRACE":
       return <AlertCircle className="h-4 w-4 text-orange-500" />;
     default:
@@ -85,6 +100,8 @@ const getStatusBadge = (status: string) => {
       return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Failed</Badge>;
     case "CANCELLED":
       return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Cancelled</Badge>;
+    case "SUSPENDED":
+      return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Suspended</Badge>;
     case "IN_GRACE":
       return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">In Grace</Badge>;
     default:
@@ -129,8 +146,57 @@ export function RecurringPaymentSummaryContent() {
   const [endDate, setEndDate] = useState("");
   const [isFiltering, setIsFiltering] = useState(false);
 
+  /* ---------- manage subscription (suspend / cancel) ---------- */
+  const [loadingAction, setLoadingAction] = useState<{ subscriptionId: string; action: string } | null>(null);
+  const [alertOpen, setAlertOpen] = useState<{ subscriptionId: string; action: "suspend" | "cancel" | "resume" } | null>(null);
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+
+  const isActionLoading = (subscriptionId: string, action: string) =>
+    loadingAction?.subscriptionId === subscriptionId && loadingAction?.action === action;
+
+  const handleManageAction = async (subscriptionId: string, action: "suspend" | "cancel" | "resume") => {
+    if (!subscriptionId) return;
+    setLoadingAction({ subscriptionId, action });
+    try {
+      await manageSubscription(subscriptionId, action);
+
+      if (action === "cancel") {
+        setSubscriptions((prev) => prev.map((s) =>
+          s.subscriptionId === subscriptionId ? { ...s, status: RecurringPaymentStatus.CANCELLED } : s
+        ));
+      } else if (action === "suspend") {
+        setSubscriptions((prev) => prev.map((s) =>
+          s.subscriptionId === subscriptionId ? { ...s, status: RecurringPaymentStatus.SUSPENDED } : s
+        ));
+      } else if (action === "resume") {
+        setSubscriptions((prev) => prev.map((s) =>
+          s.subscriptionId === subscriptionId ? { ...s, status: RecurringPaymentStatus.ACTIVE } : s
+        ));
+      }
+
+      const actionLabel = action === "suspend" ? "suspended" : action === "cancel" ? "cancelled" : "resumed";
+      toast({
+        title: "Success",
+        description: `Subscription has been ${actionLabel} successfully.`,
+      });
+      setAlertOpen(null);
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        err.message ||
+        `Failed to ${action} subscription`;
+      toast({
+        title: "Error",
+        description: msg,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  };
 
   /* ---------- load user ---------- */
   useEffect(() => {
@@ -285,8 +351,8 @@ export function RecurringPaymentSummaryContent() {
 
     return matchesSearch && matchesStatus && matchesDate;
   }).sort((a, b) => {
-    const dateA = a.authorizationTimestamp ? new Date(a.authorizationTimestamp).getTime() : 0;
-    const dateB = b.authorizationTimestamp ? new Date(b.authorizationTimestamp).getTime() : 0;
+    const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+    const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
     return dateB - dateA;
   });
 
@@ -301,7 +367,9 @@ export function RecurringPaymentSummaryContent() {
       s.status === RecurringPaymentStatus.FIRST_PAYMENT_PENDING ||
       s.status === RecurringPaymentStatus.CREATED
   ).length;
-  const totalAmount = subscriptions.reduce((sum, s) => sum + Number(s.billingAmount ?? s.amount), 0);
+  const totalAmount = subscriptions
+    .filter((s) => s.status === RecurringPaymentStatus.ACTIVE || s.status === RecurringPaymentStatus.IN_PROGRESS)
+    .reduce((sum, s) => sum + Number(s.billingAmount ?? s.amount), 0);
   const filteredTotalAmount = filteredSubscriptions.reduce((sum, s) => sum + Number(s.billingAmount ?? s.amount), 0);
 
   /* ---------- helpers ---------- */
@@ -325,7 +393,7 @@ export function RecurringPaymentSummaryContent() {
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    });
+    }).replace(",", "");
   };
 
   const getNetworkLogo = (provider: string) => {
@@ -392,7 +460,7 @@ export function RecurringPaymentSummaryContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
-            <p className="text-xs text-muted-foreground">Sum of all subscription amounts</p>
+            <p className="text-xs text-muted-foreground">Sum of active subscription amounts</p>
           </CardContent>
         </Card>
 
@@ -454,6 +522,7 @@ export function RecurringPaymentSummaryContent() {
                     <SelectItem value="COMPLETED">Completed</SelectItem>
                     <SelectItem value="FAILED">Failed</SelectItem>
                     <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="SUSPENDED">Suspended</SelectItem>
                     <SelectItem value="IN_GRACE">In Grace</SelectItem>
                   </SelectContent>
                 </Select>
@@ -582,8 +651,8 @@ export function RecurringPaymentSummaryContent() {
                           {getNetworkLogo(sub.networkProvider)}
                         </div>
                       </TableCell>
-                      <TableCell>{formatDate(sub.startDate)}</TableCell>
-                      <TableCell>{formatDate(sub.endDate)}</TableCell>
+                      <TableCell>{formatDateTime(sub.startDate)}</TableCell>
+                      <TableCell>{formatDateTime(sub.endDate)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -598,6 +667,51 @@ export function RecurringPaymentSummaryContent() {
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
+
+                            {/* Suspend — only for ACTIVE or IN_PROGRESS */}
+                            {(sub.status === RecurringPaymentStatus.ACTIVE ||
+                              sub.status === RecurringPaymentStatus.IN_PROGRESS ||
+                              sub.status === RecurringPaymentStatus.FIRST_PAYMENT_PENDING) && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setAlertOpen({ subscriptionId: sub.subscriptionId, action: "suspend" })}
+                                >
+                                  <PauseCircle className="h-4 w-4 mr-2" />
+                                  Suspend
+                                </DropdownMenuItem>
+                              </>
+                            )}
+
+                            {/* Cancel — show for non-cancelled/non-completed */}
+                            {sub.status !== RecurringPaymentStatus.CANCELLED &&
+                              sub.status !== RecurringPaymentStatus.COMPLETED &&
+                              sub.status !== RecurringPaymentStatus.FAILED && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setAlertOpen({ subscriptionId: sub.subscriptionId, action: "cancel" })}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Cancel
+                                </DropdownMenuItem>
+                              </>
+                            )}
+
+                            {/* Resume — only for SUSPENDED subscriptions */}
+                            {sub.status === RecurringPaymentStatus.SUSPENDED && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setAlertOpen({ subscriptionId: sub.subscriptionId, action: "resume" })}
+                                  className="text-green-600 focus:text-green-600"
+                                >
+                                  <PlayCircle className="h-4 w-4 mr-2" />
+                                  Resume
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -619,6 +733,125 @@ export function RecurringPaymentSummaryContent() {
         </CardContent>
       </Card>
 
+      {/* Standalone Alert Dialogs for Manage Actions */}
+      {(() => {
+        const alertSub = alertOpen
+          ? subscriptions.find((s) => s.subscriptionId === alertOpen.subscriptionId)
+          : null;
+
+        return (
+          <>
+            {/* Suspend Alert */}
+            <AlertDialog
+              open={alertOpen?.action === "suspend"}
+              onOpenChange={(open) => { if (!open) setAlertOpen(null); }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Suspend Subscription</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to suspend the subscription for{" "}
+                    <strong>{alertSub?.customerName}</strong> ({alertSub?.subscriptionId})?
+                    The recurring payments will be paused.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setAlertOpen(null)}>
+                    Go Back
+                  </AlertDialogCancel>
+                  <Button
+                    onClick={() => {
+                      if (alertOpen?.subscriptionId) {
+                        handleManageAction(alertOpen.subscriptionId, "suspend");
+                      }
+                    }}
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                    disabled={!!alertOpen && isActionLoading(alertOpen.subscriptionId, "suspend")}
+                  >
+                    {alertOpen && isActionLoading(alertOpen.subscriptionId, "suspend") && (
+                      <Loader className="h-4 w-4 animate-spin mr-2" />
+                    )}
+                    Confirm Suspend
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Cancel Alert */}
+            <AlertDialog
+              open={alertOpen?.action === "cancel"}
+              onOpenChange={(open) => { if (!open) setAlertOpen(null); }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to cancel the subscription for{" "}
+                    <strong>{alertSub?.customerName}</strong> ({alertSub?.subscriptionId})?
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setAlertOpen(null)}>
+                    Keep Subscription
+                  </AlertDialogCancel>
+                  <Button
+                    onClick={() => {
+                      if (alertOpen?.subscriptionId) {
+                        handleManageAction(alertOpen.subscriptionId, "cancel");
+                      }
+                    }}
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={!!alertOpen && isActionLoading(alertOpen.subscriptionId, "cancel")}
+                  >
+                    {alertOpen && isActionLoading(alertOpen.subscriptionId, "cancel") && (
+                      <Loader className="h-4 w-4 animate-spin mr-2" />
+                    )}
+                    Confirm Cancel
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Resume Alert */}
+            <AlertDialog
+              open={alertOpen?.action === "resume"}
+              onOpenChange={(open) => { if (!open) setAlertOpen(null); }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Resume Subscription</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to resume the subscription for{" "}
+                    <strong>{alertSub?.customerName}</strong> ({alertSub?.subscriptionId})?
+                    Recurring payments will be reactivated.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setAlertOpen(null)}>
+                    Go Back
+                  </AlertDialogCancel>
+                  <Button
+                    onClick={() => {
+                      if (alertOpen?.subscriptionId) {
+                        handleManageAction(alertOpen.subscriptionId, "resume");
+                      }
+                    }}
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={!!alertOpen && isActionLoading(alertOpen.subscriptionId, "resume")}
+                  >
+                    {alertOpen && isActionLoading(alertOpen.subscriptionId, "resume") && (
+                      <Loader className="h-4 w-4 animate-spin mr-2" />
+                    )}
+                    Confirm Resume
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        );
+      })()}
+
       {/* Detail Dialog */}
       <Dialog open={!!selectedSub} onOpenChange={() => setSelectedSub(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -635,6 +868,9 @@ export function RecurringPaymentSummaryContent() {
                     {getStatusIcon(selectedSub.status)}
                     {getStatusBadge(selectedSub.status)}
                   </div>
+                  {selectedSub.status === RecurringPaymentStatus.PENDING_AUTH && (
+                    <p className="text-xs text-red-600 font-medium mt-1">Reason: REFUSED TO AUTHORIZE OTP</p>
+                  )}
                 </div>
                 <div className="flex flex-col">
                   <Label className="text-sm font-medium text-muted-foreground">Subscription ID</Label>

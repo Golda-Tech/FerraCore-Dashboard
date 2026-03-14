@@ -8,6 +8,7 @@ export enum RecurringPaymentStatus {
   COMPLETED = "COMPLETED",
   FAILED = "FAILED",
   CANCELLED = "CANCELLED",
+  SUSPENDED = "SUSPENDED",
 }
 
 export interface RecurringPaymentSubscriptionRequest {
