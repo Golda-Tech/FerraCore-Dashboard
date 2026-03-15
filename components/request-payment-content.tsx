@@ -242,7 +242,7 @@ return{
         currency: "GHS",
         partyIdType: "MSISDN",
         payerMessage: formData.description,
-        payeeNote: "Thank you for your payment",
+        payeeNote: "Payment",
       };
 
       // Call the payment API

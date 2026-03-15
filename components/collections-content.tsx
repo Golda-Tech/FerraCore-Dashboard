@@ -182,15 +182,16 @@ export function CollectionsContent() {
 
 
   const telcos = [
-    { name: "mtn",  logo: "/mtn-momo.png" },
-    { name: "telecel", logo: "/telecel-cash.webp" },
-    { name: "airteltigo", logo: "/airtel-tigo.png" },
-    { name: "gmoney", logo: "/gmoney.jpg" },
+    { name: "mtn", codes: ["mtn"], logo: "/mtn-momo.png" },
+    { name: "telecel", codes: ["telecel", "vod", "vodafone"], logo: "/telecel-cash.webp" },
+    { name: "airteltigo", codes: ["airteltigo", "air", "airtel"], logo: "/airtel-tigo.png" },
+    { name: "gmoney", codes: ["gmoney", "gmo", "g-money"], logo: "/gmoney.jpg" },
   ];
 
   const getTelcoLogo = (provider = "MTN") => {
+    const p = provider.toLowerCase();
     const src =
-      telcos.find((t) => provider.toLowerCase().includes(t.name))?.logo ??
+      telcos.find((t) => t.codes.some((c) => p === c || p.includes(t.name)))?.logo ??
       "/unknown-telco.webp";
     return (
       <img

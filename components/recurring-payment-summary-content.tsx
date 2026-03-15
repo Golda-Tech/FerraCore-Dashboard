@@ -47,14 +47,15 @@ import {
   Loader,
   PauseCircle,
   PlayCircle,
+  Receipt,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getSubscriptions, manageSubscription } from "@/lib/recurring";
+import { getSubscriptions, manageSubscription, getSubscriptionStatus } from "@/lib/recurring";
 import { toast } from "@/components/ui/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { LoginResponse } from "@/types/auth";
-import type { RecurringPaymentSubscriptionResponse } from "@/types/recurring";
+import type { RecurringPaymentSubscriptionResponse, TransactionDto } from "@/types/recurring";
 import { RecurringPaymentStatus } from "@/types/recurring";
 
 /* ------------------------------------------------------------------ */
@@ -150,6 +151,11 @@ export function RecurringPaymentSummaryContent() {
   const [loadingAction, setLoadingAction] = useState<{ subscriptionId: string; action: string } | null>(null);
   const [alertOpen, setAlertOpen] = useState<{ subscriptionId: string; action: "suspend" | "cancel" | "resume" } | null>(null);
 
+  /* ---------- payment history dialog ---------- */
+  const [paymentHistorySub, setPaymentHistorySub] = useState<RecurringPaymentSubscriptionResponse | null>(null);
+  const [paymentHistoryTxns, setPaymentHistoryTxns] = useState<TransactionDto[]>([]);
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
@@ -195,6 +201,25 @@ export function RecurringPaymentSummaryContent() {
       });
     } finally {
       setLoadingAction(null);
+    }
+  };
+
+  /* ---------- payment history ---------- */
+  const handleViewPaymentHistory = async (sub: RecurringPaymentSubscriptionResponse) => {
+    setPaymentHistorySub(sub);
+    setPaymentHistoryTxns([]);
+    setPaymentHistoryLoading(true);
+    try {
+      const res = await getSubscriptionStatus(sub.subscriptionId);
+      setPaymentHistoryTxns(res.transactions || []);
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || err.message || "Failed to fetch payment history",
+        variant: "destructive",
+      });
+    } finally {
+      setPaymentHistoryLoading(false);
     }
   };
 
@@ -276,13 +301,14 @@ export function RecurringPaymentSummaryContent() {
       CYCLE_LABELS[s.cycle] || s.cycle,
       NETWORK_LABELS[s.networkProvider] || s.networkProvider,
       Number(s.billingAmount ?? s.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
+      s.paidCount ?? "—",
       s.status,
       formatDate(s.startDate),
       formatDate(s.endDate),
     ]);
 
     autoTable(doc, {
-      head: [["Subscription ID", "Customer", "Number", "Cycle", "Network", "Amount(GHS)", "Status", "Start", "End"]],
+      head: [["Subscription ID", "Customer", "Number", "Cycle", "Network", "Amount(GHS)", "Paid Count", "Status", "Start", "End"]],
       body,
       startY: 24,
       theme: "grid",
@@ -295,7 +321,7 @@ export function RecurringPaymentSummaryContent() {
 
   const downloadCSV = () => {
     const csvContent = [
-      "Subscription ID,Customer Name,Customer Number,Cycle,Network,Amount(GHS),Status,Start Date,End Date,Outstanding Balance",
+      "Subscription ID,Customer Name,Customer Number,Cycle,Network,Amount(GHS),Paid Count,Status,Start Date,End Date,Outstanding Balance",
       ...filteredSubscriptions.map((s) =>
         [
           s.subscriptionId,
@@ -304,6 +330,7 @@ export function RecurringPaymentSummaryContent() {
           CYCLE_LABELS[s.cycle] || s.cycle,
           NETWORK_LABELS[s.networkProvider] || s.networkProvider,
           Number(s.billingAmount ?? s.amount).toFixed(2),
+          s.paidCount ?? "—",
           s.status,
           formatDate(s.startDate),
           formatDate(s.endDate),
@@ -604,6 +631,7 @@ export function RecurringPaymentSummaryContent() {
                   <TableHead>Customer</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Cycle</TableHead>
+                  <TableHead>Paid Count</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Network</TableHead>
                   <TableHead>Start Date</TableHead>
@@ -614,7 +642,7 @@ export function RecurringPaymentSummaryContent() {
               <TableBody>
                 {loading && subscriptions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       <div className="flex items-center justify-center gap-2">
                         <RefreshCw className="h-4 w-4 animate-spin" />
                         Loading subscriptions…
@@ -623,7 +651,7 @@ export function RecurringPaymentSummaryContent() {
                   </TableRow>
                 ) : filteredSubscriptions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No subscriptions found.
                     </TableCell>
                   </TableRow>
@@ -640,6 +668,7 @@ export function RecurringPaymentSummaryContent() {
                       <TableCell>
                         <Badge variant="outline">{CYCLE_LABELS[sub.cycle] || sub.cycle}</Badge>
                       </TableCell>
+                      <TableCell className="text-center font-medium">{sub.paidCount ?? "—"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getStatusIcon(sub.status)}
@@ -667,6 +696,17 @@ export function RecurringPaymentSummaryContent() {
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
+
+                            {/* Payment History — only when paidCount > 0 */}
+                            {Number(sub.paidCount) > 0 && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleViewPaymentHistory(sub)}>
+                                  <Receipt className="h-4 w-4 mr-2" />
+                                  Payment History
+                                </DropdownMenuItem>
+                              </>
+                            )}
 
                             {/* Suspend — only for ACTIVE or IN_PROGRESS */}
                             {(sub.status === RecurringPaymentStatus.ACTIVE ||
@@ -919,6 +959,10 @@ export function RecurringPaymentSummaryContent() {
                     <p className="font-mono text-sm">{selectedSub.mandateReference || "—"}</p>
                   </div>
                   <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Paid Count</Label>
+                    <p className="font-semibold">{selectedSub.paidCount ?? "—"}</p>
+                  </div>
+                  <div>
                     <Label className="text-sm font-medium text-muted-foreground">Outstanding Balance</Label>
                     <p className="font-semibold">
                       {formatCurrency(Number(selectedSub.outstandingBalance || 0))}
@@ -966,6 +1010,119 @@ export function RecurringPaymentSummaryContent() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment History Dialog */}
+      <Dialog
+        open={!!paymentHistorySub}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPaymentHistorySub(null);
+            setPaymentHistoryTxns([]);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-green-600" />
+              Payment History
+            </DialogTitle>
+            <DialogDescription>
+              {paymentHistorySub
+                ? `${paymentHistorySub.customerName} — ${paymentHistorySub.customerNumber}`
+                : "Transaction records for this subscription"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {paymentHistoryLoading ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Loader className="h-8 w-8 animate-spin text-green-600" />
+              <p className="text-sm text-muted-foreground">Fetching payment history…</p>
+            </div>
+          ) : paymentHistoryTxns.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
+              <Receipt className="h-10 w-10 opacity-40" />
+              <p className="text-sm">No transactions found for this subscription.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {paymentHistoryTxns.map((txn, idx) => {
+                const isSuccess =
+                  txn.transStatus?.toLowerCase() === "success" ||
+                  txn.transStatus?.toLowerCase() === "completed";
+                const isFailed =
+                  txn.transStatus?.toLowerCase() === "failed" ||
+                  txn.transStatus?.toLowerCase() === "error";
+
+                return (
+                  <div
+                    key={txn.transId || idx}
+                    className="flex items-start gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/40"
+                  >
+                    {/* Status indicator */}
+                    <div
+                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                        isSuccess
+                          ? "bg-green-100 text-green-600"
+                          : isFailed
+                          ? "bg-red-100 text-red-600"
+                          : "bg-amber-100 text-amber-600"
+                      }`}
+                    >
+                      {isSuccess ? (
+                        <CheckCircle className="h-5 w-5" />
+                      ) : isFailed ? (
+                        <XCircle className="h-5 w-5" />
+                      ) : (
+                        <Clock className="h-5 w-5" />
+                      )}
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            isSuccess
+                              ? "border-green-300 text-green-700 bg-green-50"
+                              : isFailed
+                              ? "border-red-300 text-red-700 bg-red-50"
+                              : "border-amber-300 text-amber-700 bg-amber-50"
+                          }
+                        >
+                          {txn.transStatus || "—"}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {txn.transDate || "—"}
+                        </span>
+                      </div>
+                      {txn.transMsg && (
+                        <p className="text-sm text-muted-foreground leading-snug">
+                          {txn.transMsg}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-2">
+            {!paymentHistoryLoading && paymentHistoryTxns.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {paymentHistoryTxns.length} transaction{paymentHistoryTxns.length !== 1 ? "s" : ""}
+              </p>
+            )}
+            <div className="ml-auto">
+              <Button variant="outline" onClick={() => setPaymentHistorySub(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

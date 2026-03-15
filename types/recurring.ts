@@ -31,6 +31,7 @@ export interface RecurringPaymentSubscriptionResponse {
   subscriptionId: string;
   customerNumber: string;
   customerName: string;
+  paidCount: string;
   amount: number;
   billingAmount: number;
   cycle: string;
