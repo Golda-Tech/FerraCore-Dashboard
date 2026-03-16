@@ -406,7 +406,10 @@ export function PaymentsContent() {
     .filter((p) => completedStatuses.includes(p.status))
     .reduce((sum, p) => sum + (p.amountCustomerPays ?? p.amount), 0);
 
+  // All-time success rate (all transactions)
   const successRate = totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0;
+  // Today's success rate (only today's transactions)
+  const todaySuccessRate = todayPayments.length > 0 ? (todaySuccessful / todayPayments.length) * 100 : 0;
 
   /* total based on the currently visible (filtered) list */
   const filteredTotalAmount = filteredPayments
@@ -513,20 +516,28 @@ export function PaymentsContent() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Today&apos;s Success Rate</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{successRate.toFixed(1)}%</div>
+            {/* Today percentage in green */}
+            <div className="text-2xl font-bold text-green-600">
+              {todaySuccessRate.toFixed(1)}%
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Based on {totalRequests} total request{totalRequests !== 1 ? "s" : ""}
+              Based on {todayPayments.length} transaction{todayPayments.length !== 1 ? "s" : ""} today
+            </p>
+            {/* All-time percentage in normal (black) text */}
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              <span className="font-semibold text-foreground">All-time Success Rate:</span>{" "}
+              <span className="font-semibold text-foreground">{successRate.toFixed(1)}%</span>
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Transaction Breakdown</CardTitle>
+            <CardTitle className="text-sm font-medium">Today&apos;s Status Breakdown</CardTitle>
             <Smartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="space-y-2">
@@ -677,7 +688,7 @@ export function PaymentsContent() {
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Network</TableHead>
-                  <TableHead>MTN Trans ID</TableHead>
+                  <TableHead>Telco Trans ID</TableHead>
                   <TableHead>External Reference</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -708,7 +719,11 @@ export function PaymentsContent() {
                       <TableCell>
                         <div className="flex items-center gap-2">{getTelcoLogo(payment.provider)}</div>
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{payment.mtnFinancialTransactionId}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {(["VOD", "AIR", "GMO"].includes((payment.provider || "").toUpperCase())
+                          ? payment.transactionRef
+                          : payment.mtnFinancialTransactionId) || "—"}
+                      </TableCell>
                       <TableCell className="font-mono text-sm">{payment.externalRef}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -871,9 +886,12 @@ export function PaymentsContent() {
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Transaction Reference</Label>
                     <p className="text-sm font-sans text-gray-900 dark:text-gray-100 truncate">
-                      {selectedPayment.mtnFinancialTransactionId}
+                      {["VOD", "AIR", "GMO"].includes((selectedPayment.provider || "").toUpperCase())
+                          ? (selectedPayment.transactionRef || "—")
+                          : (selectedPayment.mtnFinancialTransactionId || selectedPayment.transactionRef || "—")}
                     </p>
                   </div>
+
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Description</Label>
                     <p>{selectedPayment.mtnPayeeNote}</p>
@@ -920,3 +938,4 @@ export function PaymentsContent() {
     </div>
   );
 }
+

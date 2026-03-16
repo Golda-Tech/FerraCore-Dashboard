@@ -668,7 +668,7 @@ export function PartnerTransactionsContent({
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Network</TableHead>
-                  <TableHead>MTN Trans ID</TableHead>
+                  <TableHead>Telco Trans ID</TableHead>
                   <TableHead>External Reference</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -713,7 +713,9 @@ export function PartnerTransactionsContent({
                         </div>
                       </TableCell>
                       <TableCell className="font-mono text-sm">
-                        {payment.mtnFinancialTransactionId}
+                        {(["VOD", "AIR", "GMO"].includes((payment.provider || "").toUpperCase())
+                          ? payment.transactionRef
+                          : payment.mtnFinancialTransactionId) || "—"}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         {payment.externalRef}
@@ -892,7 +894,9 @@ export function PartnerTransactionsContent({
                       Transaction Reference
                     </Label>
                     <p className="text-sm font-sans text-gray-900 dark:text-gray-100 truncate">
-                      {selectedPayment.mtnFinancialTransactionId}
+                      {(["VOD", "AIR", "GMO"].includes((selectedPayment.provider || "").toUpperCase())
+                        ? selectedPayment.transactionRef
+                        : selectedPayment.mtnFinancialTransactionId) || "—"}
                     </p>
                   </div>
                   <div>

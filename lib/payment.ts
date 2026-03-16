@@ -58,9 +58,9 @@ export async function getTransactionStatus(
 }
 
 // Perform name enquiry (get user info by mobile number)
-export async function getUserInfo(mobileNumber: string): Promise<UserInfo> {
+export async function getUserInfo(mobileNumber: string, provider?: string): Promise<UserInfo> {
   const response = await api.get<UserInfo>("/api/v1/payments/name-enquiry", {
-    params: { mobileNumber },
+    params: { mobileNumber, provider },
   });
   return response.data;
 }

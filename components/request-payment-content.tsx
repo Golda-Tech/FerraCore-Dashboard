@@ -54,6 +54,9 @@ const [fees, setFees] = useState<{
   // Debounce timer ref
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
+  // Tracks whether the user has manually picked a network — prevents auto-detection from overriding it
+  const manualNetworkOverride = useRef(false);
+
   // Ref for auto-focus
   const phoneInputRef = useRef<HTMLInputElement>(null);
 
@@ -173,7 +176,8 @@ return{
     try {
       // Concatenate 233 + 9-digit number (e.g., 23324XXXXXXX)
       const fullNumber = `233${phoneNumber}`;
-      const data: UserInfo = await getUserInfo(fullNumber);
+      const providerCode = radioValueToProviderCode(formData.network);
+      const data: UserInfo = await getUserInfo(fullNumber, providerCode);
       setFormData(prev => ({ ...prev, customerName: data.accountName }));
 
       // Optionally request OTP after successful name fetch
@@ -184,18 +188,25 @@ return{
     } finally {
       setIsFetchingName(false);
     }
-  }, []);
+  }, [formData.network]);
 
   const handlePhoneNumberChange = (value: string) => {
     // Allow only digits, max 9 characters (without the 0 prefix)
     const digitsOnly = value.replace(/\D/g, "").slice(0, 9);
     handleInputChange("phoneNumber", digitsOnly);
 
-    // Auto-detect network provider from MSISDN prefix
-    const detected = detectNetworkProvider(digitsOnly);
-    const radioValue = providerCodeToRadioValue(detected);
-    if (radioValue) {
-      handleInputChange("network", radioValue);
+    // Reset manual override when field is cleared so auto-detect works fresh
+    if (digitsOnly.length === 0) {
+      manualNetworkOverride.current = false;
+    }
+
+    // Auto-detect network provider from MSISDN prefix — but only if user hasn't manually chosen one
+    if (!manualNetworkOverride.current) {
+      const detected = detectNetworkProvider(digitsOnly);
+      const radioValue = providerCodeToRadioValue(detected);
+      if (radioValue) {
+        handleInputChange("network", radioValue);
+      }
     }
 
     // Clear existing timer
@@ -392,7 +403,10 @@ return{
                                     <Label className="text-sm">Select Network *</Label>
                                       <RadioGroup
                                         value={formData.network}
-                                        onValueChange={(v) => handleInputChange("network", v)}
+                                        onValueChange={(v) => {
+                                          manualNetworkOverride.current = true;
+                                          handleInputChange("network", v);
+                                        }}
                                         className="grid grid-cols-4 gap-4"      /* 4 columns on desktop */
                                       >
                                         {telcos.map((t) => (
@@ -425,22 +439,33 @@ return{
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
                   <div className="space-y-2 sm:col-span-1">
                     <Label htmlFor="countryCode" className="text-sm">Country</Label>
-                   <Select
-                     value={formData.countryCode}
-                     onValueChange={(value) => handleInputChange("countryCode", value)}
-                     disabled={true} // Lock the select to prevent changes
-                   >
-                     <SelectTrigger className="h-10 sm:h-9">
-                       <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="+233">🇬🇭 Ghana (+233)</SelectItem>
-                       <SelectItem value="+234" disabled className="opacity-50 cursor-not-allowed">🇳🇬 Nigeria (+234)</SelectItem>
-                       <SelectItem value="+254" disabled className="opacity-50 cursor-not-allowed">🇰🇪 Kenya (+254)</SelectItem>
-                       <SelectItem value="+256" disabled className="opacity-50 cursor-not-allowed">🇺🇬 Uganda (+256)</SelectItem>
-                       <SelectItem value="+255" disabled className="opacity-50 cursor-not-allowed">🇹🇿 Tanzania (+255)</SelectItem>
-                     </SelectContent>
-                   </Select>
+                    {/* NEW: static flag display using flagcdn.com for accurate rendering */}
+                    <div className="flex items-center gap-2 h-10 sm:h-9 px-3 border rounded-md bg-muted text-sm text-muted-foreground cursor-not-allowed select-none">
+                      <img
+                        src="https://flagcdn.com/w40/gh.png"
+                        alt="Ghana flag"
+                        className="h-4 w-6 object-cover rounded-sm flex-shrink-0"
+                      />
+                      <span>Ghana (+233)</span>
+                    </div>
+                    {/* OLD: disabled Select — emoji flag did not render reliably
+                    <Select
+                      value={formData.countryCode}
+                      onValueChange={(value) => handleInputChange("countryCode", value)}
+                      disabled={true}
+                    >
+                      <SelectTrigger className="h-10 sm:h-9">
+                        <SelectValue>🇬🇭 Ghana (+233)</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="+233">🇬🇭 Ghana (+233)</SelectItem>
+                        <SelectItem value="+234" disabled className="opacity-50 cursor-not-allowed">🇳🇬 Nigeria (+234)</SelectItem>
+                        <SelectItem value="+254" disabled className="opacity-50 cursor-not-allowed">🇰🇪 Kenya (+254)</SelectItem>
+                        <SelectItem value="+256" disabled className="opacity-50 cursor-not-allowed">🇺🇬 Uganda (+256)</SelectItem>
+                        <SelectItem value="+255" disabled className="opacity-50 cursor-not-allowed">🇹🇿 Tanzania (+255)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    */}
                   </div>
                   <div className="sm:col-span-2 space-y-2 relative">
                     <Label htmlFor="phoneNumber" className="text-sm">Mobile Number *</Label>
@@ -891,3 +916,5 @@ return{
              
   )
 }
+
+
