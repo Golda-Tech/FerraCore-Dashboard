@@ -1,28 +1,21 @@
 "use client"
 
-import { use } from "react"
+// This page reads search params on the client to avoid server/client
+// mismatches in production builds.
 import { useSearchParams } from "next/navigation"
 import { RecurringPaymentsHistoryContent } from "@/components/recurring-payments-history-content"
 
-interface SearchParams {
-  userEmail?: string
-  name?: string
-}
+export default function RecurringPaymentsHistoryPage() {
+  const searchParams = useSearchParams()
 
-export default function RecurringPaymentsHistoryPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>
-}) {
-  const resolved = use(searchParams)
-  const userEmail = resolved.userEmail ?? ""
-  const name = resolved.name ?? ""
+  // Read raw values; Next already decodes query parameters.
+  const userEmail = searchParams.get("userEmail") || ""
+  const name = searchParams.get("name") || ""
 
   return (
     <RecurringPaymentsHistoryContent
-      userEmail={decodeURIComponent(userEmail)}
-      partnerName={decodeURIComponent(name)}
+      userEmail={userEmail}
+      partnerName={name}
     />
   )
 }
-
