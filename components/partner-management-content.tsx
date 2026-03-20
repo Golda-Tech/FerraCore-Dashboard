@@ -590,6 +590,7 @@ export function UserManagementContent() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {/* View transactions for this specific partner */}
                         <DropdownMenuItem
                           onClick={() =>
                             router.push(
@@ -600,6 +601,21 @@ export function UserManagementContent() {
                           <IconEye className="mr-2 h-4 w-4" />
                           View Transactions
                         </DropdownMenuItem>
+
+                        {/* When partner is on the RECURRING_PAYMENTS plan, show recurring history entry */}
+                        {u.plan === "RECURRING_PAYMENTS" && (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              router.push(
+                                `/recurring-payments/history?userEmail=${encodeURIComponent(u.email)}&name=${encodeURIComponent(u.organizationName)}`
+                              )
+                            }
+                          >
+                            <IconEye className="mr-2 h-4 w-4" />
+                            View Recurring Payments History
+                          </DropdownMenuItem>
+                        )}
+
                         <DropdownMenuSeparator />
 
                         {u.status === "PENDING" && (
@@ -622,7 +638,7 @@ export function UserManagementContent() {
                             disabled={isActionLoading(u.organizationId, "deactivate")}
                           >
                             {isActionLoading(u.organizationId, "deactivate") ? (
-                              <IconLoader className="mr-2 h-4 w-4 animate-spin" />
+                              <IconLoader className="mr-2 h-4 w-4" />
                             ) : (
                               <IconShield className="mr-2 h-4 w-4" />
                             )}
@@ -690,3 +706,5 @@ export function UserManagementContent() {
     </div>
   )
 }
+
+
