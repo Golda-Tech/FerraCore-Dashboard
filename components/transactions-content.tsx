@@ -279,14 +279,13 @@ export function TransactionsContent() {
     const header = "Reference,Recipient,Type,Network,Amount,Status Reason,Status,Date";
 
     const rows = filteredTransactions.map((t) => {
-      const statusReason = (t.statusMessage || t.message || "").replace(/_/g, " ");
+      // const statusReason = (t. || t.message || "").replace(/_/g, " ");
       return [
         t.reference,
         t.recipientName,
         t.recipientType,
         t.network,
         t.amount,
-        statusReason,
         String(t.status).toUpperCase(),
         new Date(t.dateInitiated).toLocaleDateString(),
       ].join(",");
@@ -315,7 +314,7 @@ export function TransactionsContent() {
       t.recipientType,
       t.network,
       `₵${t.amount}`,
-      (t.statusMessage || t.message || "").replace(/_/g, " "),
+      // (t.statusMessage || t.message || "").replace(/_/g, " "),
       String(t.status).toUpperCase(),
       new Date(t.dateInitiated).toLocaleDateString(),
     ]);
