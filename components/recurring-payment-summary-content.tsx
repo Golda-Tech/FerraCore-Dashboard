@@ -155,6 +155,9 @@ export function RecurringPaymentSummaryContent() {
   const [paymentHistorySub, setPaymentHistorySub] = useState<RecurringPaymentSubscriptionResponse | null>(null);
   const [paymentHistoryTxns, setPaymentHistoryTxns] = useState<TransactionDto[]>([]);
   const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+  // Export loading flags
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
@@ -291,63 +294,89 @@ export function RecurringPaymentSummaryContent() {
 
   /* ---------- downloads ---------- */
   const downloadPDF = () => {
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.text("Recurring Payment Subscriptions", 14, 16);
+    if (filteredSubscriptions.length === 0) return;
+    setIsExportingPdf(true);
+    try {
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.setFontSize(14);
+      doc.text(user?.organizationName || "Partner", 14, 16);
+      doc.setFontSize(11);
+      doc.text("Recurring Payment Subscriptions", 14, 23);
 
-    const body = filteredSubscriptions.map((s) => [
-      s.subscriptionId,
-      s.customerName,
-      s.customerNumber,
-      CYCLE_LABELS[s.cycle] || s.cycle,
-      NETWORK_LABELS[s.networkProvider] || s.networkProvider,
-      Number(s.billingAmount ?? s.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
-      s.paidCount ?? "—",
-      s.status,
-      formatDate(s.startDate),
-      formatDate(s.endDate),
-    ]);
 
-    autoTable(doc, {
-      head: [["Subscription ID", "Customer", "Number", "Cycle", "Network", "Amount(GHS)", "Paid Count", "Status", "Start", "End"]],
-      body,
-      startY: 24,
-      theme: "grid",
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: "#22c55e" },
-    });
+      const body = filteredSubscriptions.map((s) => [
+        s.subscriptionId,
+        s.customerName,
+        s.customerNumber,
+        CYCLE_LABELS[s.cycle] || s.cycle,
+        NETWORK_LABELS[s.networkProvider] || s.networkProvider,
+        Number(s.billingAmount ?? s.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
+        s.paidCount ?? "—",
+        s.status,
+        formatDate(s.startDate),
+        formatDate(s.endDate),
+      ]);
 
-    doc.save(`recurring_subscriptions_${new Date().toISOString().slice(0, 10)}.pdf`);
+      autoTable(doc, {
+        head: [[
+          "Subscription ID",
+          "Customer",
+          "Number",
+          "Cycle",
+          "Network",
+          "Amount(GHS)",
+          "Paid Count",
+          "Status",
+          "Start",
+          "End",
+        ]],
+        body,
+        startY: 28,
+        theme: "grid",
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: "#22c55e" },
+      });
+
+      doc.save(`recurring_subscriptions_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const downloadCSV = () => {
-    const csvContent = [
-      "Subscription ID,Customer Name,Customer Number,Cycle,Network,Amount(GHS),Paid Count,Status,Start Date,End Date,Outstanding Balance",
-      ...filteredSubscriptions.map((s) =>
-        [
-          s.subscriptionId,
-          `"${s.customerName}"`,
-          s.customerNumber,
-          CYCLE_LABELS[s.cycle] || s.cycle,
-          NETWORK_LABELS[s.networkProvider] || s.networkProvider,
-          Number(s.billingAmount ?? s.amount).toFixed(2),
-          s.paidCount ?? "—",
-          s.status,
-          formatDate(s.startDate),
-          formatDate(s.endDate),
-          Number(s.outstandingBalance).toFixed(2),
-        ].join(",")
-      ),
-    ].join("\n");
+    if (filteredSubscriptions.length === 0) return;
+    setIsExportingCsv(true);
+    try {
+      const csvContent = [
+        "Subscription ID,Customer Name,Customer Number,Cycle,Network,Amount(GHS),Paid Count,Status,Start Date,End Date",
+        ...filteredSubscriptions.map((s) =>
+          [
+            s.subscriptionId,
+            `"${s.customerName}"`,
+            s.customerNumber,
+            CYCLE_LABELS[s.cycle] || s.cycle,
+            NETWORK_LABELS[s.networkProvider] || s.networkProvider,
+            Number(s.billingAmount ?? s.amount).toFixed(2),
+            s.paidCount ?? "—",
+            s.status,
+            formatDate(s.startDate),
+            formatDate(s.endDate),
+          ].join(","),
+        ),
+      ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `recurring_subscriptions_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `recurring_subscriptions_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
+      setIsExportingCsv(false);
+    }
   };
 
   /* ---------- filter logic ---------- */
@@ -558,19 +587,37 @@ export function RecurringPaymentSummaryContent() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full sm:w-auto">
                     <Download className="h-4 w-4 mr-2" />
-                    Export
+                    {isExportingPdf || isExportingCsv ? "Exporting..." : "Export"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Export Format</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={downloadPDF}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export as PDF
+                  <DropdownMenuItem
+                    onClick={downloadPDF}
+                    disabled={isExportingPdf || isExportingCsv}
+                  >
+                    <div className="flex items-center">
+                      {isExportingPdf ? (
+                        <Loader className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="mr-2 h-4 w-4" />
+                      )}
+                      Export as PDF
+                    </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={downloadCSV}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export as CSV
+                  <DropdownMenuItem
+                    onClick={downloadCSV}
+                    disabled={isExportingPdf || isExportingCsv}
+                  >
+                    <div className="flex items-center">
+                      {isExportingCsv ? (
+                        <Loader className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="mr-2 h-4 w-4" />
+                      )}
+                      Export as CSV
+                    </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -962,12 +1009,7 @@ export function RecurringPaymentSummaryContent() {
                     <Label className="text-sm font-medium text-muted-foreground">Paid Count</Label>
                     <p className="font-semibold">{selectedSub.paidCount ?? "—"}</p>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Outstanding Balance</Label>
-                    <p className="font-semibold">
-                      {formatCurrency(Number(selectedSub.outstandingBalance || 0))}
-                    </p>
-                  </div>
+                  {/* Outstanding Balance field removed as requested */}
                 </div>
               </div>
 
@@ -1128,5 +1170,4 @@ export function RecurringPaymentSummaryContent() {
     </div>
   );
 }
-
 

@@ -12,7 +12,7 @@ import { getUser } from "@/lib/auth"
 import { getSubscriptions } from "@/lib/recurring"
 import { RecurringPaymentSubscriptionResponse, RecurringPaymentStatus } from "@/types/recurring"
 import { LoginResponse } from "@/types/auth"
-import { ArrowLeft, CheckCircle2, Clock3, PauseCircle, AlertTriangle, RefreshCw, XCircle, Eye, ChevronLeft, ChevronRight, Download } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Clock3, PauseCircle, AlertTriangle, RefreshCw, XCircle, Eye, ChevronLeft, ChevronRight, Download, TrendingUp, Filter } from "lucide-react"
 import { cn } from "@/lib/utils"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -24,6 +24,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Props {
   userEmail: string
@@ -287,12 +295,6 @@ export function RecurringPaymentsHistoryContent({ userEmail, partnerName }: Prop
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={filtered.length === 0}>
-            <Download className="h-4 w-4 mr-1" /> PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={filtered.length === 0}>
-            <Download className="h-4 w-4 mr-1" /> CSV
-          </Button>
           <Button variant="outline" size="sm" onClick={loadData} disabled={loading}>
             <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             Refresh
@@ -351,17 +353,19 @@ export function RecurringPaymentsHistoryContent({ userEmail, partnerName }: Prop
           <CardDescription>List of recurring payment subscriptions</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-3">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by customer, number or subscription ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="w-full md:w-[220px]">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <div className="relative flex-1 sm:flex-initial">
+                <Input
+                  placeholder="Search by customer, number or subscription ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full sm:w-[300px]"
+                />
+              </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent align="end">
@@ -379,6 +383,34 @@ export function RecurringPaymentsHistoryContent({ userEmail, partnerName }: Prop
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
+              <TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-semibold text-green-700 dark:text-green-400">
+                {formatCurrency(totalBillingAmount)}
+              </span>
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleExportPDF} disabled={filtered.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportCSV} disabled={filtered.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export as CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {error && (

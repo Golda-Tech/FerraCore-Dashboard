@@ -275,6 +275,36 @@ export function TransactionsContent() {
     document.body.removeChild(link);
   };
 
+  const exportTransactionsCSV = () => {
+    const header = "Reference,Recipient,Type,Network,Amount,Status Reason,Status,Date";
+
+    const rows = filteredTransactions.map((t) => {
+      const statusReason = (t.statusMessage || t.message || "").replace(/_/g, " ");
+      return [
+        t.reference,
+        t.recipientName,
+        t.recipientType,
+        t.network,
+        t.amount,
+        statusReason,
+        String(t.status).toUpperCase(),
+        new Date(t.dateInitiated).toLocaleDateString(),
+      ].join(",");
+    });
+
+    const csvContent = [header, ...rows].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "transactions_export.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const exportTransactionsPDF = () => {
     const doc = new jsPDF({ orientation: "landscape" });
     doc.text("TRANSACTIONS REPORT", 14, 16);
@@ -285,12 +315,13 @@ export function TransactionsContent() {
       t.recipientType,
       t.network,
       `₵${t.amount}`,
-      t.status,
+      (t.statusMessage || t.message || "").replace(/_/g, " "),
+      String(t.status).toUpperCase(),
       new Date(t.dateInitiated).toLocaleDateString(),
     ]);
 
     autoTable(doc, {
-      head: [["Reference", "Recipient", "Type", "Network", "Amount", "Status", "Date"]],
+      head: [["Reference", "Recipient", "Type", "Network", "Amount", "Status Reason", "Status", "Date"]],
       body,
       startY: 24,
       theme: "grid",
@@ -298,7 +329,7 @@ export function TransactionsContent() {
       headStyles: { fillColor: "#22c55e" },
     });
 
-    doc.save(`transactions_${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save("transactions_report.pdf");
   };
 
   return (
@@ -322,7 +353,7 @@ export function TransactionsContent() {
               <IconDownload className="mr-2 h-4 w-4" />
               Export as PDF
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={exportTransactions}>
+            <DropdownMenuItem onClick={exportTransactionsCSV}>
               <IconDownload className="mr-2 h-4 w-4" />
               Export as CSV
             </DropdownMenuItem>

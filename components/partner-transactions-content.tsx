@@ -80,14 +80,14 @@ const getStatusBadge = (status: string) => {
 const mapApiStatus = (status: string) => {
   switch (status.toUpperCase()) {
     case "SUCCESSFUL":
-      return "completed";
+      return "Successful";
     case "ONGOING":
     case "PENDING":
-      return "pending";
+      return "Pending";
     case "FAILED":
-      return "failed";
+      return "Failed";
     default:
-      return "expired";
+      return "Expired";
   }
 };
 
@@ -309,19 +309,38 @@ export function PartnerTransactionsContent({
     const doc = new jsPDF({ orientation: "landscape" });
     doc.text(`${displayName} — Payments Report`, 14, 16);
 
+    /* ---------- brief summary under title ---------- */
+    const pdfSuccessful = filteredPayments.filter((p) => completedStatuses.includes(p.status));
+    const pdfFailed = filteredPayments.filter((p) => failedStatuses.includes(p.status));
+    const pdfPending = filteredPayments.filter((p) => pendingStatuses.includes(p.status));
+    const pdfSuccessAmt = pdfSuccessful.reduce((s, p) => s + Number(p.amountCustomerPays ?? p.amount), 0);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(80);
+    const genDate = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const dateRange = startDate || endDate
+      ? `Date Range: ${startDate || "—"} to ${endDate || "—"}`
+      : "Date Range: All";
+    doc.text(`Generated: ${genDate}   |   ${dateRange}   |   Total Transactions: ${filteredPayments.length}   |   Successful: ${pdfSuccessful.length}  (GHS ${pdfSuccessAmt.toLocaleString("en-GH", { minimumFractionDigits: 2 })})   |   Pending: ${pdfPending.length}   |   Failed: ${pdfFailed.length}`, 14, 23);
+    doc.setTextColor(0);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+
     const body = filteredPayments.map((p) => [
       p.mobileNumber,
       p.externalRef,
       mapApiStatus(p.status),
       p.provider,
+      (p.message || "").replace(/_/g, " "),
       Number(p.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
       formatDate(p.initiatedAt),
     ]);
 
     autoTable(doc, {
-      head: [["Phone", "Reference", "Status", "Network", "Amount(GHS)", "Date"]],
+      head: [["Phone", "Reference", "Status", "Network", "Status Reason", "Amount(GHS)", "Date"]],
       body,
-      startY: 24,
+      startY: 28,
       theme: "grid",
       styles: { fontSize: 9 },
       headStyles: { fillColor: "#22c55e" },
@@ -332,17 +351,19 @@ export function PartnerTransactionsContent({
 
   const downloadCSV = () => {
     const csvContent = [
-      "Phone,Reference,Status,Network,Amount(GHS),Date",
-      ...filteredPayments.map((p) =>
-        [
+      "Phone,Reference,Status,Network,Status Reason,Amount(GHS),Date",
+      ...filteredPayments.map((p) => {
+        const statusReason = (p.message || "").replace(/_/g, " ");
+        return [
           p.mobileNumber,
           p.externalRef,
           mapApiStatus(p.status),
           p.provider,
+          statusReason,
           Number(p.amount).toFixed(2),
           formatDate(p.initiatedAt),
-        ].join(",")
-      ),
+        ].join(",");
+      }),
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -577,19 +598,21 @@ export function PartnerTransactionsContent({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="completed">Successful</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="Successful">Successful</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Failed">Failed</SelectItem>
+                    <SelectItem value="Expired">Expired</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
-                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span className="text-sm font-semibold text-green-700 dark:text-green-300">
-                  Total: {formatCurrency(filteredTotalAmount)}
+
+              <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
+                <TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                <span className="text-sm font-semibold text-green-700 dark:text-green-400">
+                  {formatCurrency(filteredTotalAmount)}
                 </span>
               </div>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full sm:w-auto">
@@ -601,12 +624,16 @@ export function PartnerTransactionsContent({
                   <DropdownMenuLabel>Export Format</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={downloadPDF}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export as PDF
+                    <div className="flex items-center">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export as PDF
+                    </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={downloadCSV}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export as CSV
+                    <div className="flex items-center">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export as CSV
+                    </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
