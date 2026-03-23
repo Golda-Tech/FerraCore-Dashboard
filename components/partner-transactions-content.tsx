@@ -606,7 +606,7 @@ export function PartnerTransactionsContent({
                 </Select>
               </div>
 
-              <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800">
                 <TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                 <span className="text-sm font-semibold text-green-700 dark:text-green-400">
                   {formatCurrency(filteredTotalAmount)}
