@@ -40,7 +40,8 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getPayment, getPayments, getTransactionStatus } from "@/lib/payment";
+import { getOptimizedPayments, getPayment, getTransactionStatus } from "@/lib/payment";
+import { OptimizedPaymentsResponse, Payment } from "@/types/payment";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -91,6 +92,30 @@ const mapApiStatus = (status: string) => {
   }
 };
 
+const STATUS_FILTER_TO_API: Record<string, string[]> = {
+  all: ["PENDING", "SUCCESSFUL", "FAILED", "EXPIRED"],
+  Successful: ["SUCCESSFUL"],
+  Pending: ["PENDING", "ONGOING"],
+  Failed: ["FAILED"],
+  Expired: ["EXPIRED"],
+};
+
+const toStartOfDayIso = (value: string) => (value ? `${value}T00:00:00` : undefined);
+const toEndOfDayIso = (value: string) => (value ? `${value}T23:59:59` : undefined);
+const getCurrentDayBounds = (dateKey?: string) => {
+  const baseDate = dateKey ? new Date(`${dateKey}T00:00:00`) : new Date();
+  const year = baseDate.getFullYear();
+  const month = String(baseDate.getMonth() + 1).padStart(2, "0");
+  const day = String(baseDate.getDate()).padStart(2, "0");
+  const date = `${year}-${month}-${day}`;
+
+  return {
+    dayKey: date,
+    start: `${date}T00:00:00`,
+    end: `${date}T23:59:59`,
+  };
+};
+
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
 /* ------------------------------------------------------------------ */
@@ -106,18 +131,24 @@ export function PartnerTransactionsContent({
   partnerEmail,
   partnerName,
 }: PartnerTransactionsContentProps) {
-  const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
+  const [summary, setSummary] = useState<OptimizedPaymentsResponse | null>(null);
+  const [todaySummary, setTodaySummary] = useState<OptimizedPaymentsResponse | null>(null);
+  const [dayKey, setDayKey] = useState(getCurrentDayBounds().dayKey);
 
-  /* ---------- date range filter (client-side) ---------- */
+  /* ---------- date range filter (server-side) ---------- */
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [appliedStartDate, setAppliedStartDate] = useState("");
+  const [appliedEndDate, setAppliedEndDate] = useState("");
   const [isFiltering, setIsFiltering] = useState(false);
 
   /* ---------- pagination ---------- */
@@ -125,32 +156,142 @@ export function PartnerTransactionsContent({
   const [pageSize, setPageSize] = useState(20);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const midnightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const activeRequestRef = useRef<AbortController | null>(null);
+  const todayRequestRef = useRef<AbortController | null>(null);
+  const requestSequenceRef = useRef(0);
+  const todayRequestSequenceRef = useRef(0);
   const router = useRouter();
 
   const displayName = partnerName || partnerEmail;
+  const activeStatuses = STATUS_FILTER_TO_API[statusFilter] ?? STATUS_FILTER_TO_API.all;
+  const todayBounds = getCurrentDayBounds(dayKey);
+
+  /* ---------- debounce search ---------- */
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setSearchTerm(searchInput.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
+
+  useEffect(() => {
+    const hasValidRange = !startDate || !endDate || startDate <= endDate;
+    if (!hasValidRange) {
+      return;
+    }
+
+    setAppliedStartDate(startDate);
+    setAppliedEndDate(endDate);
+    setCurrentPage(1);
+  }, [startDate, endDate]);
+
+  /* ---------- fetch today-only summary ---------- */
+  const fetchTodaySummary = useCallback(async () => {
+    if (!partnerEmail) return;
+
+    todayRequestRef.current?.abort();
+    const controller = new AbortController();
+    todayRequestRef.current = controller;
+    const requestId = ++todayRequestSequenceRef.current;
+
+    try {
+      const data = await getOptimizedPayments({
+        initiatedBy: partnerEmail,
+        startDate: todayBounds.start,
+        endDate: todayBounds.end,
+        page: 0,
+        size: 1,
+        sort: "initiatedAt,desc",
+        signal: controller.signal,
+      });
+
+      if (controller.signal.aborted || requestId !== todayRequestSequenceRef.current) {
+        return;
+      }
+
+      setTodaySummary(data);
+    } catch (err: any) {
+      if (
+        controller.signal.aborted ||
+        err?.name === "AbortError" ||
+        err?.code === "ERR_CANCELED"
+      ) {
+        return;
+      }
+
+      console.error("Failed to fetch partner today summary:", err);
+    }
+  }, [partnerEmail, todayBounds.start, todayBounds.end]);
 
   /* ---------- fetch payments for the selected partner ---------- */
   const fetchPayments = useCallback(
     async (showLoading = true) => {
       if (!partnerEmail) return;
+
+      activeRequestRef.current?.abort();
+      const controller = new AbortController();
+      activeRequestRef.current = controller;
+      const requestId = ++requestSequenceRef.current;
+
       if (showLoading) setLoading(true);
 
       try {
-        const data = await getPayments(partnerEmail);
-        setPayments(data || []);
+        const data = await getOptimizedPayments({
+          q: searchTerm,
+          statuses: activeStatuses,
+          startDate: toStartOfDayIso(appliedStartDate),
+          endDate: toEndOfDayIso(appliedEndDate),
+          initiatedBy: partnerEmail,
+          page: currentPage - 1,
+          size: pageSize,
+          sort: "initiatedAt,desc",
+          signal: controller.signal,
+        });
+
+        if (controller.signal.aborted || requestId !== requestSequenceRef.current) {
+          return;
+        }
+
+        setPayments(data.items || []);
+        setSummary(data);
+
+        const safePage = (data.page ?? 0) + 1;
+        if (safePage !== currentPage) {
+          setCurrentPage(safePage);
+        }
+
         setLastRefresh(new Date());
+        fetchTodaySummary();
       } catch (err: any) {
+        if (
+          controller.signal.aborted ||
+          err?.name === "AbortError" ||
+          err?.code === "ERR_CANCELED"
+        ) {
+          return;
+        }
+
         console.error("Failed to fetch partner payments:", err);
+        setPayments([]);
+        setSummary(null);
       } finally {
-        if (showLoading) setLoading(false);
+        if (!controller.signal.aborted && requestId === requestSequenceRef.current && showLoading) {
+          setLoading(false);
+        }
       }
     },
-    [partnerEmail]
+    [partnerEmail, searchTerm, activeStatuses, appliedStartDate, appliedEndDate, currentPage, pageSize, fetchTodaySummary]
   );
 
-  /* ---------- initial fetch ---------- */
+  /* ---------- initial fetch / reactive fetch ---------- */
   useEffect(() => {
     fetchPayments(true);
+
+    return () => {
+      activeRequestRef.current?.abort();
+    };
   }, [fetchPayments]);
 
   /* ---------- auto-refresh ---------- */
@@ -177,6 +318,42 @@ export function PartnerTransactionsContent({
     };
   }, [partnerEmail, isAutoRefreshEnabled, fetchPayments]);
 
+  /* ---------- midnight rollover ---------- */
+  useEffect(() => {
+    const scheduleMidnightRefresh = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+      const timeoutMs = nextMidnight.getTime() - now.getTime();
+
+      midnightTimeoutRef.current = setTimeout(() => {
+        setDayKey(getCurrentDayBounds().dayKey);
+      }, timeoutMs);
+    };
+
+    if (midnightTimeoutRef.current) {
+      clearTimeout(midnightTimeoutRef.current);
+      midnightTimeoutRef.current = null;
+    }
+
+    scheduleMidnightRefresh();
+
+    return () => {
+      if (midnightTimeoutRef.current) {
+        clearTimeout(midnightTimeoutRef.current);
+        midnightTimeoutRef.current = null;
+      }
+      todayRequestRef.current?.abort();
+    };
+  }, [dayKey]);
+
+  useEffect(() => {
+    fetchTodaySummary();
+
+    return () => {
+      todayRequestRef.current?.abort();
+    };
+  }, [fetchTodaySummary]);
 
   /* ---------- telco logos ---------- */
   const telcos = [
@@ -199,91 +376,47 @@ export function PartnerTransactionsContent({
     );
   };
 
-  /* ---------- filtering (including client-side date range) ---------- */
-  const filteredPayments = payments.filter((payment) => {
-    const mappedStatus = mapApiStatus(payment.status);
-    const term = searchTerm.toLowerCase();
-    const matchesSearch =
-      !term ||
-      (payment.mobileNumber || "").toLowerCase().includes(term) ||
-      (payment.transactionRef || "").toLowerCase().includes(term) ||
-      (payment.externalRef || "").toLowerCase().includes(term) ||
-      (payment.mtnFinancialTransactionId || "").toLowerCase().includes(term);
-    const matchesStatus = statusFilter === "all" || mappedStatus === statusFilter;
-
-    /* date range — client-side only */
-    let matchesDate = true;
-    if (startDate) {
-      const paymentDate = new Date(payment.initiatedAt);
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      if (paymentDate < start) matchesDate = false;
-    }
-    if (endDate) {
-      const paymentDate = new Date(payment.initiatedAt);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      if (paymentDate > end) matchesDate = false;
-    }
-
-    return matchesSearch && matchesStatus && matchesDate;
-  });
+  /* ---------- current page dataset ---------- */
+  const filteredPayments = payments;
 
   /* ---------- summary stats ---------- */
-  const completedStatuses = ["SUCCESSFUL"];
-  const pendingStatuses = ["PENDING"];
-  const failedStatuses = ["FAILED"];
+  const statusCounts = summary?.statusCounts ?? {};
+  const completedRequests = Number(statusCounts.SUCCESSFUL ?? 0);
+  const pendingRequests = Number((statusCounts.PENDING ?? 0)) + Number((statusCounts.ONGOING ?? 0));
+  const failedRequests = Number(statusCounts.FAILED ?? 0);
+  const expiredRequests = Number(statusCounts.EXPIRED ?? 0);
+  const totalRequests = Number(summary?.totalElements ?? 0);
 
-  /* ---------- helper: is today ---------- */
-  const isToday = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const now = new Date();
-    return (
-      d.getFullYear() === now.getFullYear() &&
-      d.getMonth() === now.getMonth() &&
-      d.getDate() === now.getDate()
-    );
-  };
+  const todayStatusCounts = todaySummary?.statusCounts ?? {};
+  const todaySuccessful = Number(todayStatusCounts.SUCCESSFUL ?? 0);
+  const todayPending = Number(todayStatusCounts.PENDING ?? 0) + Number(todayStatusCounts.ONGOING ?? 0);
+  const todayFailed = Number(todayStatusCounts.FAILED ?? 0);
+  const todayTotalCount = Number(todaySummary?.totalElements ?? 0);
 
-  const todayPayments = payments.filter((p) => isToday(p.initiatedAt));
-
-  /* All-time counts */
-  const totalRequests = payments.length;
-  const completedRequests = payments.filter((p) => completedStatuses.includes(p.status)).length;
-  const pendingRequests = payments.filter((p) => pendingStatuses.includes(p.status)).length;
-  const failedRequests = payments.filter((p) => failedStatuses.includes(p.status)).length;
-
-  /* Today counts */
-  const todaySuccessful = todayPayments.filter((p) => completedStatuses.includes(p.status)).length;
-  const todayPending = todayPayments.filter((p) => pendingStatuses.includes(p.status)).length;
-  const todayFailed = todayPayments.filter((p) => failedStatuses.includes(p.status)).length;
-
-  /* Amounts — use amountCustomerPays */
-  const todayAmountCollected = todayPayments
-    .filter((p) => completedStatuses.includes(p.status))
-    .reduce((sum, p) => sum + (p.amountCustomerPays ?? p.amount), 0);
-  const allTimeAmountCollected = payments
-    .filter((p) => completedStatuses.includes(p.status))
-    .reduce((sum, p) => sum + (p.amountCustomerPays ?? p.amount), 0);
-
+  const allTimeAmountCollected = Number(summary?.totalAmount ?? 0);
+  const todayAmountCollected = Number(summary?.todayAmount ?? todaySummary?.todayAmount ?? 0);
   const successRate = totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0;
 
-  /* total based on the currently visible (filtered) list */
-  const filteredTotalAmount = filteredPayments
-    .filter((p) => completedStatuses.includes(p.status))
-    .reduce((sum, p) => sum + (p.amountCustomerPays ?? p.amount), 0);
+  const hasDateInput = Boolean(startDate || endDate || appliedStartDate || appliedEndDate);
+  const filteredSuccessfulAmount = filteredPayments
+    .filter((payment) => payment.status === "SUCCESSFUL")
+    .reduce((sum, payment) => sum + Number(payment.amountCustomerPays ?? payment.amount ?? 0), 0);
+
+  /* keep totals on the filtered-row path while date filtering is active to avoid stale summary flicker */
+  const filteredTotalAmount = hasDateInput
+    ? filteredSuccessfulAmount
+    : Number(summary?.totalAmount ?? 0);
 
   /* ---------- pagination ---------- */
-  const totalPages = Math.max(1, Math.ceil(filteredPayments.length / pageSize));
-  const paginatedPayments = filteredPayments.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const totalPages = Math.max(1, summary?.totalPages ?? 1);
+  const paginatedPayments = filteredPayments;
+  const rangeStart = totalRequests === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const rangeEnd = totalRequests === 0 ? 0 : Math.min((currentPage - 1) * pageSize + paginatedPayments.length, totalRequests);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, startDate, endDate, payments.length]);
+  }, [partnerEmail, searchTerm, statusFilter, appliedStartDate, appliedEndDate, pageSize]);
 
   /* ---------- helpers ---------- */
   const formatCurrency = (amount: number) =>
@@ -309,20 +442,19 @@ export function PartnerTransactionsContent({
     const doc = new jsPDF({ orientation: "landscape" });
     doc.text(`${displayName} — Payments Report`, 14, 16);
 
-    /* ---------- brief summary under title ---------- */
-    const pdfSuccessful = filteredPayments.filter((p) => completedStatuses.includes(p.status));
-    const pdfFailed = filteredPayments.filter((p) => failedStatuses.includes(p.status));
-    const pdfPending = filteredPayments.filter((p) => pendingStatuses.includes(p.status));
+    const pdfSuccessful = filteredPayments.filter((p) => p.status === "SUCCESSFUL");
+    const pdfFailed = filteredPayments.filter((p) => p.status === "FAILED");
+    const pdfPending = filteredPayments.filter((p) => ["PENDING", "ONGOING"].includes(p.status));
     const pdfSuccessAmt = pdfSuccessful.reduce((s, p) => s + Number(p.amountCustomerPays ?? p.amount), 0);
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(80);
     const genDate = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    const dateRange = startDate || endDate
-      ? `Date Range: ${startDate || "—"} to ${endDate || "—"}`
+    const dateRange = appliedStartDate || appliedEndDate
+      ? `Date Range: ${appliedStartDate || "—"} to ${appliedEndDate || "—"}`
       : "Date Range: All";
-    doc.text(`Generated: ${genDate}   |   ${dateRange}   |   Total Transactions: ${filteredPayments.length}   |   Successful: ${pdfSuccessful.length}  (GHS ${pdfSuccessAmt.toLocaleString("en-GH", { minimumFractionDigits: 2 })})   |   Pending: ${pdfPending.length}   |   Failed: ${pdfFailed.length}`, 14, 23);
+    doc.text(`Generated: ${genDate}   |   ${dateRange}   |   Page: ${currentPage}/${totalPages}   |   Rows on Page: ${filteredPayments.length}   |   Successful: ${pdfSuccessful.length}  (GHS ${pdfSuccessAmt.toLocaleString("en-GH", { minimumFractionDigits: 2 })})   |   Pending: ${pdfPending.length}   |   Failed: ${pdfFailed.length}`, 14, 23);
     doc.setTextColor(0);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
@@ -333,7 +465,7 @@ export function PartnerTransactionsContent({
       mapApiStatus(p.status),
       p.provider,
       (p.message || "").replace(/_/g, " "),
-      Number(p.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
+      Number(p.amountCustomerPays ?? p.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
       formatDate(p.initiatedAt),
     ]);
 
@@ -360,7 +492,7 @@ export function PartnerTransactionsContent({
           mapApiStatus(p.status),
           p.provider,
           statusReason,
-          Number(p.amount).toFixed(2),
+          Number(p.amountCustomerPays ?? p.amount).toFixed(2),
           formatDate(p.initiatedAt),
         ].join(",");
       }),
@@ -398,7 +530,8 @@ export function PartnerTransactionsContent({
         selectedPayment.provider,
         selectedPayment.transactionRef
       );
-      setSelectedPayment((prev: any) => ({ ...prev, ...statusData }));
+      setSelectedPayment((prev) => (prev ? { ...prev, ...statusData } : prev));
+      fetchPayments(false);
     } catch (err) {
       console.error("Failed to refresh payment status:", err);
     } finally {
@@ -410,16 +543,21 @@ export function PartnerTransactionsContent({
 
   const toggleAutoRefresh = () => setIsAutoRefreshEnabled((prev) => !prev);
 
-  /* ---------- apply date range (client-side visual feedback) ---------- */
+  /* ---------- apply date range (server-side visual feedback) ---------- */
   const handleApplyDateFilter = () => {
     setIsFiltering(true);
-    // Brief visual feedback — filtering is already reactive via filteredPayments
+    setAppliedStartDate(startDate);
+    setAppliedEndDate(endDate);
+    setCurrentPage(1);
     setTimeout(() => setIsFiltering(false), 400);
   };
 
   const handleClearDateFilter = () => {
     setStartDate("");
     setEndDate("");
+    setAppliedStartDate("");
+    setAppliedEndDate("");
+    setCurrentPage(1);
   };
 
   /* ================================================================ */
@@ -480,7 +618,7 @@ export function PartnerTransactionsContent({
           <CardContent className="flex-1 flex flex-col px-4 pb-4 pt-1">
             <div className="text-2xl font-bold text-green-600">{formatCurrency(todayAmountCollected)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {todaySuccessful} successful of {todayPayments.length} today
+              {todaySuccessful} successful of {todayTotalCount} today
             </p>
           </CardContent>
         </Card>
@@ -512,12 +650,12 @@ export function PartnerTransactionsContent({
             <Separator className="my-2" />
             <p className="text-xs font-medium text-muted-foreground mb-1">Today&apos;s Rate</p>
             <div className="text-lg font-semibold text-green-600">
-              {todayPayments.length > 0
-                ? ((todaySuccessful / todayPayments.length) * 100).toFixed(1)
+              {todayTotalCount > 0
+                ? ((todaySuccessful / todayTotalCount) * 100).toFixed(1)
                 : "0.0"}%
             </div>
             <p className="text-xs text-muted-foreground">
-              {todaySuccessful} successful of {todayPayments.length} today
+              {todaySuccessful} successful of {todayTotalCount} today
             </p>
           </CardContent>
         </Card>
@@ -564,6 +702,15 @@ export function PartnerTransactionsContent({
                   <span>{failedRequests}</span>
                 </span>
               </div>
+              {expiredRequests > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-gray-500" />
+                    Expired
+                  </span>
+                  <span className="tabular-nums font-medium">{expiredRequests}</span>
+                </div>
+              )}
               <p className="text-[10px] text-muted-foreground pt-1">Today / All-time</p>
             </div>
           </CardContent>
@@ -586,12 +733,18 @@ export function PartnerTransactionsContent({
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search by phone or reference..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => {
+                      setSearchInput(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="pl-8 w-full sm:w-[300px]"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={(value) => {
+                  setStatusFilter(value);
+                  setCurrentPage(1);
+                }}>
                   <SelectTrigger className="w-full sm:w-[150px]">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue />
@@ -678,7 +831,7 @@ export function PartnerTransactionsContent({
                   </>
                 )}
               </Button>
-              {(startDate || endDate) && (
+              {(startDate || endDate || appliedStartDate || appliedEndDate) && (
                 <Button variant="ghost" size="sm" onClick={handleClearDateFilter}>
                   Clear
                 </Button>
@@ -702,7 +855,7 @@ export function PartnerTransactionsContent({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPayments.length === 0 && !loading ? (
+                {paginatedPayments.length === 0 && !loading ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No transactions found for this partner.
@@ -796,8 +949,7 @@ export function PartnerTransactionsContent({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>
-                Showing {Math.min((currentPage - 1) * pageSize + 1, filteredPayments.length)}–
-                {Math.min(currentPage * pageSize, filteredPayments.length)} of {filteredPayments.length} transactions
+                Showing {rangeStart}–{rangeEnd} of {totalRequests} transactions
               </span>
               <div className="flex items-center gap-1.5">
                 <Label htmlFor="ptPageSize" className="text-xs whitespace-nowrap">Rows</Label>
@@ -815,19 +967,19 @@ export function PartnerTransactionsContent({
             </div>
 
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage <= 1} onClick={() => setCurrentPage(1)}>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage <= 1 || loading} onClick={() => setCurrentPage(1)}>
                 <ChevronsLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage <= 1 || loading} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm px-2 tabular-nums">
                 Page {currentPage} of {totalPages}
               </span>
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage >= totalPages || loading} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(totalPages)}>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentPage >= totalPages || loading} onClick={() => setCurrentPage(totalPages)}>
                 <ChevronsRight className="h-4 w-4" />
               </Button>
             </div>
@@ -945,7 +1097,7 @@ export function PartnerTransactionsContent({
                     <Label className="text-sm font-medium text-muted-foreground">Request ID</Label>
                     <p className="font-mono">{selectedPayment.id}</p>
                   </div>
-                  {selectedPayment.paidAt && (
+                  {selectedPayment.completedAt && (
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Paid At</Label>
                       <p>{formatDate(selectedPayment.completedAt)}</p>

@@ -1,4 +1,3 @@
-
 export type PaymentStatus =
   | "SUCCESS"
   | "PENDING"
@@ -8,7 +7,8 @@ export type PaymentStatus =
   | "CANCELLED"
   | "PENDING_EXTERNAL"
   | "REFUNDED"
-  | "INITIATED";
+  | "INITIATED"
+  | "EXPIRED";
 
 
 export type Interval = "DAILY" | "WEEKLY" | "MONTHLY";
@@ -44,11 +44,13 @@ export interface Payment {
   amountCustomerPays: number;
   transactionFee: number;
   currency: string;
+  callbackStatus?: string | null;
   status: string;
   message?: string | null;
   initiatedAt: string;
   initiatedBy: string;
   initiationPartner: string;
+  userRoles?: string[] | null;
   completedAt?: string | null;
   mtnFinancialTransactionId?: string | null;
   mtnExternalId?: string | null;
@@ -89,3 +91,25 @@ export interface PaymentTrend {
   statusCounts: Record<PaymentStatus, number>;
 }
 
+export interface OptimizedPaymentsQuery {
+  q?: string;
+  statuses?: string[];
+  startDate?: string;
+  endDate?: string;
+  initiatedBy?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+  signal?: AbortSignal;
+}
+
+export interface OptimizedPaymentsResponse {
+  items: Payment[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  statusCounts: Partial<Record<PaymentStatus | string, number>>;
+  totalAmount: number;
+  todayAmount: number;
+}

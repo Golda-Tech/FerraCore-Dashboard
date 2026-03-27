@@ -170,7 +170,7 @@ export function LoginForm() {
                     console.error("OTP verify timed out");
                   }
                   // 2.  Axios error with server payload
-                  const msg = err.response?.data?.message || err.response?.statusText;
+                  const msg = err.response?.data?.detail || err.response?.data?.message || err.response?.data?.title || err.response?.statusText;
                   // 3.  Fallback
                   const userMsg = msg || err.message || "Invalid OTP. Please check your code and try again.";
 
@@ -193,9 +193,11 @@ export function LoginForm() {
       await sendLoginOtp(email, password, "EMAIL", "LOGIN");
       setResendCooldown(60);
     } catch (err: any) {
+      const msg = err.response?.data?.detail || err.response?.data?.message || err.response?.data?.title || err.response?.statusText;
+      const userMsg = msg || err.message || "Failed to resend OTP. Please try again.";
       setLoginResult({
         success: false,
-        error: err.message || "Failed to resend OTP. Please try again.",
+        error: userMsg,
       });
       setShowResultDialog(true);
     } finally {

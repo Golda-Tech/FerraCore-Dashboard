@@ -8,6 +8,8 @@ import {
   UserInfo,
   StatusSummary,
   PaymentTrend,
+  OptimizedPaymentsQuery,
+  OptimizedPaymentsResponse,
 } from "@/types/payment";
 
 // Create a new payment
@@ -37,6 +39,29 @@ export async function getPayments(
   if (initiatedBy !== undefined) params.initiatedBy = initiatedBy;
 
   const response = await api.get<Payment[]>("/api/v1/payments", { params });
+  return response.data;
+}
+
+export async function getOptimizedPayments(
+  query: OptimizedPaymentsQuery
+): Promise<OptimizedPaymentsResponse> {
+  const { signal } = query;
+  const params: Record<string, string | number> = {
+    page: query.page ?? 0,
+    size: query.size ?? 20,
+    sort: query.sort ?? "initiatedAt,desc",
+  };
+
+  if (query.q !== undefined) params.q = query.q;
+  if (query.statuses?.length) params.statuses = query.statuses.join(",");
+  if (query.startDate) params.startDate = query.startDate;
+  if (query.endDate) params.endDate = query.endDate;
+  if (query.initiatedBy) params.initiatedBy = query.initiatedBy;
+
+  const response = await api.get<OptimizedPaymentsResponse>("/api/v1/payments/optimized", {
+    params,
+    signal,
+  });
   return response.data;
 }
 
