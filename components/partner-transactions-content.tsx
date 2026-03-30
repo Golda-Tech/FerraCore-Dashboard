@@ -40,8 +40,8 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getOptimizedPayments, getPayment, getTransactionStatus } from "@/lib/payment";
-import { OptimizedPaymentsResponse, Payment } from "@/types/payment";
+import { getOptimizedPayments, getPayment, getTransactionStatus, getStreamPayments, getPartnerTotal } from "@/lib/payment";
+import { OptimizedPaymentsResponse, Payment, StreamPaymentItem } from "@/types/payment";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -78,26 +78,11 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-const mapApiStatus = (status: string) => {
-  switch (status.toUpperCase()) {
-    case "SUCCESSFUL":
-      return "Successful";
-    case "ONGOING":
-    case "PENDING":
-      return "Pending";
-    case "FAILED":
-      return "Failed";
-    default:
-      return "Expired";
-  }
-};
-
 const STATUS_FILTER_TO_API: Record<string, string[]> = {
-  all: ["PENDING", "SUCCESSFUL", "FAILED", "EXPIRED"],
+  all: ["PENDING", "SUCCESSFUL", "FAILED"],
   Successful: ["SUCCESSFUL"],
   Pending: ["PENDING", "ONGOING"],
   Failed: ["FAILED"],
-  Expired: ["EXPIRED"],
 };
 
 const toStartOfDayIso = (value: string) => (value ? `${value}T00:00:00` : undefined);
@@ -137,8 +122,9 @@ export function PartnerTransactionsContent({
   const [statusFilter, setStatusFilter] = useState("all");
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [refreshingStatus, setRefreshingStatus] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
   const [summary, setSummary] = useState<OptimizedPaymentsResponse | null>(null);
   const [todaySummary, setTodaySummary] = useState<OptimizedPaymentsResponse | null>(null);
@@ -159,8 +145,13 @@ export function PartnerTransactionsContent({
   const midnightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
   const todayRequestRef = useRef<AbortController | null>(null);
+  const pdfExportRequestRef = useRef<AbortController | null>(null);
+  const csvExportRequestRef = useRef<AbortController | null>(null);
+  const isExportingRef = useRef(false);
   const requestSequenceRef = useRef(0);
   const todayRequestSequenceRef = useRef(0);
+  const partnerTotalRequestRef = useRef<AbortController | null>(null);
+  const [partnerTotalAmount, setPartnerTotalAmount] = useState<number | null>(null);
   const router = useRouter();
 
   const displayName = partnerName || partnerEmail;
@@ -176,6 +167,40 @@ export function PartnerTransactionsContent({
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
 
+  /* ---------- fetch partner total for date range ---------- */
+  const fetchPartnerTotal = useCallback(
+    async (sd: string, ed: string) => {
+      if (!partnerEmail || !sd || !ed) return;
+
+      partnerTotalRequestRef.current?.abort();
+      const controller = new AbortController();
+      partnerTotalRequestRef.current = controller;
+
+      try {
+        const data = await getPartnerTotal(
+          partnerEmail,
+          `${sd}T00:00:00`,
+          `${ed}T23:59:59`,
+          controller.signal
+        );
+
+        if (controller.signal.aborted) return;
+
+        setPartnerTotalAmount(data.totalAmount);
+      } catch (err: any) {
+        if (
+          controller.signal.aborted ||
+          err?.name === "AbortError" ||
+          err?.code === "ERR_CANCELED"
+        ) {
+          return;
+        }
+        console.error("Failed to fetch partner total:", err);
+      }
+    },
+    [partnerEmail]
+  );
+
   useEffect(() => {
     const hasValidRange = !startDate || !endDate || startDate <= endDate;
     if (!hasValidRange) {
@@ -185,7 +210,15 @@ export function PartnerTransactionsContent({
     setAppliedStartDate(startDate);
     setAppliedEndDate(endDate);
     setCurrentPage(1);
-  }, [startDate, endDate]);
+
+    // Fetch partner total when both dates are set, clear when removed
+    if (startDate && endDate) {
+      fetchPartnerTotal(startDate, endDate);
+    } else if (!startDate && !endDate) {
+      setPartnerTotalAmount(null);
+      partnerTotalRequestRef.current?.abort();
+    }
+  }, [startDate, endDate, fetchPartnerTotal]);
 
   /* ---------- fetch today-only summary ---------- */
   const fetchTodaySummary = useCallback(async () => {
@@ -262,7 +295,6 @@ export function PartnerTransactionsContent({
           setCurrentPage(safePage);
         }
 
-        setLastRefresh(new Date());
         fetchTodaySummary();
       } catch (err: any) {
         if (
@@ -355,6 +387,14 @@ export function PartnerTransactionsContent({
     };
   }, [fetchTodaySummary]);
 
+  useEffect(() => {
+    return () => {
+      pdfExportRequestRef.current?.abort();
+      csvExportRequestRef.current?.abort();
+      partnerTotalRequestRef.current?.abort();
+    };
+  }, []);
+
   /* ---------- telco logos ---------- */
   const telcos = [
     { name: "mtn", codes: ["mtn"], logo: "/mtn-momo.png" },
@@ -398,13 +438,11 @@ export function PartnerTransactionsContent({
   const successRate = totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0;
 
   const hasDateInput = Boolean(startDate || endDate || appliedStartDate || appliedEndDate);
-  const filteredSuccessfulAmount = filteredPayments
-    .filter((payment) => payment.status === "SUCCESSFUL")
-    .reduce((sum, payment) => sum + Number(payment.amountCustomerPays ?? payment.amount ?? 0), 0);
 
-  /* keep totals on the filtered-row path while date filtering is active to avoid stale summary flicker */
-  const filteredTotalAmount = hasDateInput
-    ? filteredSuccessfulAmount
+  /* When a date range is active, use the partner-total API amount.
+     When cleared, revert to the backend summary totalAmount. */
+  const filteredTotalAmount = hasDateInput && partnerTotalAmount !== null
+    ? partnerTotalAmount
     : Number(summary?.totalAmount ?? 0);
 
   /* ---------- pagination ---------- */
@@ -436,77 +474,173 @@ export function PartnerTransactionsContent({
     return `${base}.${ms}`;
   };
 
-
-  /* ---------- export ---------- */
-  const downloadPDF = () => {
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.text(`${displayName} — Payments Report`, 14, 16);
-
-    const pdfSuccessful = filteredPayments.filter((p) => p.status === "SUCCESSFUL");
-    const pdfFailed = filteredPayments.filter((p) => p.status === "FAILED");
-    const pdfPending = filteredPayments.filter((p) => ["PENDING", "ONGOING"].includes(p.status));
-    const pdfSuccessAmt = pdfSuccessful.reduce((s, p) => s + Number(p.amountCustomerPays ?? p.amount), 0);
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(80);
-    const genDate = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    const dateRange = appliedStartDate || appliedEndDate
-      ? `Date Range: ${appliedStartDate || "—"} to ${appliedEndDate || "—"}`
-      : "Date Range: All";
-    doc.text(`Generated: ${genDate}   |   ${dateRange}   |   Page: ${currentPage}/${totalPages}   |   Rows on Page: ${filteredPayments.length}   |   Successful: ${pdfSuccessful.length}  (GHS ${pdfSuccessAmt.toLocaleString("en-GH", { minimumFractionDigits: 2 })})   |   Pending: ${pdfPending.length}   |   Failed: ${pdfFailed.length}`, 14, 23);
-    doc.setTextColor(0);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-
-    const body = filteredPayments.map((p) => [
-      p.mobileNumber,
-      p.externalRef,
-      mapApiStatus(p.status),
-      p.provider,
-      (p.message || "").replace(/_/g, " "),
-      Number(p.amountCustomerPays ?? p.amount).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
-      formatDate(p.initiatedAt),
-    ]);
-
-    autoTable(doc, {
-      head: [["Phone", "Reference", "Status", "Network", "Status Reason", "Amount(GHS)", "Date"]],
-      body,
-      startY: 28,
-      theme: "grid",
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: "#22c55e" },
-    });
-
-    doc.save(`partner-payments_${new Date().toISOString().slice(0, 10)}.pdf`);
+  const escapeCsvValue = (value: string | number | null | undefined) => {
+    const stringValue = String(value ?? "");
+    if (/[",\n]/.test(stringValue)) {
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    return stringValue;
   };
 
-  const downloadCSV = () => {
-    const csvContent = [
-      "Phone,Reference,Status,Network,Status Reason,Amount(GHS),Date",
-      ...filteredPayments.map((p) => {
-        const statusReason = (p.message || "").replace(/_/g, " ");
-        return [
-          p.mobileNumber,
-          p.externalRef,
-          mapApiStatus(p.status),
-          p.provider,
-          statusReason,
-          Number(p.amountCustomerPays ?? p.amount).toFixed(2),
-          formatDate(p.initiatedAt),
-        ].join(",");
-      }),
-    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `partner-payments_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  /* ---------- export ---------- */
+  const formatStreamDate = (dateArr: number[]) => {
+    if (!dateArr || dateArr.length < 6) return "—";
+    const [year, month, day, hour, minute, second] = dateArr;
+    const d = new Date(year, month - 1, day, hour, minute, second);
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  const downloadPDF = async () => {
+    if (!partnerEmail || isExportingPdf || isExportingCsv) return;
+
+    // Require date range
+    if (!startDate || !endDate) {
+      alert("Please select a start date and end date before exporting to PDF.");
+      return;
+    }
+
+    isExportingRef.current = true;
+    pdfExportRequestRef.current?.abort();
+    const controller = new AbortController();
+    pdfExportRequestRef.current = controller;
+    setIsExportingPdf(true);
+
+    try {
+      const streamStartDate = `${startDate}T00:00:00`;
+      const streamEndDate = `${endDate}T23:59:59`;
+
+      const exportRows: StreamPaymentItem[] = await getStreamPayments(
+        streamStartDate,
+        streamEndDate,
+        controller.signal
+      );
+
+      if (controller.signal.aborted) return;
+
+      const successCount = exportRows.filter((r) => r.status === "SUCCESSFUL").length;
+      const failedCount = exportRows.filter((r) => r.status === "FAILED").length;
+      const pendingCount = exportRows.filter((r) => r.status === "PENDING").length;
+      const successAmt = exportRows
+        .filter((r) => r.status === "SUCCESSFUL")
+        .reduce((sum, r) => sum + Number(r.amountGhs ?? 0), 0);
+
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${displayName} — Payments Report`, 14, 16);
+
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      const genDate = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+      const dateRange = `${startDate}  to  ${endDate}`;
+      doc.text(
+        `Generated: ${genDate}   |   Date Range: ${dateRange}   |   Total Records: ${exportRows.length.toLocaleString()}   |   Successful: ${successCount.toLocaleString()} (GHS ${successAmt.toLocaleString("en-GH", { minimumFractionDigits: 2 })})   |   Pending: ${pendingCount.toLocaleString()}   |   Failed: ${failedCount.toLocaleString()}`,
+        14, 23,
+      );
+      doc.setTextColor(0);
+      doc.setFont("helvetica", "normal");
+
+      autoTable(doc, {
+        head: [["Customer MSISDN", "Reference", "Network", "Amount (GHS)", "Status", "Status Reason", "Date"]],
+        body: exportRows.map((p) => [
+          p.customerMsisdn,
+          p.reference,
+          p.network,
+          Number(p.amountGhs ?? 0).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
+          p.status,
+          (p.statusReason || "").replace(/_/g, " "),
+          formatStreamDate(p.date),
+        ]),
+        startY: 28,
+        theme: "grid",
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: "bold", halign: "center" },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: {
+          6: { cellWidth: 45, overflow: "visible" },
+        },
+      });
+
+      doc.save(`partner-payments_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err: any) {
+      if (controller.signal.aborted || err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
+      console.error("Failed to export partner payments PDF:", err);
+    } finally {
+      if (pdfExportRequestRef.current === controller) pdfExportRequestRef.current = null;
+      setIsExportingPdf(false);
+      isExportingRef.current = false;
+    }
+  };
+
+  const downloadCSV = async () => {
+    if (!partnerEmail || isExportingPdf || isExportingCsv) return;
+
+    // Require date range
+    if (!startDate || !endDate) {
+      alert("Please select a start date and end date before exporting to CSV.");
+      return;
+    }
+
+    isExportingRef.current = true;
+    csvExportRequestRef.current?.abort();
+    const controller = new AbortController();
+    csvExportRequestRef.current = controller;
+    setIsExportingCsv(true);
+
+    try {
+      const streamStartDate = `${startDate}T00:00:00`;
+      const streamEndDate = `${endDate}T23:59:59`;
+
+      const exportRows: StreamPaymentItem[] = await getStreamPayments(
+        streamStartDate,
+        streamEndDate,
+        controller.signal
+      );
+
+      if (controller.signal.aborted) return;
+
+      const csvContent = [
+        "Customer MSISDN,Reference,Network,Amount(GHS),Status,Status Reason,Date",
+        ...exportRows.map((p) => {
+          const statusReason = (p.statusReason || "").replace(/_/g, " ");
+          return [
+            escapeCsvValue(p.customerMsisdn),
+            escapeCsvValue(p.reference),
+            escapeCsvValue(p.network),
+            escapeCsvValue(Number(p.amountGhs ?? 0).toFixed(2)),
+            escapeCsvValue(p.status),
+            escapeCsvValue(statusReason),
+            escapeCsvValue(formatStreamDate(p.date)),
+          ].join(",");
+        }),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = `partner-payments_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err: any) {
+      if (controller.signal.aborted || err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
+      console.error("Failed to export partner payments CSV:", err);
+    } finally {
+      if (csvExportRequestRef.current === controller) csvExportRequestRef.current = null;
+      setIsExportingCsv(false);
+      isExportingRef.current = false;
+    }
   };
 
   /* ---------- detail & refresh handlers ---------- */
@@ -549,6 +683,9 @@ export function PartnerTransactionsContent({
     setAppliedStartDate(startDate);
     setAppliedEndDate(endDate);
     setCurrentPage(1);
+    if (startDate && endDate) {
+      fetchPartnerTotal(startDate, endDate);
+    }
     setTimeout(() => setIsFiltering(false), 400);
   };
 
@@ -558,6 +695,8 @@ export function PartnerTransactionsContent({
     setAppliedStartDate("");
     setAppliedEndDate("");
     setCurrentPage(1);
+    setPartnerTotalAmount(null);
+    partnerTotalRequestRef.current?.abort();
   };
 
   /* ================================================================ */
@@ -754,7 +893,6 @@ export function PartnerTransactionsContent({
                     <SelectItem value="Successful">Successful</SelectItem>
                     <SelectItem value="Pending">Pending</SelectItem>
                     <SelectItem value="Failed">Failed</SelectItem>
-                    <SelectItem value="Expired">Expired</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -766,30 +904,37 @@ export function PartnerTransactionsContent({
                 </span>
               </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Export Format</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={downloadPDF}>
-                    <div className="flex items-center">
-                      <Download className="mr-2 h-4 w-4" />
-                      Export as PDF
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={downloadCSV}>
-                    <div className="flex items-center">
-                      <Download className="mr-2 h-4 w-4" />
-                      Export as CSV
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {isExportingPdf || isExportingCsv ? (
+                <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {isExportingPdf ? "Exporting PDF…" : "Exporting CSV…"}
+                </Button>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => { downloadPDF(); }}>
+                      <div className="flex items-center">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export as PDF
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => { downloadCSV(); }}>
+                      <div className="flex items-center">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export as CSV
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
 
             {/* Date range filter */}
@@ -844,14 +989,14 @@ export function PartnerTransactionsContent({
             <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Network</TableHead>
-                  <TableHead>Telco Trans ID</TableHead>
-                  <TableHead>External Reference</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-center">Customer</TableHead>
+                  <TableHead className="text-center">Amount</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Network</TableHead>
+                  <TableHead className="text-center">Telco Trans ID</TableHead>
+                  <TableHead className="text-center">External Reference</TableHead>
+                  <TableHead className="text-center">Created</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -901,12 +1046,12 @@ export function PartnerTransactionsContent({
                         {payment.externalRef}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          <Calendar className="h-4 w-4 shrink-0" />
                           {formatDate(payment.initiatedAt)}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">

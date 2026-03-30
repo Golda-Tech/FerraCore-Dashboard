@@ -40,8 +40,8 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getOptimizedPayments, getPayment, getTransactionStatus } from "@/lib/payment";
-import { OptimizedPaymentsResponse, Payment } from "@/types/payment";
+import { getOptimizedPayments, getPayment, getTransactionStatus, getStreamPayments, getPartnerTotal } from "@/lib/payment";
+import { OptimizedPaymentsResponse, Payment, StreamPaymentItem } from "@/types/payment";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { LoginResponse } from "@/types/auth";
@@ -76,22 +76,8 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-const mapApiStatus = (status: string) => {
-  switch (status.toUpperCase()) {
-    case "SUCCESSFUL":
-      return "Successful";
-    case "ONGOING":
-    case "PENDING":
-      return "Pending";
-    case "FAILED":
-      return "Failed";
-    default:
-      return "Expired";
-  }
-};
-
 const STATUS_FILTER_TO_API: Record<string, string[]> = {
-  all: ["PENDING", "SUCCESSFUL", "FAILED", "EXPIRED"],
+  all: ["PENDING", "SUCCESSFUL", "FAILED"],
   Successful: ["SUCCESSFUL"],
   Pending: ["PENDING", "ONGOING"],
   Failed: ["FAILED"],
@@ -121,6 +107,8 @@ export function PaymentsContent() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
   const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [summary, setSummary] = useState<OptimizedPaymentsResponse | null>(null);
@@ -146,6 +134,11 @@ export function PaymentsContent() {
   const todayRequestRef = useRef<AbortController | null>(null);
   const requestSequenceRef = useRef(0);
   const todayRequestSequenceRef = useRef(0);
+  const pdfExportRequestRef = useRef<AbortController | null>(null);
+  const csvExportRequestRef = useRef<AbortController | null>(null);
+  const isExportingRef = useRef(false);
+  const partnerTotalRequestRef = useRef<AbortController | null>(null);
+  const [partnerTotalAmount, setPartnerTotalAmount] = useState<number | null>(null);
 
   const router = useRouter();
   const activeStatuses = STATUS_FILTER_TO_API[statusFilter] ?? STATUS_FILTER_TO_API.all;
@@ -159,6 +152,40 @@ export function PaymentsContent() {
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
 
+  /* ---------- fetch partner total for date range ---------- */
+  const fetchPartnerTotal = useCallback(
+    async (sd: string, ed: string) => {
+      if (!user?.email || !sd || !ed) return;
+
+      partnerTotalRequestRef.current?.abort();
+      const controller = new AbortController();
+      partnerTotalRequestRef.current = controller;
+
+      try {
+        const data = await getPartnerTotal(
+          user.email,
+          `${sd}T00:00:00`,
+          `${ed}T23:59:59`,
+          controller.signal
+        );
+
+        if (controller.signal.aborted) return;
+
+        setPartnerTotalAmount(data.totalAmount);
+      } catch (err: any) {
+        if (
+          controller.signal.aborted ||
+          err?.name === "AbortError" ||
+          err?.code === "ERR_CANCELED"
+        ) {
+          return;
+        }
+        console.error("Failed to fetch partner total:", err);
+      }
+    },
+    [user?.email]
+  );
+
   useEffect(() => {
     const hasValidRange = !startDate || !endDate || startDate <= endDate;
     if (!hasValidRange) {
@@ -168,7 +195,15 @@ export function PaymentsContent() {
     setAppliedStartDate(startDate);
     setAppliedEndDate(endDate);
     setCurrentPage(1);
-  }, [startDate, endDate]);
+
+    // Fetch partner total when both dates are set, clear when removed
+    if (startDate && endDate) {
+      fetchPartnerTotal(startDate, endDate);
+    } else if (!startDate && !endDate) {
+      setPartnerTotalAmount(null);
+      partnerTotalRequestRef.current?.abort();
+    }
+  }, [startDate, endDate, fetchPartnerTotal]);
 
   const fetchTodaySummary = useCallback(async (email: string) => {
     if (!email) return;
@@ -298,6 +333,7 @@ export function PaymentsContent() {
     }
 
     intervalRef.current = setInterval(() => {
+      if (isExportingRef.current) return; // skip refresh during export
       fetchPayments(user.email!, false, "interval");
     }, 8000);
 
@@ -362,6 +398,9 @@ export function PaymentsContent() {
     setAppliedStartDate(startDate);
     setAppliedEndDate(endDate);
     setCurrentPage(1);
+    if (startDate && endDate) {
+      fetchPartnerTotal(startDate, endDate);
+    }
     setTimeout(() => setIsFiltering(false), 400);
   };
 
@@ -371,89 +410,180 @@ export function PaymentsContent() {
     setAppliedStartDate("");
     setAppliedEndDate("");
     setCurrentPage(1);
+    setPartnerTotalAmount(null);
+    partnerTotalRequestRef.current?.abort();
   };
 
-  const downloadPDF = () => {
-    if (!user) return;
-
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.text(user.organizationName || "PAYMENTS REPORT", 14, 16);
-
-    const pdfSuccessful = payments.filter((p) => p.status === "SUCCESSFUL");
-    const pdfFailed = payments.filter((p) => p.status === "FAILED");
-    const pdfPending = payments.filter((p) => ["PENDING", "ONGOING"].includes(p.status));
-    const pdfSuccessAmt = pdfSuccessful.reduce((s, p) => s + Number(p.amountCustomerPays ?? p.amount), 0);
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(80);
-    const genDate = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    const dateRange = appliedStartDate || appliedEndDate
-      ? `Date Range: ${appliedStartDate || "—"} to ${appliedEndDate || "—"}`
-      : "Date Range: All";
-    doc.text(`Generated: ${genDate}   |   ${dateRange}   |   Page: ${currentPage}/${Math.max(1, summary?.totalPages ?? 1)}   |   Rows on Page: ${payments.length}   |   Successful: ${pdfSuccessful.length}  (GHS ${pdfSuccessAmt.toLocaleString("en-GH", { minimumFractionDigits: 2 })})   |   Pending: ${pdfPending.length}   |   Failed: ${pdfFailed.length}`, 14, 23);
-    doc.setTextColor(0);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-
-    const body = payments.map((p) => [
-      p.mobileNumber,
-      p.externalRef,
-      p.provider,
-      Number(p.amountCustomerPays ?? p.amount).toLocaleString("en-GH", {
-        minimumFractionDigits: 2,
-      }),
-      mapApiStatus(p.status),
-      (p.message || "").replace(/_/g, " "),
-      formatDate(p.initiatedAt),
-    ]);
-
-    autoTable(doc, {
-      head: [[
-        "Phone",
-        "Reference",
-        "Network",
-        "Amount(GHS)",
-        "Status",
-        "Status Reason",
-        "Date",
-      ]],
-      body,
-      startY: 28,
-      theme: "grid",
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: "#22c55e" },
+  const formatStreamDate = (dateArr: number[]) => {
+    if (!dateArr || dateArr.length < 6) return "—";
+    const [year, month, day, hour, minute, second] = dateArr;
+    const d = new Date(year, month - 1, day, hour, minute, second);
+    const base = d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
-
-    doc.save(`payments_${new Date().toISOString().slice(0, 10)}.pdf`);
+    return base;
   };
 
-  const downloadCSV = () => {
-    const csvContent = [
-      "Phone,Reference,Network,Amount(GHS),Status,Status Reason,Date",
-      ...payments.map((p) => {
-        const statusReason = (p.message || "").replace(/_/g, " ");
-        return [
-          p.mobileNumber,
-          p.externalRef,
-          p.provider,
-          Number(p.amountCustomerPays ?? p.amount).toFixed(2),
-          mapApiStatus(p.status),
-          statusReason,
-          formatDate(p.initiatedAt),
-        ].join(",");
-      }),
-    ].join("\n");
+  const downloadPDF = async () => {
+    if (!user?.email || isExportingPdf || isExportingCsv) return;
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `payments_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Require date range
+    if (!startDate || !endDate) {
+      alert("Please select a start date and end date before exporting to PDF.");
+      return;
+    }
+
+    isExportingRef.current = true;
+    pdfExportRequestRef.current?.abort();
+    const controller = new AbortController();
+    pdfExportRequestRef.current = controller;
+    setIsExportingPdf(true);
+
+    try {
+      const streamStartDate = `${startDate}T00:00:00`;
+      const streamEndDate = `${endDate}T23:59:59`;
+
+      const exportRows: StreamPaymentItem[] = await getStreamPayments(
+        streamStartDate,
+        streamEndDate,
+        controller.signal
+      );
+
+      if (controller.signal.aborted) return;
+
+      const successCount = exportRows.filter((r) => r.status === "SUCCESSFUL").length;
+      const failedCount = exportRows.filter((r) => r.status === "FAILED").length;
+      const pendingCount = exportRows.filter((r) => r.status === "PENDING").length;
+      const successAmt = exportRows
+        .filter((r) => r.status === "SUCCESSFUL")
+        .reduce((sum, r) => sum + Number(r.amountGhs ?? 0), 0);
+
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(user.organizationName || "PAYMENTS REPORT", 14, 16);
+
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      const genDate = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+      const dateRange = `${startDate}  to  ${endDate}`;
+      doc.text(
+        `Generated: ${genDate}   |   Date Range: ${dateRange}   |   Total Records: ${exportRows.length.toLocaleString()}   |   Successful: ${successCount.toLocaleString()} (GHS ${successAmt.toLocaleString("en-GH", { minimumFractionDigits: 2 })})   |   Pending: ${pendingCount.toLocaleString()}   |   Failed: ${failedCount.toLocaleString()}`,
+        14, 23,
+      );
+      doc.setTextColor(0);
+      doc.setFont("helvetica", "normal");
+
+      autoTable(doc, {
+        head: [["Customer MSISDN", "Reference", "Network", "Amount (GHS)", "Status", "Status Reason", "Date"]],
+        body: exportRows.map((p) => [
+          p.customerMsisdn,
+          p.reference,
+          p.network,
+          Number(p.amountGhs ?? 0).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
+          p.status,
+          (p.statusReason || "").replace(/_/g, " "),
+          formatStreamDate(p.date),
+        ]),
+        startY: 28,
+        theme: "grid",
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: "bold", halign: "center" },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: {
+          6: { cellWidth: 45, overflow: "visible" },
+        },
+      });
+
+      doc.save(`payments_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err: any) {
+      if (controller.signal.aborted || err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
+      console.error("Failed to export payments PDF:", err);
+    } finally {
+      if (pdfExportRequestRef.current === controller) pdfExportRequestRef.current = null;
+      setIsExportingPdf(false);
+      isExportingRef.current = false;
+    }
+  };
+
+  const escapeCsvValue = (value: string | number | null | undefined) => {
+    const stringValue = String(value ?? "");
+    if (/[",\n]/.test(stringValue)) {
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    return stringValue;
+  };
+
+  const downloadCSV = async () => {
+    if (!user?.email || isExportingPdf || isExportingCsv) return;
+
+    // Require date range
+    if (!startDate || !endDate) {
+      alert("Please select a start date and end date before exporting to CSV.");
+      return;
+    }
+
+    isExportingRef.current = true;
+    csvExportRequestRef.current?.abort();
+    const controller = new AbortController();
+    csvExportRequestRef.current = controller;
+    setIsExportingCsv(true);
+
+    try {
+      const streamStartDate = `${startDate}T00:00:00`;
+      const streamEndDate = `${endDate}T23:59:59`;
+
+      const exportRows: StreamPaymentItem[] = await getStreamPayments(
+        streamStartDate,
+        streamEndDate,
+        controller.signal
+      );
+
+      if (controller.signal.aborted) return;
+
+      const csvContent = [
+        "Customer MSISDN,Reference,Network,Amount(GHS),Status,Status Reason,Date",
+        ...exportRows.map((p) => {
+          const statusReason = (p.statusReason || "").replace(/_/g, " ");
+          return [
+            escapeCsvValue(p.customerMsisdn),
+            escapeCsvValue(p.reference),
+            escapeCsvValue(p.network),
+            escapeCsvValue(Number(p.amountGhs ?? 0).toFixed(2)),
+            escapeCsvValue(p.status),
+            escapeCsvValue(statusReason),
+            escapeCsvValue(formatStreamDate(p.date)),
+          ].join(",");
+        }),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = `payments_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err: any) {
+      if (controller.signal.aborted || err?.name === "AbortError" || err?.code === "ERR_CANCELED") {
+        return;
+      }
+      console.error("Failed to export payments CSV:", err);
+    } finally {
+      if (csvExportRequestRef.current === controller) {
+        csvExportRequestRef.current = null;
+      }
+      setIsExportingCsv(false);
+      isExportingRef.current = false;
+    }
   };
 
   const handleViewDetails = async (transactionRef: string) => {
@@ -524,11 +654,11 @@ export function PaymentsContent() {
   const successRate = totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0;
   const todaySuccessRate = todayTotalCount > 0 ? (todaySuccessful / todayTotalCount) * 100 : 0;
   const hasAppliedDateRange = Boolean(appliedStartDate || appliedEndDate);
-  const filteredSuccessfulAmount = payments
-    .filter((payment) => payment.status === "SUCCESSFUL")
-    .reduce((sum, payment) => sum + Number(payment.amountCustomerPays ?? payment.amount ?? 0), 0);
-  const filteredTotalAmount = hasAppliedDateRange
-    ? filteredSuccessfulAmount
+
+  /* When a date range is active, use the partner-total API amount.
+     When cleared, revert to the backend summary totalAmount. */
+  const filteredTotalAmount = hasAppliedDateRange && partnerTotalAmount !== null
+    ? partnerTotalAmount
     : Number(summary?.totalAmount ?? 0);
 
   const totalPages = Math.max(1, summary?.totalPages ?? 1);
@@ -560,6 +690,14 @@ export function PaymentsContent() {
     const ms = String(d.getMilliseconds()).padStart(3, "0");
     return `${base}.${ms}`;
   };
+
+  useEffect(() => {
+    return () => {
+      pdfExportRequestRef.current?.abort();
+      csvExportRequestRef.current?.abort();
+      partnerTotalRequestRef.current?.abort();
+    };
+  }, []);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -727,26 +865,33 @@ export function PaymentsContent() {
                 </span>
               </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Export Format</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={downloadPDF}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export as PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={downloadCSV}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export as CSV
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {isExportingPdf || isExportingCsv ? (
+                <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  {isExportingPdf ? "Exporting PDF…" : "Exporting CSV…"}
+                </Button>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => { downloadPDF(); }}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export as PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => { downloadCSV(); }}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export as CSV
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 p-3 rounded-lg border bg-muted/30">
@@ -799,14 +944,14 @@ export function PaymentsContent() {
             <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Network</TableHead>
-                  <TableHead>Telco Trans ID</TableHead>
-                  <TableHead>External Reference</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-center">Customer</TableHead>
+                  <TableHead className="text-center">Amount</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Network</TableHead>
+                  <TableHead className="text-center">Telco Trans ID</TableHead>
+                  <TableHead className="text-center">External Reference</TableHead>
+                  <TableHead className="text-center">Created</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -850,12 +995,12 @@ export function PaymentsContent() {
                       </TableCell>
                       <TableCell className="font-mono text-sm">{payment.externalRef}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          <Calendar className="h-4 w-4 shrink-0" />
                           {formatDate(payment.initiatedAt)}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">

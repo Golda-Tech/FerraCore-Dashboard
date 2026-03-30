@@ -10,6 +10,8 @@ import {
   PaymentTrend,
   OptimizedPaymentsQuery,
   OptimizedPaymentsResponse,
+  StreamPaymentItem,
+  PartnerTotalResponse,
 } from "@/types/payment";
 
 // Create a new payment
@@ -52,7 +54,7 @@ export async function getOptimizedPayments(
     sort: query.sort ?? "initiatedAt,desc",
   };
 
-  if (query.q !== undefined) params.q = query.q;
+  if (query.q) params.q = query.q;
   if (query.statuses?.length) params.statuses = query.statuses.join(",");
   if (query.startDate) params.startDate = query.startDate;
   if (query.endDate) params.endDate = query.endDate;
@@ -97,6 +99,19 @@ export async function getCommissionFees(partnerName: string): Promise<{ transact
     {
       params: { partnerName },
     }
+  );
+  return response.data;
+}
+
+// Update commission fees for a partner
+export async function updateCommissionFees(
+  partnerName: string,
+  fees: { transactionFee: string; cappedAmount: string; recurringFee: string }
+): Promise<{ transactionFee: string; cappedAmount: string; recurringFee: string }> {
+  const response = await api.put<{ transactionFee: string; cappedAmount: string; recurringFee: string }>(
+    "/api/v1/payments/fees",
+    fees,
+    { params: { partnerName } }
   );
   return response.data;
 }
@@ -153,5 +168,56 @@ export async function getPaymentsTrends(
   const response = await api.get<PaymentTrend[]>("/api/v1/payments/trends", {
     params: { initiatedBy, startDate, endDate, interval },
   });
+  return response.data;
+}
+
+/**
+ * Single API call for export. Returns whatever the server gives back
+ * (up to 100 items). The items array is used to build the CSV/PDF.
+ */
+export async function getExportPayments(
+  query: OptimizedPaymentsQuery
+): Promise<OptimizedPaymentsResponse> {
+  return getOptimizedPayments({
+    ...query,
+    page: 0,
+    size: 100,
+  });
+}
+
+/**
+ * Fetch all payments for a date range via the stream endpoint.
+ * Returns the full array of items for that range — used for PDF/CSV export.
+ */
+export async function getStreamPayments(
+  startDate: string,
+  endDate: string,
+  signal?: AbortSignal
+): Promise<StreamPaymentItem[]> {
+  const response = await api.get<StreamPaymentItem[]>(
+    "/api/v1/payments/optimized/stream",
+    {
+      params: { startDate, endDate },
+      signal,
+    }
+  );
+  return response.data;
+}
+
+/**
+ * Get partner total amount for a date range.
+ * POST /api/v1/payments/optimized/partner-total
+ */
+export async function getPartnerTotal(
+  initiatedBy: string,
+  startDate: string,
+  endDate: string,
+  signal?: AbortSignal
+): Promise<PartnerTotalResponse> {
+  const response = await api.post<PartnerTotalResponse>(
+    "/api/v1/payments/optimized/partner-total",
+    { initiatedBy, startDate, endDate },
+    { signal }
+  );
   return response.data;
 }

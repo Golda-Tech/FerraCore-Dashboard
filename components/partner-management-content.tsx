@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { IconPlus, IconSearch, IconDownload, IconEye, IconTrash, IconUserPlus, IconShield, IconUser, IconCrown, IconLoader } from "@tabler/icons-react"
+import { IconPlus, IconSearch, IconDownload, IconEye, IconTrash, IconUserPlus, IconShield, IconUser, IconCrown, IconLoader, IconReceipt2 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -104,6 +104,13 @@ interface SubscriptionManagementRequest {
   action: "activate" | "deactivate" | "cancel"
 }
 
+/* ---- partner-summary shape ---- */
+type PartnerSummaryItem = {
+  partnerName: string
+  transactionCount: number
+  totalAmountCustomerPays: number
+}
+
 /* ---- table row shape ---- */
 interface User {
   id: string
@@ -149,8 +156,20 @@ export function UserManagementContent() {
   useEffect(() => {
     async function loadPartners() {
       try {
-        const res = await api.get("/api/v1/auth/profile/partners")
-        const data: BackendUser[] = res.data
+        // Fetch partners and partner-summary in parallel for performance
+        const [partnersRes, summaryRes] = await Promise.all([
+          api.get("/api/v1/auth/profile/partners"),
+          api.get<PartnerSummaryItem[]>("/api/v1/payments/partner-summary"),
+        ])
+
+        const data: BackendUser[] = partnersRes.data
+        const summaryData: PartnerSummaryItem[] = summaryRes.data
+
+        // Build a case-insensitive lookup map for O(1) access
+        const summaryMap = new Map<string, PartnerSummaryItem>()
+        for (const s of summaryData) {
+          summaryMap.set(s.partnerName.toUpperCase(), s)
+        }
 
         console.log("Raw API response:", data) // Debug log
 
@@ -177,6 +196,9 @@ export function UserManagementContent() {
             console.warn(`Missing organization ID for user: ${u.email}`, u)
           }
 
+          // Look up partner-summary data by org name (case-insensitive)
+          const pSummary = summaryMap.get(orgName.toUpperCase())
+
           return {
             id: u.id,
             firstName: u.firstName,
@@ -186,8 +208,8 @@ export function UserManagementContent() {
             status: u.subscription?.status || "PENDING",
             lastLogin: "Never",
             createdAt: new Date().toISOString().split("T")[0],
-            transactionCount: Number(u.summary?.totalCountTransactions ?? 0),
-            totalVolume: u.summary?.totalSuccessfulAmountTransactions ?? 0,
+            transactionCount: pSummary?.transactionCount ?? 0,
+            totalVolume: pSummary?.totalAmountCustomerPays ?? 0,
             organizationName: orgName,
             organizationId: orgId || u.id, // Fallback to user id if organization id is missing
             plan: u.subscription?.plan || "N/A",
@@ -550,13 +572,13 @@ export function UserManagementContent() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Partner</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Plan</TableHead>
+                <TableHead className="text-center">Partner</TableHead>
+                <TableHead className="text-center">Role</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-center">Plan</TableHead>
                 <TableHead className="text-center">Transactions</TableHead>
-                <TableHead>Volume (GHS)</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-center">Volume (GHS)</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -582,7 +604,7 @@ export function UserManagementContent() {
                   <TableCell>{u.plan}</TableCell>
                   <TableCell className="text-center">{u.transactionCount.toLocaleString()}</TableCell>
                   <TableCell>₵{u.totalVolume.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -600,6 +622,14 @@ export function UserManagementContent() {
                         >
                           <IconEye className="mr-2 h-4 w-4" />
                           View Transactions
+                        </DropdownMenuItem>
+
+                        {/* View commissions for this partner */}
+                        <DropdownMenuItem
+                          onClick={() => router.push("/commissions")}
+                        >
+                          <IconReceipt2 className="mr-2 h-4 w-4" />
+                          View Commissions
                         </DropdownMenuItem>
 
                         {/* When partner is on the RECURRING_PAYMENTS plan, show recurring history entry */}

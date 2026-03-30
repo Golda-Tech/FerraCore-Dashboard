@@ -113,3 +113,22 @@ export interface OptimizedPaymentsResponse {
   totalAmount: number;
   todayAmount: number;
 }
+
+/** Shape returned by /api/v1/payments/optimized/partner-total */
+export interface PartnerTotalResponse {
+  partnerId: string;
+  totalAmount: number;
+}
+
+/** Shape returned by /api/v1/payments/optimized/stream */
+export interface StreamPaymentItem {
+  customerMsisdn: string;
+  reference: string;
+  network: string;
+  amountGhs: number;
+  status: string;
+  statusReason: string | null;
+  /** Date represented as [year, month, day, hour, minute, second, nanos] */
+  date: number[];
+}
+
