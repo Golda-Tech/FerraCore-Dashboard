@@ -93,7 +93,13 @@ export function CommissionsContent() {
   useEffect(() => {
     const user = getUser();
     setCurrentUser(user);
-  }, []);
+
+    // Only SUPER_ADMIN and GA_ADMIN can access this page
+    const role = user?.userRoles;
+    if (role && role !== "SUPER_ADMIN" && role !== "GA_ADMIN") {
+      router.replace("/dashboard");
+    }
+  }, [router]);
 
   /* ---------- load partners then fetch fees for each ---------- */
   const loadCommissions = useCallback(async () => {

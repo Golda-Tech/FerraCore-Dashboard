@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { IconPlus, IconSearch, IconDownload, IconEye, IconTrash, IconUserPlus, IconShield, IconUser, IconCrown, IconLoader, IconReceipt2 } from "@tabler/icons-react"
+import { IconPlus, IconSearch, IconDownload, IconEye, IconTrash, IconUserPlus, IconShield, IconUser, IconCrown, IconLoader } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -624,13 +624,6 @@ export function UserManagementContent() {
                           View Transactions
                         </DropdownMenuItem>
 
-                        {/* View commissions for this partner */}
-                        <DropdownMenuItem
-                          onClick={() => router.push("/commissions")}
-                        >
-                          <IconReceipt2 className="mr-2 h-4 w-4" />
-                          View Commissions
-                        </DropdownMenuItem>
 
                         {/* When partner is on the RECURRING_PAYMENTS plan, show recurring history entry */}
                         {u.plan === "RECURRING_PAYMENTS" && (

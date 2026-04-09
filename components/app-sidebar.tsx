@@ -20,6 +20,7 @@ import {
   IconUsers,
   IconFolder,
   IconRepeat,
+  IconReceipt2,
 } from "@tabler/icons-react";
 import { UserPlus } from "lucide-react";
 
@@ -75,6 +76,12 @@ const partnersUsersPages: PartnersUsersPage[] = [
     page: "user-management" as PageName,
     icon: IconUserCircle,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
+  },
+  {
+    title: "Manage Commissions",
+    page: "commissions" as PageName,
+    icon: IconReceipt2,
+    allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
   }
   // ,
   // {
