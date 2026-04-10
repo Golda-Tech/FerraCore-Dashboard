@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -45,7 +45,7 @@ interface EndpointDef {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Endpoint Data – combined & curated from both Postman collections  */
+/*  Endpoint Data â€“ combined & curated from both Postman collections  */
 /* ------------------------------------------------------------------ */
 
 const authEndpoints: EndpointDef[] = [
@@ -91,55 +91,53 @@ const authEndpoints: EndpointDef[] = [
       ),
     },
     notes:
-      "This is a public endpoint — no Bearer token is required. The returned access_token must be included as a Bearer token in the Authorization header for all protected endpoints.",
+      "This is a public endpoint â€” no Bearer token is required. The returned access_token must be included as a Bearer token in the Authorization header for all protected endpoints.",
   },
 ];
 
 const callbackEndpoints: EndpointDef[] = [
   {
-    id: "mtn-callback",
-    name: "Payment Callback (MTN)",
-    method: "PUT",
-    path: "/api/v1/payments/mtn/callback",
+    id: "partner-callback",
+    name: "Partner Payment Callback",
+    method: "POST",
+    path: "https://your-callback-url.com/payment/callback",
     description:
-      "Processes an MTN Mobile Money callback notification. This endpoint is called by the payment provider when a transaction status changes. You can also configure your own callback URL in the dashboard under Settings → API & Keys.",
-    auth: "bearer",
+      "RexHub sends a POST request to your configured callback URL whenever a payment status changes. You must provide a POST callback endpoint that accepts the parameters below. You can add your callback URL in the Settings section on the RexHub Dashboard (under API & Keys), or share it via email to onboarding@rexhub.com.",
+    auth: "none",
     headers: [
       { key: "Content-Type", value: "application/json" },
-      { key: "Accept", value: "application/json" },
-      { key: "Authorization", value: "Bearer YOUR_ACCESS_TOKEN" },
     ],
     requestBody: {
       raw: JSON.stringify(
         {
-          externalId: "FCC-09216908-260112113420830",
-          amount: "0.30",
-          currency: "GHS",
-          payer: { partyIdType: "MSISDN", partyId: "233249223888" },
-          payerMessage: "Acme Corp",
-          payeeNote: "Payment for order",
+          transactionId: "6e385829-1edf-4225-9c2f-38df924ceb3a",
+          externalTransactionId: "01000011-21978274-260326220859369",
+          amountTransferred: 49.00,
           status: "SUCCESSFUL",
-          reason: "",
-          financialTransactionId: "fa276d30-933d-432c-814c-20397a8c5431",
+          reason: "Payment completed",
+          callbackReceivedAt: "2026-03-26T22:10:01.145279",
         },
         null,
         2
       ),
+      description:
+        "RexHub will POST this payload to your callback URL. Your endpoint should return a 202 Accepted status code with no response body.",
     },
     responseExample: {
-      status: 200,
-      body: JSON.stringify(
-        {
-          mandateId: "string",
-          retrievalReference: "string",
-          status: "INACTIVE",
-          nextPaymentDueDate: "2026-02-01T20:07:59.297Z",
-          lastPaymentStatus: "SUCCESSFUL",
-        },
-        null,
-        2
-      ),
+      status: 202,
+      body: "// No response body — return HTTP 202 Accepted with an empty body.",
+      description: "Your server should return HTTP 202 Accepted with no response body to acknowledge receipt of the callback.",
     },
+    queryParams: [
+      { key: "transactionId", type: "string", required: true, description: "RexHub's unique transaction reference ID" },
+      { key: "externalTransactionId", type: "string", required: true, description: "The external/provider transaction ID" },
+      { key: "amountTransferred", type: "BigDecimal", required: true, description: "The amount transferred in GHS" },
+      { key: "status", type: "string", required: true, description: "Transaction status: SUCCESSFUL, FAILED, or PENDING" },
+      { key: "reason", type: "string", required: false, description: "Reason or description (e.g. failure reason)" },
+      { key: "callbackReceivedAt", type: "LocalDateTime", required: true, description: "Timestamp when the callback was received (ISO 8601)" },
+    ],
+    notes:
+      "Your callback endpoint must be a POST endpoint. RexHub expects a 202 Accepted response. If the callback fails, RexHub will retry up to 3 times.",
   },
 ];
 
@@ -194,7 +192,7 @@ const paymentEndpoints: EndpointDef[] = [
       { key: "provider", type: "string", required: true, description: "Payment provider (MTN, AIRTELTIGO, VODAFONE)" },
       { key: "mobileNumber", type: "string", required: true, description: "Customer MSISDN with country code (e.g. 233240000000)" },
       { key: "amount", type: "number", required: true, description: "Amount to charge in GHS" },
-      { key: "currency", type: "string", required: true, description: "Currency code — currently only GHS supported" },
+      { key: "currency", type: "string", required: true, description: "Currency code â€” currently only GHS supported" },
       { key: "collectionRef", type: "string", required: true, description: "Your unique collection reference" },
       { key: "initiatedBy", type: "string", required: true, description: "Email of the user/partner initiating the request" },
       { key: "payerMessage", type: "string", required: false, description: "Message displayed to the payer" },
@@ -318,7 +316,7 @@ const recurringEndpoints: EndpointDef[] = [
         2
       ),
       description:
-        "cycle options: DLY (Daily), WKL (Weekly), MTH (Monthly). resumable: Y/N — whether the subscription can be paused & resumed. cycleSkip: Y/N — whether missed cycles are skipped.",
+        "cycle options: DLY (Daily), WKL (Weekly), MTH (Monthly). resumable: Y/N â€” whether the subscription can be paused & resumed. cycleSkip: Y/N â€” whether missed cycles are skipped.",
     },
     queryParams: [
       { key: "customerNumber", type: "string", required: true, description: "Customer MSISDN with country code" },
@@ -330,8 +328,8 @@ const recurringEndpoints: EndpointDef[] = [
       { key: "networkProvider", type: "string", required: true, description: "Network provider (MTN)" },
       { key: "reference", type: "string", required: true, description: "Your reference for this subscription" },
       { key: "returnUrl", type: "string", required: true, description: "Callback URL for payment notifications" },
-      { key: "resumable", type: "string", required: false, description: "Y or N — whether the subscription can be paused and resumed" },
-      { key: "cycleSkip", type: "string", required: false, description: "Y or N — whether missed cycles can be skipped" },
+      { key: "resumable", type: "string", required: false, description: "Y or N â€” whether the subscription can be paused and resumed" },
+      { key: "cycleSkip", type: "string", required: false, description: "Y or N â€” whether missed cycles can be skipped" },
     ],
     responseExample: {
       status: 200,
@@ -463,7 +461,7 @@ const recurringEndpoints: EndpointDef[] = [
           customerNumber: "233595999364",
           amountDue: "15.00",
           invoiceReference: "INV-1001",
-          description: "Installment Payment – Subscription ID 8901234567891",
+          description: "Installment Payment â€“ Subscription ID 8901234567891",
           expiryDate: "2026-03-31T23:59:59Z",
         },
         null,
@@ -532,7 +530,8 @@ function CodeBlock({ code }: { code: string }) {
 
 function buildCurl(ep: EndpointDef): string {
   const base = "https://api.ferracore.tech";
-  let curl = `curl -X ${ep.method} "${base}${ep.path}"`;
+  const isFullUrl = ep.path.startsWith("http");
+  let curl = `curl -X ${ep.method} "${isFullUrl ? ep.path : base + ep.path}"`;
   if (ep.headers) {
     ep.headers.forEach((h) => {
       curl += ` \\\n  -H "${h.key}: ${h.value}"`;
@@ -543,8 +542,8 @@ function buildCurl(ep: EndpointDef): string {
   }
   if (ep.queryParams && ep.method === "GET") {
     const qs = ep.queryParams.map((p) => `${p.key}={${p.key}}`).join("&");
-    // Replace the base path with query string version
-    curl = curl.replace(`"${base}${ep.path}"`, `"${base}${ep.path}?${qs}"`);
+    const urlPart = isFullUrl ? ep.path : base + ep.path;
+    curl = curl.replace(`"${urlPart}"`, `"${urlPart}?${qs}"`);
   }
   return curl;
 }
@@ -554,7 +553,7 @@ function EndpointCard({ ep }: { ep: EndpointDef }) {
 
   return (
     <div className="border rounded-xl overflow-hidden transition-all hover:shadow-md">
-      {/* Header – always visible */}
+      {/* Header â€“ always visible */}
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors"
@@ -570,7 +569,7 @@ function EndpointCard({ ep }: { ep: EndpointDef }) {
         {open ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
       </button>
 
-      {/* Body – expandable */}
+      {/* Body â€“ expandable */}
       {open && (
         <div className="border-t px-4 pb-5 pt-4 space-y-5 bg-muted/20">
           <p className="text-sm leading-relaxed">{ep.description}</p>
@@ -615,7 +614,7 @@ function EndpointCard({ ep }: { ep: EndpointDef }) {
                       <tr key={h.key} className="border-t">
                         <td className="px-3 py-2 font-mono text-xs">{h.key}</td>
                         <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{h.value}</td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{h.description ?? "—"}</td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{h.description ?? "â€”"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -684,9 +683,12 @@ function EndpointCard({ ep }: { ep: EndpointDef }) {
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Response</h4>
                 <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
-                  {ep.responseExample.status} OK
+                  {ep.responseExample.status} {ep.responseExample.status === 202 ? "Accepted" : "OK"}
                 </Badge>
               </div>
+              {ep.responseExample.description && (
+                <p className="text-xs text-muted-foreground">{ep.responseExample.description}</p>
+              )}
               <CodeBlock code={ep.responseExample.body} />
             </div>
           )}
@@ -995,7 +997,7 @@ export function ApiDocsContent() {
               <p className="text-sm leading-relaxed text-muted-foreground">
                 The RexHub Payment Gateway provides a robust, secure platform for businesses to process
                 payments, handle recurring subscriptions, and receive real-time webhook
-                notifications — all through a single, unified API.
+                notifications â€” all through a single, unified API.
               </p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {[
@@ -1061,7 +1063,7 @@ export function ApiDocsContent() {
                   </div>
                   <CodeBlock code={'POST /api/v1/subscriptions/tokens\n\n// No Authorization header needed'} />
                   <p className="text-xs text-muted-foreground">
-                    The token endpoint is public — supply your credentials in the request body.
+                    The token endpoint is public â€” supply your credentials in the request body.
                   </p>
                 </div>
               </div>
@@ -1144,11 +1146,11 @@ export function ApiDocsContent() {
                   <tbody>
                     {[
                       { code: "200", desc: "Success" },
-                      { code: "400", desc: "Bad Request — Invalid parameters or payload" },
-                      { code: "401", desc: "Unauthorized — Invalid or missing token" },
-                      { code: "403", desc: "Forbidden — Insufficient permissions" },
-                      { code: "404", desc: "Not Found — Resource does not exist" },
-                      { code: "500", desc: "Server Error — Something went wrong on our end" },
+                      { code: "400", desc: "Bad Request â€” Invalid parameters or payload" },
+                      { code: "401", desc: "Unauthorized â€” Invalid or missing token" },
+                      { code: "403", desc: "Forbidden â€” Insufficient permissions" },
+                      { code: "404", desc: "Not Found â€” Resource does not exist" },
+                      { code: "500", desc: "Server Error â€” Something went wrong on our end" },
                     ].map((r) => (
                       <tr key={r.code} className="border-t">
                         <td className="px-3 py-2 font-mono text-xs font-bold">{r.code}</td>
@@ -1213,15 +1215,15 @@ export function ApiDocsContent() {
                 Subscription Key and Subscription Secret separated by a colon:
               </p>
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Step 1 — Concatenate key and secret</h4>
+                <h4 className="text-sm font-semibold">Step 1 â€” Concatenate key and secret</h4>
                 <CodeBlock code={`your_subscription_key:your_subscription_secret`} />
               </div>
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Step 2 — Base64-encode the string</h4>
+                <h4 className="text-sm font-semibold">Step 2 â€” Base64-encode the string</h4>
                 <CodeBlock code={`echo -n "your_subscription_key:your_subscription_secret" | base64\n\n# Output: eW91cl9zdWJzY3JpcHRpb25fa2V5OnlvdXJfc3Vic2NyaXB0aW9uX3NlY3JldA==`} />
               </div>
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Step 3 — Include in the Authorization header</h4>
+                <h4 className="text-sm font-semibold">Step 3 â€” Include in the Authorization header</h4>
                 <CodeBlock code={`Authorization: Basic eW91cl9zdWJzY3JpcHRpb25fa2V5OnlvdXJfc3Vic2NyaXB0aW9uX3NlY3JldA==`} />
               </div>
               <div className="space-y-2">
@@ -1277,9 +1279,13 @@ export function ApiDocsContent() {
           <div className="space-y-2 mb-4">
             <h2 className="text-xl font-bold">Callback / Webhook</h2>
             <p className="text-sm text-muted-foreground">
-              Configure your callback URL in the RexHub Dashboard under{" "}
-              <strong>Settings → API &amp; Keys</strong>. When a payment status changes, RexHub will
-              send a notification to your configured URL.
+              When a payment status changes, RexHub will send a <strong>POST</strong> request to your configured
+              callback URL with the transaction details. You can add your callback URL in the{" "}
+              <strong>Settings</strong> section on the RexHub Dashboard (under API &amp; Keys), or share it via
+              email to{" "}
+              <a href="mailto:onboarding@rexhub.com" className="text-primary underline">
+                onboarding@rexhub.com
+              </a>.
             </p>
           </div>
 
@@ -1289,11 +1295,16 @@ export function ApiDocsContent() {
                 <Webhook className="h-4 w-4 text-blue-600" />
                 Setting Up Your Callback URL
               </h3>
+              <p className="text-sm text-muted-foreground">
+                You must provide a <strong>POST</strong> callback endpoint. RexHub will send payment status
+                updates to this URL automatically.
+              </p>
               <ol className="text-sm space-y-1.5 pl-5 list-decimal text-muted-foreground">
-                <li>Navigate to <strong>Settings → API &amp; Keys</strong> in your dashboard.</li>
-                <li>Enter your webhook URL in the <strong>X-Callback-Url</strong> field.</li>
+                <li>Navigate to <strong>Settings &rarr; API &amp; Keys</strong> in your dashboard, or share the URL via email to onboarding@rexhub.com.</li>
+                <li>Enter your POST webhook URL in the <strong>X-Callback-Url</strong> field.</li>
                 <li>Click <strong>Save Changes</strong>.</li>
-                <li>RexHub will send a <code className="bg-muted px-1 rounded text-xs">PUT</code> request to your URL on every status change.</li>
+                <li>RexHub will send a <code className="bg-muted px-1 rounded text-xs">POST</code> request to your URL on every payment status change.</li>
+                <li>Your endpoint should return a <code className="bg-muted px-1 rounded text-xs">202 Accepted</code> status code to acknowledge receipt.</li>
               </ol>
             </CardContent>
           </Card>
@@ -1307,6 +1318,10 @@ export function ApiDocsContent() {
               <CardTitle className="text-base">Callback Payload Fields</CardTitle>
             </CardHeader>
             <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                These are the fields RexHub will POST to your callback URL when a payment status changes.
+                Your endpoint should return <strong>HTTP 202 Accepted</strong>.
+              </p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border rounded-lg overflow-hidden">
                   <thead>
@@ -1318,13 +1333,12 @@ export function ApiDocsContent() {
                   </thead>
                   <tbody>
                     {[
-                      { field: "externalId", type: "string", desc: "Your external reference for the transaction" },
-                      { field: "amount", type: "string", desc: "Transaction amount" },
-                      { field: "currency", type: "string", desc: "Currency code (GHS)" },
-                      { field: "payer", type: "object", desc: "Payer details — partyIdType and partyId" },
-                      { field: "status", type: "string", desc: "SUCCESSFUL, FAILED, or PENDING" },
-                      { field: "reason", type: "string", desc: "Failure reason (empty on success)" },
-                      { field: "financialTransactionId", type: "string", desc: "Provider's financial transaction ID" },
+                      { field: "transactionId", type: "String", desc: "RexHub's unique transaction reference ID" },
+                      { field: "externalTransactionId", type: "String", desc: "The external/provider transaction ID" },
+                      { field: "amountTransferred", type: "BigDecimal", desc: "The amount transferred in GHS" },
+                      { field: "status", type: "String", desc: "Transaction status: SUCCESSFUL, FAILED, or PENDING" },
+                      { field: "reason", type: "String", desc: "Reason or description (e.g. failure reason, empty on success)" },
+                      { field: "callbackReceivedAt", type: "LocalDateTime", desc: "ISO 8601 timestamp when the callback was received" },
                     ].map((r) => (
                       <tr key={r.field} className="border-t">
                         <td className="px-3 py-2 font-mono text-xs">{r.field}</td>
