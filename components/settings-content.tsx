@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { User, Building2, Shield, Key, Eye, EyeOff, Copy,Calendar,CreditCard,Smartphone, Mail, Bell,RefreshCw, Check, AlertTriangle, Info, Globe } from "lucide-react";
+import { User, Building2, Shield, Key, Eye, EyeOff, Copy,Calendar,CreditCard,Smartphone, Mail, Bell,RefreshCw, Check, AlertTriangle, Info, Globe, Code2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api"
 import { getUserProfile, fetchNewKeys, updateProfile, updateOrganization, updateCallbackUrl,updateWhitelistedNumbers } from "@/lib/auth";
 import type { WhitelistUpdateRequest } from "@/types/auth";
@@ -21,6 +22,7 @@ import { useToast } from "@/components/ui/use-toast"
 
 
 export function SettingsContent() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("profile");
   const [showSubscriptionSecret, setShowSubscriptionSecret] = useState(false);
   const [showClientToken, setShowClientToken] = useState(false);
@@ -639,15 +641,13 @@ const saveWhitelistedNumbers = async () => {
               <div className="flex items-center space-x-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg"><AlertTriangle className="h-5 w-5 text-yellow-600" /><div className="text-sm text-yellow-800"><p className="font-medium">Keep credentials secure</p><p>Never share keys in public repos or client-side code.</p></div></div>
               <div className="flex space-x-2">
                 <Button variant="outline" onClick={generateNewKey} disabled={isGeneratingKey}>{isGeneratingKey ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Generating…</> : "Regenerate Keys"}</Button>
-                <a
-                  href="https://documenter.getpostman.com/view/3132318/2sB3dVMn5V"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center rounded-lg bg-[#ff6c37] px-4 py-2 text-sm font-semibold text-white hover:bg-[#e55a2b] transition-colors"
+                <Button
+                  onClick={() => router.push("/api-docs")}
+                  className="inline-flex items-center gap-2 bg-[#ff6c37] hover:bg-[#e55a2b] text-white"
                 >
-                  <Globe className="mr-2 h-4 w-4" />
+                  <Code2 className="h-4 w-4" />
                   API Docs
-                </a>
+                </Button>
               </div>
               <div className="flex items-end gap-3">
               <Button

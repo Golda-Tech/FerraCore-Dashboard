@@ -21,6 +21,7 @@ import {
   IconFolder,
   IconRepeat,
   IconReceipt2,
+  IconCode,
 } from "@tabler/icons-react";
 import { UserPlus } from "lucide-react";
 
@@ -108,6 +109,7 @@ const getPartnersUsersPages = (userRole: string | undefined) => {
 
 const navSecondary = [
   { title: "Settings", page: "settings" as PageName, icon: IconSettings },
+  { title: "Developer API", page: "api-docs" as PageName, icon: IconCode },
 ];
 
 const documents: any[] = [];
