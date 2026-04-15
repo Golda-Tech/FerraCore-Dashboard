@@ -91,7 +91,208 @@ const authEndpoints: EndpointDef[] = [
       ),
     },
     notes:
-      "This is a public endpoint â€” no Bearer token is required. The returned access_token must be included as a Bearer token in the Authorization header for all protected endpoints.",
+      "This is a public endpoint and no Bearer token is required. The returned access_token must be included as a Bearer token in the Authorization header for all protected endpoints.",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/*  V2 Auth Endpoints                                                  */
+/* ------------------------------------------------------------------ */
+const authV2Endpoints: EndpointDef[] = [
+  {
+    id: "access-token-v2",
+    name: "Generate Access Token (V2)",
+    method: "POST",
+    path: "/api/v2/subscriptions/tokens",
+    description:
+      "Issues a JWT access token using header-only Basic Auth credentials. No request body is required. Credentials are read exclusively from the Authorization header as Base64-encoded subscriptionKey:subscriptionSecret.",
+    auth: "basic",
+    headers: [
+      { key: "Authorization", value: "Basic <Base64(subscriptionKey:subscriptionSecret)>", description: "Base64-encoded subscription_key:subscription_secret" },
+    ],
+    responseExample: {
+      status: 200,
+      body: JSON.stringify(
+        {
+          accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          expiresIn: 60,
+          subscriptionId: 1,
+          organization: {
+            organizationName: "ACME CORP",
+            contactEmail: "admin@acme.com",
+            planType: "ENTERPRISE",
+            status: "ACTIVE",
+            field1: "",
+            field2: "",
+          },
+          message: "Token issued successfully.",
+        },
+        null,
+        2
+      ),
+    },
+    notes:
+      "Unlike V1, this endpoint does NOT accept credentials in the request body. You must provide them via the Basic Authorization header. The returned accessToken must be included as a Bearer token for all subsequent V2 API calls.",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/*  V2 Payment Endpoints                                               */
+/* ------------------------------------------------------------------ */
+const paymentV2Endpoints: EndpointDef[] = [
+  {
+    id: "initiate-payment-v2",
+    name: "Initiate Payment (V2)",
+    method: "POST",
+    path: "/api/v2/payments/initiate",
+    description:
+      "Phase 1 — Pre-processing. Enriches the payment request with account name (MTN name enquiry), account holder status (ACTIVE/INACTIVE), fee calculation based on partner commission settings, and a 5-minute expiry window. Stores the pre-payment record in both the database and Redis. If auto_execute is set to true, the request is routed directly to the V1 payment flow and returns a PaymentResponse instead.",
+    auth: "bearer",
+    headers: [
+      { key: "Authorization", value: "Bearer YOUR_ACCESS_TOKEN" },
+      { key: "Content-Type", value: "application/json" },
+      { key: "X-Reference-Id", value: "{{x_reference_id}}", description: "Optional — auto-generated if blank. Used to track the pre-payment through execute/cancel." },
+      { key: "X-Callback-Url", value: "https://your-callback-url.com/webhook", description: "Your webhook URL for payment notifications (optional)" },
+      { key: "X-Target-Environment", value: "sandbox", description: "sandbox or production (optional)" },
+    ],
+    requestBody: {
+      raw: JSON.stringify(
+        {
+          merchant_reference: "MERCH-001",
+          msisdn: "0241234567",
+          network: "MTN",
+          amount: 10.0,
+          description: "Payment for order #001",
+          initiatedBy: "user@example.com",
+          initiationPartnerId: "01000001",
+          auto_execute: false,
+        },
+        null,
+        2
+      ),
+      description:
+        "Set auto_execute to true to skip the execute step and process payment immediately via the V1 flow. When false (default), you must call Execute Payment to submit the payment within the 5-minute expiry window.",
+    },
+    queryParams: [
+      { key: "merchant_reference", type: "string", required: true, description: "Your unique merchant reference for this payment" },
+      { key: "msisdn", type: "string", required: true, description: "Customer phone number (e.g. 0241234567)" },
+      { key: "network", type: "string", required: true, description: "Payment network/provider (MTN, AIRTELTIGO, VODAFONE)" },
+      { key: "amount", type: "number", required: true, description: "Amount to charge in GHS" },
+      { key: "description", type: "string", required: false, description: "Description of the payment" },
+      { key: "initiatedBy", type: "string", required: true, description: "Email of the user/partner initiating the request" },
+      { key: "initiationPartnerId", type: "string", required: true, description: "Partner ID of the initiating organization" },
+      { key: "auto_execute", type: "boolean", required: false, description: "If true, bypasses the 2-phase flow and executes immediately via V1. Default: false" },
+    ],
+    responseExample: {
+      status: 200,
+      body: JSON.stringify(
+        {
+          merchant_reference: "MERCH-001",
+          account_name: "John Doe",
+          account_status: "ACTIVE",
+          msisdn: "0241234567",
+          network: "MTN",
+          subtotal: 10.0,
+          fee: { rate: "0.80", value: 0.08 },
+          total: 10.08,
+          expires_at: "2025-01-01T12:05:00Z",
+          expires_in: 300,
+        },
+        null,
+        2
+      ),
+      description:
+        "Response headers include X-Reference-Id (the reference to use in execute/cancel), X-Ref-Status (VALID), and X-Ref-Expires (ISO-8601 expiry timestamp).",
+    },
+    notes:
+      "The pre-payment expires after 5 minutes. You must call Execute Payment within this window. Response headers: X-Reference-Id, X-Ref-Status, X-Ref-Expires.",
+  },
+  {
+    id: "execute-payment-v2",
+    name: "Execute Payment (V2)",
+    method: "POST",
+    path: "/api/v2/payments/execute",
+    description:
+      "Phase 2 — Execution. Looks up the pre-payment record by X-Reference-Id (Redis first, DB fallback) and submits it to the payment provider. The pre-payment must be in CREATED status and within the 5-minute expiry window.",
+    auth: "bearer",
+    headers: [
+      { key: "Authorization", value: "Bearer YOUR_ACCESS_TOKEN" },
+      { key: "X-Reference-Id", value: "{{x_reference_id}}", description: "Required — must match the reference ID from the Initiate step" },
+    ],
+    responseExample: {
+      status: 200,
+      body: JSON.stringify(
+        {
+          merchant_reference: "MERCH-001",
+          status: "SUBMITTED",
+        },
+        null,
+        2
+      ),
+    },
+    notes:
+      "The pre-payment must be in CREATED status. If the reference is expired, cancelled, or already executed, a 409 Conflict error is returned.",
+  },
+  {
+    id: "cancel-payment-v2",
+    name: "Cancel Payment (V2)",
+    method: "POST",
+    path: "/api/v2/payments/cancel",
+    description:
+      "Cancels a pre-payment before it is executed. The pre-payment must be in CREATED status. Marks the record as CANCELLED in both the database and Redis. The request body is optional — reason is informational only.",
+    auth: "bearer",
+    headers: [
+      { key: "Authorization", value: "Bearer YOUR_ACCESS_TOKEN" },
+      { key: "Content-Type", value: "application/json" },
+      { key: "X-Reference-Id", value: "{{x_reference_id}}", description: "Required — must match the reference ID from the Initiate step" },
+    ],
+    requestBody: {
+      raw: JSON.stringify(
+        { reason: "Customer requested cancellation" },
+        null,
+        2
+      ),
+      description: "Optional — the reason field is informational only.",
+    },
+    responseExample: {
+      status: 200,
+      body: JSON.stringify(
+        {
+          merchant_reference: "MERCH-001",
+          status: "CANCELLED",
+        },
+        null,
+        2
+      ),
+    },
+  },
+  {
+    id: "check-payment-status-v2",
+    name: "Check Payment Status (V2)",
+    method: "GET",
+    path: "/api/v2/payments/status",
+    description: "Checks the real-time status of a specific payment transaction by provider and transaction reference. Identical to V1 but under the V2 URL namespace.",
+    auth: "bearer",
+    headers: [{ key: "Authorization", value: "Bearer YOUR_ACCESS_TOKEN" }],
+    queryParams: [
+      { key: "provider", type: "string", required: true, description: "Payment provider (e.g. MTN, AIRTELTIGO)" },
+      { key: "transactionRef", type: "string", required: true, description: "The transaction reference returned from the Initiate/Execute Payment call" },
+    ],
+    responseExample: {
+      status: 200,
+      body: JSON.stringify(
+        {
+          transactionRef: "4243846303",
+          status: "SUCCESSFUL",
+          amount: 10.0,
+          currency: "GHS",
+          financialTransactionId: "78023346170",
+          reason: "Payment completed",
+        },
+        null,
+        2
+      ),
+    },
   },
 ];
 
@@ -192,7 +393,7 @@ const paymentEndpoints: EndpointDef[] = [
       { key: "provider", type: "string", required: true, description: "Payment provider (MTN, AIRTELTIGO, VODAFONE)" },
       { key: "mobileNumber", type: "string", required: true, description: "Customer MSISDN with country code (e.g. 233240000000)" },
       { key: "amount", type: "number", required: true, description: "Amount to charge in GHS" },
-      { key: "currency", type: "string", required: true, description: "Currency code â€” currently only GHS supported" },
+      { key: "currency", type: "string", required: true, description: "Currency code - currently only GHS supported" },
       { key: "collectionRef", type: "string", required: true, description: "Your unique collection reference" },
       { key: "initiatedBy", type: "string", required: true, description: "Email of the user/partner initiating the request" },
       { key: "payerMessage", type: "string", required: false, description: "Message displayed to the payer" },
@@ -316,7 +517,7 @@ const recurringEndpoints: EndpointDef[] = [
         2
       ),
       description:
-        "cycle options: DLY (Daily), WKL (Weekly), MTH (Monthly). resumable: Y/N â€” whether the subscription can be paused & resumed. cycleSkip: Y/N â€” whether missed cycles are skipped.",
+        "cycle options: DLY (Daily), WKL (Weekly), MTH (Monthly). resumable: Y/N - whether the subscription can be paused & resumed. cycleSkip: Y/N - whether missed cycles are skipped.",
     },
     queryParams: [
       { key: "customerNumber", type: "string", required: true, description: "Customer MSISDN with country code" },
@@ -328,8 +529,8 @@ const recurringEndpoints: EndpointDef[] = [
       { key: "networkProvider", type: "string", required: true, description: "Network provider (MTN)" },
       { key: "reference", type: "string", required: true, description: "Your reference for this subscription" },
       { key: "returnUrl", type: "string", required: true, description: "Callback URL for payment notifications" },
-      { key: "resumable", type: "string", required: false, description: "Y or N â€” whether the subscription can be paused and resumed" },
-      { key: "cycleSkip", type: "string", required: false, description: "Y or N â€” whether missed cycles can be skipped" },
+      { key: "resumable", type: "string", required: false, description: "Y or N - whether the subscription can be paused and resumed" },
+      { key: "cycleSkip", type: "string", required: false, description: "Y or N - whether missed cycles can be skipped" },
     ],
     responseExample: {
       status: 200,
@@ -534,7 +735,12 @@ function buildCurl(ep: EndpointDef): string {
   let curl = `curl -X ${ep.method} "${isFullUrl ? ep.path : base + ep.path}"`;
   if (ep.headers) {
     ep.headers.forEach((h) => {
-      curl += ` \\\n  -H "${h.key}: ${h.value}"`;
+      // For basic auth, show the actual Basic header format
+      if (h.key === "Authorization" && ep.auth === "basic") {
+        curl += ` \\\n  -H "Authorization: Basic <Base64(subscription_key:subscription_secret)>"`;
+      } else {
+        curl += ` \\\n  -H "${h.key}: ${h.value}"`;
+      }
     });
   }
   if (ep.requestBody) {
@@ -561,7 +767,7 @@ function EndpointCard({ ep }: { ep: EndpointDef }) {
         <MethodBadge method={ep.method} />
         <code className="text-sm font-mono text-muted-foreground flex-1 truncate">{ep.path}</code>
         <span className="hidden sm:block text-sm font-medium mr-2">{ep.name}</span>
-        {ep.auth === "bearer" ? (
+        {ep.auth === "bearer" || ep.auth === "basic" ? (
           <Lock className="h-4 w-4 text-amber-500 shrink-0" />
         ) : (
           <Unlock className="h-4 w-4 text-emerald-500 shrink-0" />
@@ -589,6 +795,10 @@ function EndpointCard({ ep }: { ep: EndpointDef }) {
               <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300">
                 Bearer Token
               </Badge>
+            ) : ep.auth === "basic" ? (
+              <Badge variant="outline" className="bg-indigo-50 text-indigo-800 border-indigo-300">
+                Basic Auth (Header)
+              </Badge>
             ) : (
               <Badge variant="outline" className="bg-green-50 text-green-800 border-green-300">
                 Public (No auth)
@@ -614,7 +824,7 @@ function EndpointCard({ ep }: { ep: EndpointDef }) {
                       <tr key={h.key} className="border-t">
                         <td className="px-3 py-2 font-mono text-xs">{h.key}</td>
                         <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{h.value}</td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{h.description ?? "â€”"}</td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{h.description ?? "-"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -716,7 +926,7 @@ function exportDocsToPdf() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
         doc.setTextColor(160, 160, 160);
-        doc.text("RexHub Payment Gateway  |  API v1", PW / 2, PH - 8, { align: "center" });
+        doc.text("RexHub Payment Gateway  |  API v1 & v2", PW / 2, PH - 8, { align: "center" });
         doc.text("Page " + pg, PW - M, PH - 8, { align: "right" });
         doc.addPage();
         pg++;
@@ -755,7 +965,7 @@ function exportDocsToPdf() {
       doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 100, 100);
-      doc.text("API v1  -  Reference Documentation", PW / 2, y, { align: "center" });
+      doc.text("API v1 & v2  -  Reference Documentation", PW / 2, y, { align: "center" });
       y += 5;
 
       doc.setFontSize(9);
@@ -764,7 +974,7 @@ function exportDocsToPdf() {
 
       const ds = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
       doc.setTextColor(140, 140, 140);
-      doc.text("Generated: " + ds + "   |   Version 1.0", PW / 2, y, { align: "center" });
+      doc.text("Generated: " + ds + "   |   Version 1.0 & 2.0", PW / 2, y, { align: "center" });
       y += 8;
 
       doc.setDrawColor(200, 200, 200);
@@ -787,7 +997,7 @@ function exportDocsToPdf() {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
-      doc.text("All endpoints are under API version 1:  /api/v1/*", M, y);
+      doc.text("V1 endpoints: /api/v1/*   |   V2 endpoints: /api/v2/*", M, y);
       y += 8;
 
       doc.setDrawColor(200, 200, 200);
@@ -825,10 +1035,12 @@ function exportDocsToPdf() {
 
       /* ---- Endpoint Sections ---- */
       const sections: { title: string; endpoints: EndpointDef[] }[] = [
-        { title: "1. Authentication", endpoints: authEndpoints },
-        { title: "2. Callback / Webhook", endpoints: callbackEndpoints },
-        { title: "3. Payment Operations", endpoints: paymentEndpoints },
-        { title: "4. Recurring Payments (Auto-Debit)", endpoints: recurringEndpoints },
+        { title: "1. Authentication (V1)", endpoints: authEndpoints },
+        { title: "2. Authentication (V2)", endpoints: authV2Endpoints },
+        { title: "3. Callback / Webhook", endpoints: callbackEndpoints },
+        { title: "4. Payment Operations (V1)", endpoints: paymentEndpoints },
+        { title: "5. Payment Operations (V2)", endpoints: paymentV2Endpoints },
+        { title: "6. Recurring Payments (Auto-Debit)", endpoints: recurringEndpoints },
       ];
 
       sections.forEach((section) => {
@@ -870,7 +1082,7 @@ function exportDocsToPdf() {
           // Auth
           doc.setFontSize(8);
           doc.setTextColor(120, 120, 120);
-          doc.text("Auth: " + (ep.auth === "bearer" ? "Bearer Token (required)" : "Public (no auth needed)"), M, y);
+          doc.text("Auth: " + (ep.auth === "bearer" ? "Bearer Token (required)" : ep.auth === "basic" ? "Basic Auth Header (required)" : "Public (no auth needed)"), M, y);
           y += 5;
 
           // Request body
@@ -922,16 +1134,16 @@ function exportDocsToPdf() {
 
       doc.setFontSize(8);
       doc.setTextColor(160, 160, 160);
-      doc.text("RexHub Payment Gateway  -  API v1", PW / 2, y, { align: "center" });
+      doc.text("RexHub Payment Gateway  -  API v1 & v2", PW / 2, y, { align: "center" });
 
       // Final page footer
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(160, 160, 160);
-      doc.text("RexHub Payment Gateway  |  API v1", PW / 2, PH - 8, { align: "center" });
+      doc.text("RexHub Payment Gateway  |  API v1 & v2", PW / 2, PH - 8, { align: "center" });
       doc.text("Page " + pg, PW - M, PH - 8, { align: "right" });
 
-      doc.save("RexHub-API-v1-Documentation.pdf");
+      doc.save("RexHub-API-v1-v2-Documentation.pdf");
     }
   );
 }
@@ -956,9 +1168,10 @@ export function ApiDocsContent() {
               <BookOpen className="h-7 w-7 text-primary" />
               API Documentation
               <Badge className="bg-primary/10 text-primary text-xs font-semibold ml-1">v1</Badge>
+              <Badge className="bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 text-xs font-semibold ml-0.5">v2</Badge>
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              RexHub Payment Gateway &middot; API Version 1 &middot; Powered by Ferracore Technologies
+              RexHub Payment Gateway &middot; API Version 1 &amp; 2 &middot; Powered by Ferracore Technologies
             </p>
           </div>
         </div>
@@ -993,11 +1206,11 @@ export function ApiDocsContent() {
           {/* Hero Card */}
           <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
             <CardContent className="pt-6 space-y-4">
-              <h2 className="text-xl font-bold">Welcome to the RexHub Payment Gateway API <span className="text-primary">v1</span></h2>
+              <h2 className="text-xl font-bold">Welcome to the RexHub Payment Gateway API <span className="text-primary">v1</span> &amp; <span className="text-violet-600">v2</span></h2>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 The RexHub Payment Gateway provides a robust, secure platform for businesses to process
                 payments, handle recurring subscriptions, and receive real-time webhook
-                notifications â€” all through a single, unified API.
+                notifications all through a single, unified API.
               </p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {[
@@ -1031,7 +1244,8 @@ export function ApiDocsContent() {
               <CodeBlock code="https://api.ferracore.tech" />
               <p className="text-xs text-muted-foreground mt-2">
                 All API requests should be made to this base URL followed by the endpoint path.
-                All endpoints are under <strong>API version 1</strong>: <code className="bg-muted px-1 rounded">/api/v1/*</code>
+                V1 endpoints are under <code className="bg-muted px-1 rounded">/api/v1/*</code> and
+                V2 endpoints under <code className="bg-muted px-1 rounded">/api/v2/*</code>.
               </p>
             </CardContent>
           </Card>
@@ -1063,7 +1277,7 @@ export function ApiDocsContent() {
                   </div>
                   <CodeBlock code={'POST /api/v1/subscriptions/tokens\n\n// No Authorization header needed'} />
                   <p className="text-xs text-muted-foreground">
-                    The token endpoint is public â€” supply your credentials in the request body.
+                    The token endpoint is public. Supply your credentials in the request body.
                   </p>
                 </div>
               </div>
@@ -1215,15 +1429,15 @@ export function ApiDocsContent() {
                 Subscription Key and Subscription Secret separated by a colon:
               </p>
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Step 1 â€” Concatenate key and secret</h4>
+                <h4 className="text-sm font-semibold">Step 1 - Concatenate key and secret</h4>
                 <CodeBlock code={`your_subscription_key:your_subscription_secret`} />
               </div>
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Step 2 â€” Base64-encode the string</h4>
+                <h4 className="text-sm font-semibold">Step 2 - Base64-encode the string</h4>
                 <CodeBlock code={`echo -n "your_subscription_key:your_subscription_secret" | base64\n\n# Output: eW91cl9zdWJzY3JpcHRpb25fa2V5OnlvdXJfc3Vic2NyaXB0aW9uX3NlY3JldA==`} />
               </div>
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Step 3 â€” Include in the Authorization header</h4>
+                <h4 className="text-sm font-semibold">Step 3 - Include in the Authorization header</h4>
                 <CodeBlock code={`Authorization: Basic eW91cl9zdWJzY3JpcHRpb25fa2V5OnlvdXJfc3Vic2NyaXB0aW9uX3NlY3JldA==`} />
               </div>
               <div className="space-y-2">
@@ -1244,18 +1458,98 @@ export function ApiDocsContent() {
           {authEndpoints.map((ep) => (
             <EndpointCard key={ep.id} ep={ep} />
           ))}
+
+          {/* V2 Authentication */}
+          <div className="space-y-2 mt-8 mb-4 pt-6 border-t">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold">Authentication — V2</h2>
+              <Badge className="bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 text-xs font-semibold">V2</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              V2 authentication uses <strong>header-only Basic Auth</strong>. No request body is needed — credentials
+              are supplied exclusively via the <code className="bg-muted px-1 rounded">Authorization: Basic</code> header.
+            </p>
+          </div>
+          {authV2Endpoints.map((ep) => (
+            <EndpointCard key={ep.id} ep={ep} />
+          ))}
         </TabsContent>
 
         {/* ===== PAYMENTS ===== */}
         <TabsContent value="payments" className="space-y-4">
+          {/* V1 Section */}
           <div className="space-y-2 mb-4">
-            <h2 className="text-xl font-bold">Payment Operations</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold">Payment Operations — V1</h2>
+              <Badge className="bg-primary/10 text-primary text-xs font-semibold">V1</Badge>
+            </div>
             <p className="text-sm text-muted-foreground">
               Initiate payments, check statuses, perform name enquiries, and retrieve payment details.
               All payment endpoints require a valid Bearer token.
             </p>
           </div>
           {paymentEndpoints.map((ep) => (
+            <EndpointCard key={ep.id} ep={ep} />
+          ))}
+
+          {/* V2 Section */}
+          <div className="space-y-2 mt-8 mb-4 pt-6 border-t">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold">Payment Operations — V2</h2>
+              <Badge className="bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 text-xs font-semibold">V2</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              V2 introduces a <strong>two-phase payment flow</strong>: <em>Initiate → Execute</em>.
+              Phase 1 (Initiate) enriches the request with account name verification, fee calculation,
+              and creates a pre-payment with a 5-minute expiry. Phase 2 (Execute) submits the payment to
+              the provider. You can also cancel a pre-payment before execution.
+              Set <code className="bg-muted px-1 rounded">auto_execute: true</code> to bypass the two-phase
+              flow and process immediately.
+            </p>
+          </div>
+
+          {/* V2 Flow Diagram */}
+          <Card className="border-violet-200 bg-violet-50/50 dark:bg-violet-950/20">
+            <CardContent className="pt-5 space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Zap className="h-4 w-4 text-violet-600" />
+                V2 Payment Flow
+              </h3>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <div className="px-3 py-1.5 rounded-lg border bg-background font-medium">
+                  1. Initiate
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <div className="px-3 py-1.5 rounded-lg border bg-background text-muted-foreground">
+                  Pre-payment created (5 min TTL)
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <div className="px-3 py-1.5 rounded-lg border bg-background font-medium">
+                  2. Execute
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <div className="px-3 py-1.5 rounded-lg border bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-medium">
+                  Payment Submitted
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-sm mt-2">
+                <span className="text-xs text-muted-foreground">Or:</span>
+                <div className="px-3 py-1.5 rounded-lg border bg-background font-medium">
+                  1. Initiate
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <div className="px-3 py-1.5 rounded-lg border bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 font-medium">
+                  Cancel
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                <strong>Tip:</strong> Use <code className="bg-muted px-1 rounded">auto_execute: true</code> in the
+                Initiate request body to skip Phase 2 and process payment immediately through the V1 pipeline.
+              </p>
+            </CardContent>
+          </Card>
+
+          {paymentV2Endpoints.map((ep) => (
             <EndpointCard key={ep.id} ep={ep} />
           ))}
         </TabsContent>
