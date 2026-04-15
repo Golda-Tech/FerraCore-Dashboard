@@ -41,8 +41,10 @@ export async function login({
 }
 
 
-export async function getUserProfile(): Promise<ProfileResponse> {
-  const { data } = await api.get<ProfileResponse>("/api/v1/auth/profile");
+export async function getUserProfile(orgId: string): Promise<ProfileResponse> {
+  const { data } = await api.get<ProfileResponse>("/api/v1/auth/profile", {
+    params: { orgId },
+  });
   return data;
 }
 

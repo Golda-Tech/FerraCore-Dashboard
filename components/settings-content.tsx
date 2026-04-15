@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { User, Building2, Shield, Key, Eye, EyeOff, Copy,Calendar,CreditCard,Smartphone, Mail, Bell,RefreshCw, Check, AlertTriangle, Info, Globe, Code2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api"
-import { getUserProfile, fetchNewKeys, updateProfile, updateOrganization, updateCallbackUrl,updateWhitelistedNumbers } from "@/lib/auth";
+import { getUserProfile, getUser, fetchNewKeys, updateProfile, updateOrganization, updateCallbackUrl,updateWhitelistedNumbers } from "@/lib/auth";
 import type { WhitelistUpdateRequest } from "@/types/auth";
 import { useToast } from "@/components/ui/use-toast"
 
@@ -47,7 +47,9 @@ export function SettingsContent() {
   const [error, setError] = useState("");
 
  useEffect(() => {
-       getUserProfile()
+   const stored = getUser();
+   const orgId = stored?.organizationId ?? "";
+   getUserProfile(orgId)
      .then(setUser)
      .catch(setError)
      .finally(() => setLoading(false));

@@ -1146,11 +1146,11 @@ export function ApiDocsContent() {
                   <tbody>
                     {[
                       { code: "200", desc: "Success" },
-                      { code: "400", desc: "Bad Request â€” Invalid parameters or payload" },
-                      { code: "401", desc: "Unauthorized â€” Invalid or missing token" },
-                      { code: "403", desc: "Forbidden â€” Insufficient permissions" },
-                      { code: "404", desc: "Not Found â€” Resource does not exist" },
-                      { code: "500", desc: "Server Error â€” Something went wrong on our end" },
+                      { code: "400", desc: "Bad Request - Invalid parameters or payload" },
+                      { code: "401", desc: "Unauthorized - Invalid or missing token" },
+                      { code: "403", desc: "Forbidden - Insufficient permissions" },
+                      { code: "404", desc: "Not Found - Resource does not exist" },
+                      { code: "500", desc: "Server Error - Something went wrong on our end" },
                     ].map((r) => (
                       <tr key={r.code} className="border-t">
                         <td className="px-3 py-2 font-mono text-xs font-bold">{r.code}</td>
