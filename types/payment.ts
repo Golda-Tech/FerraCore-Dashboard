@@ -130,5 +130,7 @@ export interface StreamPaymentItem {
   statusReason: string | null;
   /** Date represented as [year, month, day, hour, minute, second, nanos] */
   date: number[];
+ xtargetReferenceId: string;
+ telcoReference: string;
 }
 

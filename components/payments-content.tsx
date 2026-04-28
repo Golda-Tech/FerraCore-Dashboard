@@ -480,10 +480,12 @@ export function PaymentsContent() {
       doc.setFont("helvetica", "normal");
 
       autoTable(doc, {
-        head: [["Customer MSISDN", "Reference", "Network", "Amount (GHS)", "Status", "Status Reason", "Date"]],
+        head: [["Customer MSISDN", "Reference", "X-Target Ref ID", "Telco Reference", "Network", "Amount (GHS)", "Status", "Status Reason", "Date"]],
         body: exportRows.map((p) => [
           p.customerMsisdn,
           p.reference,
+          p.xtargetReferenceId ?? "-",
+          p.telcoReference ?? "-",
           p.network,
           Number(p.amountGhs ?? 0).toLocaleString("en-GH", { minimumFractionDigits: 2 }),
           p.status,
@@ -492,11 +494,11 @@ export function PaymentsContent() {
         ]),
         startY: 28,
         theme: "grid",
-        styles: { fontSize: 8, cellPadding: 3 },
+        styles: { fontSize: 7.5, cellPadding: 2.5 },
         headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: "bold", halign: "center" },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-          6: { cellWidth: 45, overflow: "visible" },
+          8: { cellWidth: 40, overflow: "visible" },
         },
       });
 
@@ -547,12 +549,14 @@ export function PaymentsContent() {
       if (controller.signal.aborted) return;
 
       const csvContent = [
-        "Customer MSISDN,Reference,Network,Amount(GHS),Status,Status Reason,Date",
+        "Customer MSISDN,Reference,X-Target Ref ID,Telco Reference,Network,Amount(GHS),Status,Status Reason,Date",
         ...exportRows.map((p) => {
           const statusReason = (p.statusReason || "").replace(/_/g, " ");
           return [
             escapeCsvValue(p.customerMsisdn),
             escapeCsvValue(p.reference),
+            escapeCsvValue(p.xtargetReferenceId ?? ""),
+            escapeCsvValue(p.telcoReference ?? ""),
             escapeCsvValue(p.network),
             escapeCsvValue(Number(p.amountGhs ?? 0).toFixed(2)),
             escapeCsvValue(p.status),
