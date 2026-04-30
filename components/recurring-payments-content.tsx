@@ -10,6 +10,7 @@ import {
   User,
   ShieldCheck,
   CheckCircle,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
@@ -46,7 +48,6 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { getUser } from "@/lib/auth";
 import { getUserInfo, getCommissionFees } from "@/lib/payment";
-import { detectNetworkProvider } from "@/lib/helpers";
 import { useRouter } from "next/navigation";
 import {
   createSubscription,
@@ -274,11 +275,6 @@ export function RecurringPaymentsContent() {
     const digits = value.replace(/\D/g, "").slice(0, 9);
     setPhoneNumber(digits);
 
-    // Auto-detect network provider from MSISDN prefix
-    const detected = detectNetworkProvider(digits);
-    if (detected && detected !== "GMO") {
-      setNetworkProvider(detected as "MTN" | "VOD" | "AIR");
-    }
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (digits.length === 9) {
@@ -434,233 +430,235 @@ export function RecurringPaymentsContent() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreateMandate} className="space-y-6">
-              {/* -- Phone -- */}
-              <div className="space-y-2">
-                <Label htmlFor="phone">Customer Mobile Number</Label>
-                <div className="flex gap-2">
-                  <div className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm font-medium">
-                    +233
-                  </div>
-                  <div className="relative flex-1">
+
+              {/* ── Network + Phone ─────────────────────────────────── */}
+              <div className="space-y-4">
+                <h3 className="text-base sm:text-lg font-medium flex items-center gap-2">
+                  <Smartphone className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Customer Mobile Number
+                </h3>
+
+                {/* Network selector – image tiles (mirrors request-payment) */}
+                <div className="space-y-2">
+                  <Label className="text-sm">Select Network *</Label>
+                  <RadioGroup
+                    value={networkProvider}
+                    onValueChange={(v) =>
+                      setNetworkProvider(v as "MTN" | "VOD" | "AIR")
+                    }
+                    className="flex gap-3"
+                  >
+                    {NETWORKS.map((n) => (
+                      <div key={n.value}>
+                        <RadioGroupItem
+                          value={n.value}
+                          id={`net-${n.value}`}
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor={`net-${n.value}`}
+                          className="flex flex-col items-center justify-center gap-2 w-20 h-20 border-2 rounded-lg cursor-pointer
+                                     text-gray-900 dark:text-white
+                                     hover:bg-gray-50 dark:hover:bg-gray-800
+                                     peer-data-[state=checked]:border-blue-600
+                                     peer-data-[state=checked]:bg-blue-50
+                                     dark:peer-data-[state=checked]:bg-blue-950
+                                     peer-data-[state=checked]:text-gray-900
+                                     dark:peer-data-[state=checked]:text-white
+                                     transition-colors"
+                        >
+                          <img
+                            src={n.image}
+                            alt={n.label}
+                            className="h-10 w-10 object-contain"
+                          />
+                          <span className="text-xs text-center">{n.label}</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                {/* Phone input with 233 prefix baked in */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm">Mobile Number *</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium select-none pointer-events-none">
+                      233
+                    </span>
                     <Input
                       id="phone"
+                      type="text"
+                      inputMode="numeric"
                       placeholder="24XXXXXXX"
                       value={phoneNumber}
                       onChange={(e) => handlePhoneChange(e.target.value)}
                       maxLength={9}
-                      className="pr-10"
+                      required
+                      className="pl-12 pr-10 h-10 sm:h-9"
                     />
                     {isFetchingName && (
-                      <Loader className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader className="h-4 w-4 animate-spin text-gray-400" />
+                      </div>
                     )}
                   </div>
+                  <p className="text-xs text-gray-500">Enter 9 digits (e.g., 24XXXXXXX).</p>
+                  {fetchError && (
+                    <p className="text-xs text-red-600 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {fetchError}
+                    </p>
+                  )}
                 </div>
-                {fetchError && (
-                  <p className="text-sm text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3.5 w-3.5" /> {fetchError}
-                  </p>
-                )}
               </div>
 
-              {/* -- Customer Name (read‑only) -- */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Customer Name</Label>
-                <Input
-                  id="name"
-                  value={customerName}
-                  readOnly
-                  placeholder="Auto‑populated after phone lookup"
-                  className="bg-muted"
-                />
+              <Separator />
+
+              {/* ── Customer Name ────────────────────────────────────── */}
+              <div className="space-y-4">
+                <h3 className="text-base sm:text-lg font-medium">Customer Information</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="customerName" className="text-sm">Customer Name *</Label>
+                  <Input
+                    id="customerName"
+                    placeholder={isFetchingName ? "Fetching name…" : "Customer name will appear here"}
+                    value={customerName}
+                    readOnly
+                    required
+                    className="h-10 sm:h-9 bg-gray-100 dark:bg-gray-800"
+                  />
+                </div>
               </div>
 
               {customerName && (
                 <>
                   <Separator />
 
-                  {/* -- Amount -- */}
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">
-                      Amount <span className="text-xs text-muted-foreground">(GHS)</span>
-                    </Label>
-                    <Input
-                        id="amount"
-                        type="text"
-                        inputMode="decimal"
-                        pattern="[0-9]*\.?[0-9]*"
-                        placeholder="0.00"
-                        className="h-10 sm:h-9"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        required
-                    />
-                  </div>
+                  {/* ── Amount ───────────────────────────────────────── */}
+                  <div className="space-y-4">
+                    <h3 className="text-base sm:text-lg font-medium">Mandate Details</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="amount" className="text-sm">Amount (GHS) *</Label>
+                        <Input
+                          id="amount"
+                          type="text"
+                          inputMode="decimal"
+                          pattern="[0-9]*\.?[0-9]*"
+                          placeholder="0.00"
+                          className="h-10 sm:h-9"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                          required
+                        />
+                      </div>
 
-                  {/* -- Payment Summary (fee breakdown) -- */}
-                  {parsedAmount > 0 && (
-                    <div className="space-y-4">
-                      <h3 className="text-base sm:text-lg font-medium">Payment Summary</h3>
-                      <div className="bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-3 sm:p-4 space-y-3">
-                        <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
-                          <span>Payment Amount:</span>
-                          <span className="font-medium">GHS {parsedAmount.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
-                          <span>Recurring Fee ({fees ? `${fees.recurringFee}%` : '...'}):</span>
-                          <span className="font-medium">GHS {recurringFee.toFixed(2)}</span>
-                        </div>
-                        {isCapped && fees && (
-                          <div className="text-xs text-amber-600 dark:text-amber-400">
-                            * Fee capped at GHS {fees.cappedAmount.toFixed(2)}
-                          </div>
-                        )}
-                        <Separator />
-                        <div className="flex justify-between text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          <span>Customer Pays:</span>
-                          <span>GHS {totalCustomerPays.toFixed(2)}</span>
-                        </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Cycle *</Label>
+                        <Select
+                          value={cycle}
+                          onValueChange={(v) => setCycle(v as "DLY" | "WKL" | "MON")}
+                        >
+                          <SelectTrigger className="h-10 sm:h-9">
+                            <SelectValue placeholder="Select a cycle" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CYCLES.map((c) => (
+                              <SelectItem key={c.value} value={c.value}>
+                                {c.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="startDate" className="text-sm">Start Date</Label>
+                        <Input
+                          id="startDate"
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="h-10 sm:h-9"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="endDate" className="text-sm">End Date *</Label>
+                        <Input
+                          id="endDate"
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="h-10 sm:h-9"
+                          required
+                        />
                       </div>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="reference" className="text-sm">Reference *</Label>
+                      <Input
+                        id="reference"
+                        placeholder="Enter a unique reference"
+                        value={reference}
+                        onChange={(e) => setReference(e.target.value)}
+                        className="h-10 sm:h-9"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── Fee summary (mirrors request-payment) ────────── */}
+                  {parsedAmount > 0 && (
+                    <>
+                      <Separator />
+                      <div className="space-y-4">
+                        <h3 className="text-base sm:text-lg font-medium">Payment Summary</h3>
+                        <div className="bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-3 sm:p-4 space-y-3">
+                          <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
+                            <span>Payment Amount:</span>
+                            <span className="font-medium">GHS {parsedAmount.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
+                            <span>Recurring Fee ({fees ? `${fees.recurringFee}%` : "…"}):</span>
+                            <span className="font-medium">GHS {recurringFee.toFixed(2)}</span>
+                          </div>
+                          {isCapped && fees && (
+                            <div className="text-xs text-amber-600 dark:text-amber-400">
+                              * Fee capped at GHS {fees.cappedAmount.toFixed(2)}
+                            </div>
+                          )}
+                          <Separator />
+                          <div className="flex justify-between text-sm text-muted-foreground dark:text-gray-400">
+                            <span>Customer Pays:</span>
+                            <span>GHS {totalCustomerPays.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
                   )}
 
-                  {/* -- Cycle -- */}
-                  <div className="space-y-2">
-                    <Label>Cycle <span className="text-destructive">*</span></Label>
-                    <Select
-                      value={cycle}
-                      onValueChange={(v) =>
-                        setCycle(v as "DLY" | "WKL" | "MON")
-                      }
+                  <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+                    <Button
+                      type="submit"
+                      disabled={isCreating || !amount || !endDate || !reference || !cycle}
+                      className="w-full sm:w-auto"
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a cycle" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CYCLES.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {isCreating ? (
+                        <>
+                          <Loader className="mr-2 h-4 w-4 animate-spin" />
+                          Creating Mandate…
+                        </>
+                      ) : (
+                        <>
+                          Create Mandate
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
                   </div>
-
-                  {/* -- Dates -- */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="startDate">Start Date</Label>
-                      <Input
-                        id="startDate"
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="endDate">End Date</Label>
-                      <Input
-                        id="endDate"
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* -- Network -- */}
-                  <div className="space-y-2">
-                    <Label>Network Provider</Label>
-                    <div className="flex gap-3">
-                      {NETWORKS.map((n) => (
-                        <button
-                          key={n.value}
-                          type="button"
-                          onClick={() =>
-                            setNetworkProvider(
-                              n.value as "MTN" | "VOD" | "AIR"
-                            )
-                          }
-                          className={cn(
-                            "flex flex-col items-center gap-1 rounded-lg border-2 p-3 transition-colors cursor-pointer",
-                            networkProvider === n.value
-                              ? "border-primary bg-primary/5"
-                              : "border-muted hover:border-muted-foreground/30"
-                          )}
-                        >
-                          <img
-                            src={n.image}
-                            alt={n.label}
-                            className="h-8 w-8 object-contain"
-                          />
-                          <span className="text-xs font-medium">
-                            {n.label}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* -- Reference -- */}
-                  <div className="space-y-2">
-                    <Label htmlFor="reference">Reference</Label>
-                    <Input
-                      id="reference"
-                      placeholder="Enter a unique reference"
-                      value={reference}
-                      onChange={(e) => setReference(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* -- Toggles (commented out) -- */}
-                  {/*
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center justify-between rounded-lg border p-3">
-                      <Label htmlFor="resumable" className="text-sm">
-                        Resumable
-                      </Label>
-                      <Switch
-                        id="resumable"
-                        checked={resumable === "Y"}
-                        onCheckedChange={(v) =>
-                          setResumable(v ? "Y" : "N")
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border p-3">
-                      <Label htmlFor="cycleSkip" className="text-sm">
-                        Cycle Skip
-                      </Label>
-                      <Switch
-                        id="cycleSkip"
-                        checked={cycleSkip === "Y"}
-                        onCheckedChange={(v) =>
-                          setCycleSkip(v ? "Y" : "N")
-                        }
-                      />
-                    </div>
-                  </div>
-                  */}
-
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isCreating || !amount || !endDate || !reference || !cycle}
-                  >
-                    {isCreating ? (
-                      <>
-                        <Loader className="mr-2 h-4 w-4 animate-spin" />
-                        Creating Mandate…
-                      </>
-                    ) : (
-                      <>
-                        Create Mandate
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
                 </>
               )}
             </form>
