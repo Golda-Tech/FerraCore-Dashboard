@@ -58,7 +58,7 @@ export async function getOptimizedPayments(
   if (query.statuses?.length) params.statuses = query.statuses.join(",");
   if (query.startDate) params.startDate = query.startDate;
   if (query.endDate) params.endDate = query.endDate;
-  if (query.initiatedBy) params.initiatedBy = query.initiatedBy;
+  if (query.initiationPartner) params.initiationPartner = query.initiationPartner;
 
   const response = await api.get<OptimizedPaymentsResponse>("/api/v1/payments/optimized", {
     params,
@@ -209,14 +209,14 @@ export async function getStreamPayments(
  * POST /api/v1/payments/optimized/partner-total
  */
 export async function getPartnerTotal(
-  initiatedBy: string,
+  initiationPartner: string,
   startDate: string,
   endDate: string,
   signal?: AbortSignal
 ): Promise<PartnerTotalResponse> {
   const response = await api.post<PartnerTotalResponse>(
     "/api/v1/payments/optimized/partner-total",
-    { initiatedBy, startDate, endDate },
+    { initiationPartner, startDate, endDate },
     { signal }
   );
   return response.data;

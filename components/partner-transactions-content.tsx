@@ -170,7 +170,7 @@ export function PartnerTransactionsContent({
   /* ---------- fetch partner total for date range ---------- */
   const fetchPartnerTotal = useCallback(
     async (sd: string, ed: string) => {
-      if (!partnerEmail || !sd || !ed) return;
+      if (!displayName || !sd || !ed) return;
 
       partnerTotalRequestRef.current?.abort();
       const controller = new AbortController();
@@ -178,7 +178,7 @@ export function PartnerTransactionsContent({
 
       try {
         const data = await getPartnerTotal(
-          partnerEmail,
+          displayName,
           `${sd}T00:00:00`,
           `${ed}T23:59:59`,
           controller.signal
@@ -198,7 +198,7 @@ export function PartnerTransactionsContent({
         console.error("Failed to fetch partner total:", err);
       }
     },
-    [partnerEmail]
+    [displayName]
   );
 
   useEffect(() => {
@@ -222,7 +222,7 @@ export function PartnerTransactionsContent({
 
   /* ---------- fetch today-only summary ---------- */
   const fetchTodaySummary = useCallback(async () => {
-    if (!partnerEmail) return;
+    if (!displayName) return;
 
     todayRequestRef.current?.abort();
     const controller = new AbortController();
@@ -231,7 +231,7 @@ export function PartnerTransactionsContent({
 
     try {
       const data = await getOptimizedPayments({
-        initiatedBy: partnerEmail,
+        initiationPartner: displayName,
         startDate: todayBounds.start,
         endDate: todayBounds.end,
         page: 0,
@@ -256,12 +256,12 @@ export function PartnerTransactionsContent({
 
       console.error("Failed to fetch partner today summary:", err);
     }
-  }, [partnerEmail, todayBounds.start, todayBounds.end]);
+  }, [displayName, todayBounds.start, todayBounds.end]);
 
   /* ---------- fetch payments for the selected partner ---------- */
   const fetchPayments = useCallback(
     async (showLoading = true) => {
-      if (!partnerEmail) return;
+      if (!displayName) return;
 
       activeRequestRef.current?.abort();
       const controller = new AbortController();
@@ -276,7 +276,7 @@ export function PartnerTransactionsContent({
           statuses: activeStatuses,
           startDate: toStartOfDayIso(appliedStartDate),
           endDate: toEndOfDayIso(appliedEndDate),
-          initiatedBy: partnerEmail,
+          initiationPartner: displayName,
           page: currentPage - 1,
           size: pageSize,
           sort: "initiatedAt,desc",
@@ -314,7 +314,7 @@ export function PartnerTransactionsContent({
         }
       }
     },
-    [partnerEmail, searchTerm, activeStatuses, appliedStartDate, appliedEndDate, currentPage, pageSize, fetchTodaySummary]
+    [displayName, searchTerm, activeStatuses, appliedStartDate, appliedEndDate, currentPage, pageSize, fetchTodaySummary]
   );
 
   /* ---------- initial fetch / reactive fetch ---------- */
@@ -328,7 +328,7 @@ export function PartnerTransactionsContent({
 
   /* ---------- auto-refresh ---------- */
   useEffect(() => {
-    if (!partnerEmail || !isAutoRefreshEnabled) {
+    if (!displayName || !isAutoRefreshEnabled) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -348,7 +348,7 @@ export function PartnerTransactionsContent({
         intervalRef.current = null;
       }
     };
-  }, [partnerEmail, isAutoRefreshEnabled, fetchPayments]);
+  }, [displayName, isAutoRefreshEnabled, fetchPayments]);
 
   /* ---------- midnight rollover ---------- */
   useEffect(() => {

@@ -155,7 +155,7 @@ export function PaymentsContent() {
   /* ---------- fetch partner total for date range ---------- */
   const fetchPartnerTotal = useCallback(
     async (sd: string, ed: string) => {
-      if (!user?.email || !sd || !ed) return;
+      if (!user?.organizationName || !sd || !ed) return;
 
       partnerTotalRequestRef.current?.abort();
       const controller = new AbortController();
@@ -163,7 +163,7 @@ export function PaymentsContent() {
 
       try {
         const data = await getPartnerTotal(
-          user.email,
+          user.organizationName,
           `${sd}T00:00:00`,
           `${ed}T23:59:59`,
           controller.signal
@@ -183,7 +183,7 @@ export function PaymentsContent() {
         console.error("Failed to fetch partner total:", err);
       }
     },
-    [user?.email]
+    [user?.organizationName]
   );
 
   useEffect(() => {
@@ -205,8 +205,8 @@ export function PaymentsContent() {
     }
   }, [startDate, endDate, fetchPartnerTotal]);
 
-  const fetchTodaySummary = useCallback(async (email: string) => {
-    if (!email) return;
+  const fetchTodaySummary = useCallback(async (orgName: string) => {
+    if (!orgName) return;
 
     todayRequestRef.current?.abort();
     const controller = new AbortController();
@@ -215,7 +215,7 @@ export function PaymentsContent() {
 
     try {
       const data = await getOptimizedPayments({
-        initiatedBy: email,
+        initiationPartner: orgName,
         startDate: todayBounds.start,
         endDate: todayBounds.end,
         page: 0,
@@ -242,11 +242,11 @@ export function PaymentsContent() {
     }
   }, [todayBounds.start, todayBounds.end]);
 
-  const fetchPayments = useCallback(async (email: string, showLoading = true, source = "unknown") => {
-    console.log(`[${new Date().toISOString()}] fetchPayments called from: ${source}`, { email, showLoading });
+  const fetchPayments = useCallback(async (orgName: string, showLoading = true, source = "unknown") => {
+    console.log(`[${new Date().toISOString()}] fetchPayments called from: ${source}`, { orgName, showLoading });
 
-    if (!email) {
-      console.error("fetchPayments: No email provided");
+    if (!orgName) {
+      console.error("fetchPayments: No organization name provided");
       return;
     }
 
@@ -265,7 +265,7 @@ export function PaymentsContent() {
         statuses: activeStatuses,
         startDate: toStartOfDayIso(appliedStartDate),
         endDate: toEndOfDayIso(appliedEndDate),
-        initiatedBy: email,
+        initiationPartner: orgName,
         page: currentPage - 1,
         size: pageSize,
         sort: "initiatedAt,desc",
@@ -284,7 +284,7 @@ export function PaymentsContent() {
         setCurrentPage(safePage);
       }
 
-      fetchTodaySummary(email);
+      fetchTodaySummary(orgName);
     } catch (err: any) {
       if (
         controller.signal.aborted ||
@@ -310,17 +310,17 @@ export function PaymentsContent() {
   }, []);
 
   useEffect(() => {
-    if (user?.email) {
-      fetchPayments(user.email, true, "user-effect");
+    if (user?.organizationName) {
+      fetchPayments(user.organizationName, true, "user-effect");
     }
 
     return () => {
       activeRequestRef.current?.abort();
     };
-  }, [user?.email, fetchPayments]);
+  }, [user?.organizationName, fetchPayments]);
 
   useEffect(() => {
-    if (!user?.email || !isAutoRefreshEnabled) {
+    if (!user?.organizationName || !isAutoRefreshEnabled) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -334,7 +334,7 @@ export function PaymentsContent() {
 
     intervalRef.current = setInterval(() => {
       if (isExportingRef.current) return; // skip refresh during export
-      fetchPayments(user.email!, false, "interval");
+      fetchPayments(user.organizationName!, false, "interval");
     }, 8000);
 
     return () => {
@@ -343,7 +343,7 @@ export function PaymentsContent() {
         intervalRef.current = null;
       }
     };
-  }, [user?.email, isAutoRefreshEnabled, fetchPayments]);
+  }, [user?.organizationName, isAutoRefreshEnabled, fetchPayments]);
 
   useEffect(() => {
     const scheduleMidnightRefresh = () => {
@@ -374,18 +374,18 @@ export function PaymentsContent() {
   }, [dayKey]);
 
   useEffect(() => {
-    if (user?.email) {
-      fetchTodaySummary(user.email);
+    if (user?.organizationName) {
+      fetchTodaySummary(user.organizationName);
     }
 
     return () => {
       todayRequestRef.current?.abort();
     };
-  }, [user?.email, fetchTodaySummary]);
+  }, [user?.organizationName, fetchTodaySummary]);
 
   const handleManualRefresh = () => {
-    if (user?.email) {
-      fetchPayments(user.email, true, "manual-refresh");
+    if (user?.organizationName) {
+      fetchPayments(user.organizationName, true, "manual-refresh");
     }
   };
 
@@ -611,8 +611,8 @@ export function PaymentsContent() {
         selectedPayment.transactionRef
       );
       setSelectedPayment((prev) => (prev ? { ...prev, ...statusData } : prev));
-      if (user?.email) {
-        fetchPayments(user.email, false, "status-refresh");
+      if (user?.organizationName) {
+        fetchPayments(user.organizationName, false, "status-refresh");
       }
     } catch (err) {
       console.error("Failed to refresh payment status:", err);

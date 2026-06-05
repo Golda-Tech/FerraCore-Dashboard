@@ -177,24 +177,43 @@ useEffect(() => {
 
   /* ----------  CALLBACK  ---------- */
   const saveCallback = async () => {
-    setSaving(true);
-    setSaveError(""); // clear previous error
+    // Sanitize: trim whitespace
+    const rawUrl = (user?.subscription?.callbackUrl ?? "").trim();
+
+    // Validate: must be a proper https URL
+    if (!rawUrl) {
+      setSaveError("Callback URL is required.");
+      return;
+    }
+    if (!rawUrl.startsWith("https://")) {
+      setSaveError("Callback URL must start with https://");
+      return;
+    }
     try {
-      const updated = await updateCallbackUrl(
-        (document.getElementById("callbackUrl") as HTMLInputElement).value
-      );
+      new URL(rawUrl); // throws if structurally invalid
+    } catch {
+      setSaveError("Please enter a valid URL (e.g. https://my.app/webhook).");
+      return;
+    }
+
+    setSaving(true);
+    setSaveError("");
+    try {
+      // Pass only the clean URL string — not an object
+      const updated = await updateCallbackUrl(rawUrl);
       setUser(updated);
       setDirty(false);
     } catch (err: any) {
-         const problem = err.response?.data;
-               const userMsg = problem?.detail ||                       // "Invalid temporary password."
-                               problem?.title ||                        // "Internal Server Error"
-                               problem?.message ||                      // fallback
-                               err.response?.statusText ||              // "Internal Server Error"
-                               err.message ||                           // final fallback
-                               "Save callback URL failed.";
-            setSaveError(userMsg);
-      setDirty(true); // error → back to "Save Changes"
+      const problem = err.response?.data;
+      const userMsg =
+        problem?.detail ||
+        problem?.title ||
+        problem?.message ||
+        err.response?.statusText ||
+        err.message ||
+        "Save callback URL failed.";
+      setSaveError(userMsg);
+      setDirty(true);
       console.error("Save callback URL failed", err);
     } finally {
       setSaving(false);
@@ -612,9 +631,22 @@ const saveWhitelistedNumbers = async () => {
                     <Input
                       id="callbackUrl"
                       value={user?.subscription?.callbackUrl ?? ""}
-                      onChange={(e) => {setUser({ ...user, subscription: { ...user.subscription, callbackUrl: e.target.value } });handleFieldChange();}}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setUser({ ...user, subscription: { ...user.subscription, callbackUrl: val } });
+                        handleFieldChange();
+                        // Clear any stale https error as the user types
+                        if (saveError && (saveError.includes("https") || saveError.includes("URL"))) {
+                          setSaveError("");
+                        }
+                      }}
                       placeholder="https://my.app/webhook"
-                      className="font-mono"
+                      className={`font-mono ${
+                        user?.subscription?.callbackUrl &&
+                        !user.subscription.callbackUrl.startsWith("https://")
+                          ? "border-red-400 focus-visible:ring-red-400"
+                          : ""
+                      }`}
                     />
                     <Button
                       variant="outline"
@@ -624,6 +656,13 @@ const saveWhitelistedNumbers = async () => {
                       {copied === "callbackUrl" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
+                  {user?.subscription?.callbackUrl &&
+                    !user.subscription.callbackUrl.startsWith("https://") && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        URL must start with <span className="font-mono">https://</span>
+                      </p>
+                    )}
                 </div>
 
               <div className="space-y-2"><Label>Subscription Key</Label>

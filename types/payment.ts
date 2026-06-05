@@ -96,7 +96,7 @@ export interface OptimizedPaymentsQuery {
   statuses?: string[];
   startDate?: string;
   endDate?: string;
-  initiatedBy?: string;
+  initiationPartner?: string;
   page?: number;
   size?: number;
   sort?: string;
