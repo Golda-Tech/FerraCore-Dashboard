@@ -96,8 +96,9 @@ const authEndpoints: EndpointDef[] = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  V2 Auth Endpoints                                                  */
+/*  V2 Auth Endpoints — commented out, re-enable when V2 is ready     */
 /* ------------------------------------------------------------------ */
+/*
 const authV2Endpoints: EndpointDef[] = [
   {
     id: "access-token-v2",
@@ -126,10 +127,12 @@ const authV2Endpoints: EndpointDef[] = [
       "Unlike V1, this endpoint does NOT accept credentials in the request body. Credentials are passed exclusively via the Authorization header. The returned access_token must be used as a Bearer token for all subsequent V2 API calls. Error responses include a machine-readable code field (e.g. INVALID_CREDENTIALS, SUBSCRIPTION_INACTIVE).",
   },
 ];
+*/
 
 /* ------------------------------------------------------------------ */
-/*  V2 Payment Endpoints                                               */
+/*  V2 Payment Endpoints — commented out, re-enable when V2 is ready  */
 /* ------------------------------------------------------------------ */
+/*
 const paymentV2Endpoints: EndpointDef[] = [
   {
     id: "initiate-payment-v2",
@@ -286,6 +289,7 @@ const paymentV2Endpoints: EndpointDef[] = [
       "All provider outcomes return HTTP 200. The code field carries the semantic result: PAYMENT_SUCCESSFUL, PAYMENT_PENDING, or PAYMENT_FAILED. Only malformed requests or unknown references return 4xx.",
   },
 ];
+*/
 
 const callbackEndpoints: EndpointDef[] = [
   {
@@ -917,7 +921,7 @@ function exportDocsToPdf() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
         doc.setTextColor(160, 160, 160);
-        doc.text("RexHub Payment Gateway  |  API v1 & v2", PW / 2, PH - 8, { align: "center" });
+        doc.text("RexHub Payment Gateway  |  API v1", PW / 2, PH - 8, { align: "center" });
         doc.text("Page " + pg, PW - M, PH - 8, { align: "right" });
         doc.addPage();
         pg++;
@@ -956,7 +960,7 @@ function exportDocsToPdf() {
       doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 100, 100);
-      doc.text("API v1 & v2  -  Reference Documentation", PW / 2, y, { align: "center" });
+      doc.text("API v1  -  Reference Documentation", PW / 2, y, { align: "center" });
       y += 5;
 
       doc.setFontSize(9);
@@ -965,7 +969,7 @@ function exportDocsToPdf() {
 
       const ds = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
       doc.setTextColor(140, 140, 140);
-      doc.text("Generated: " + ds + "   |   Version 1.0 & 2.0", PW / 2, y, { align: "center" });
+      doc.text("Generated: " + ds + "   |   Version 1.0", PW / 2, y, { align: "center" });
       y += 8;
 
       doc.setDrawColor(200, 200, 200);
@@ -988,7 +992,7 @@ function exportDocsToPdf() {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
-      doc.text("V1 endpoints: /api/v1/*   |   V2 endpoints: /api/v2/*", M, y);
+      doc.text("V1 endpoints: /api/v1/*", M, y);
       y += 8;
 
       doc.setDrawColor(200, 200, 200);
@@ -1027,11 +1031,11 @@ function exportDocsToPdf() {
       /* ---- Endpoint Sections ---- */
       const sections: { title: string; endpoints: EndpointDef[] }[] = [
         { title: "1. Authentication (V1)", endpoints: authEndpoints },
-        { title: "2. Authentication (V2)", endpoints: authV2Endpoints },
-        { title: "3. Callback / Webhook", endpoints: callbackEndpoints },
-        { title: "4. Payment Operations (V1)", endpoints: paymentEndpoints },
-        { title: "5. Payment Operations (V2)", endpoints: paymentV2Endpoints },
-        { title: "6. Recurring Payments (Auto-Debit)", endpoints: recurringEndpoints },
+        // { title: "2. Authentication (V2)", endpoints: authV2Endpoints },  // V2 — re-enable when ready
+        { title: "2. Callback / Webhook", endpoints: callbackEndpoints },
+        { title: "3. Payment Operations (V1)", endpoints: paymentEndpoints },
+        // { title: "5. Payment Operations (V2)", endpoints: paymentV2Endpoints },  // V2 — re-enable when ready
+        { title: "4. Recurring Payments (Auto-Debit)", endpoints: recurringEndpoints },
       ];
 
       sections.forEach((section) => {
@@ -1125,16 +1129,16 @@ function exportDocsToPdf() {
 
       doc.setFontSize(8);
       doc.setTextColor(160, 160, 160);
-      doc.text("RexHub Payment Gateway  -  API v1 & v2", PW / 2, y, { align: "center" });
+      doc.text("RexHub Payment Gateway  -  API v1", PW / 2, y, { align: "center" });
 
       // Final page footer
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(160, 160, 160);
-      doc.text("RexHub Payment Gateway  |  API v1 & v2", PW / 2, PH - 8, { align: "center" });
+      doc.text("RexHub Payment Gateway  |  API v1", PW / 2, PH - 8, { align: "center" });
       doc.text("Page " + pg, PW - M, PH - 8, { align: "right" });
 
-      doc.save("RexHub-API-v1-v2-Documentation.pdf");
+      doc.save("RexHub-API-v1-Documentation.pdf");
     }
   );
 }
@@ -1159,10 +1163,10 @@ export function ApiDocsContent() {
               <BookOpen className="h-7 w-7 text-primary" />
               API Documentation
               <Badge className="bg-primary/10 text-primary text-xs font-semibold ml-1">v1</Badge>
-              <Badge className="bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 text-xs font-semibold ml-0.5">v2</Badge>
+              {/* <Badge className="bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 text-xs font-semibold ml-0.5">v2</Badge> */}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              RexHub Payment Gateway &middot; API Version 1 &amp; 2 &middot; Powered by Ferracore Technologies
+              RexHub Payment Gateway &middot; API Version 1 &middot; Powered by Ferracore Technologies
             </p>
           </div>
         </div>
@@ -1197,7 +1201,7 @@ export function ApiDocsContent() {
           {/* Hero Card */}
           <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
             <CardContent className="pt-6 space-y-4">
-              <h2 className="text-xl font-bold">Welcome to the RexHub Payment Gateway API <span className="text-primary">v1</span> &amp; <span className="text-violet-600">v2</span></h2>
+              <h2 className="text-xl font-bold">Welcome to the RexHub Payment Gateway API <span className="text-primary">v1</span></h2>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 The RexHub Payment Gateway provides a robust, secure platform for businesses to process
                 payments, handle recurring subscriptions, and receive real-time webhook
@@ -1235,8 +1239,8 @@ export function ApiDocsContent() {
               <CodeBlock code="https://api.ferracore.tech" />
               <p className="text-xs text-muted-foreground mt-2">
                 All API requests should be made to this base URL followed by the endpoint path.
-                V1 endpoints are under <code className="bg-muted px-1 rounded">/api/v1/*</code> and
-                V2 endpoints under <code className="bg-muted px-1 rounded">/api/v2/*</code>.
+                V1 endpoints are under <code className="bg-muted px-1 rounded">/api/v1/*</code>.
+                {/* V2 endpoints under <code className="bg-muted px-1 rounded">/api/v2/*</code> — re-enable when V2 is ready */}
               </p>
             </CardContent>
           </Card>
@@ -1450,7 +1454,8 @@ export function ApiDocsContent() {
             <EndpointCard key={ep.id} ep={ep} />
           ))}
 
-          {/* V2 Authentication */}
+          {/* V2 Authentication — commented out, re-enable when V2 is ready */}
+          {/*
           <div className="space-y-2 mt-8 mb-4 pt-6 border-t">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold">Authentication — V2</h2>
@@ -1464,6 +1469,7 @@ export function ApiDocsContent() {
           {authV2Endpoints.map((ep) => (
             <EndpointCard key={ep.id} ep={ep} />
           ))}
+          */}
         </TabsContent>
 
         {/* ===== PAYMENTS ===== */}
@@ -1483,7 +1489,8 @@ export function ApiDocsContent() {
             <EndpointCard key={ep.id} ep={ep} />
           ))}
 
-          {/* V2 Section */}
+          {/* V2 Payment section — commented out, re-enable when V2 is ready */}
+          {/*
           <div className="space-y-2 mt-8 mb-4 pt-6 border-t">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold">Payment Operations — V2</h2>
@@ -1499,7 +1506,6 @@ export function ApiDocsContent() {
             </p>
           </div>
 
-          {/* V2 Flow Diagram */}
           <Card className="border-violet-200 bg-violet-50/50 dark:bg-violet-950/20">
             <CardContent className="pt-5 space-y-3">
               <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -1543,6 +1549,7 @@ export function ApiDocsContent() {
           {paymentV2Endpoints.map((ep) => (
             <EndpointCard key={ep.id} ep={ep} />
           ))}
+          */}
         </TabsContent>
 
         {/* ===== RECURRING ===== */}
