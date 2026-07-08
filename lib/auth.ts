@@ -67,7 +67,7 @@ export async function updateOrganization(data: Partial<ProfileResponse["organiza
 }
 
 export async function updateCallbackUrl(callbackUrl: string) {
-  const { data: updated } = await api.put<ProfileResponse>("/api/v1/auth/profile/callback", { callbackUrl });
+  const { data: updated } = await api.put<ProfileResponse>("/api/v1/auth/profile/callback", callbackUrl);
   return updated;
 }
 
