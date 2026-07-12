@@ -186,18 +186,19 @@ export async function getExportPayments(
 }
 
 /**
- * Fetch all payments for a date range via the stream endpoint.
+ * Fetch all payments for a date range via the partner stream endpoint.
  * Returns the full array of items for that range — used for PDF/CSV export.
  */
 export async function getStreamPayments(
+  initiationPartner: string,
   startDate: string,
   endDate: string,
   signal?: AbortSignal
 ): Promise<StreamPaymentItem[]> {
   const response = await api.get<StreamPaymentItem[]>(
-    "/api/v1/payments/optimized/stream",
+    "/api/v1/payments/optimized/stream/partner",
     {
-      params: { startDate, endDate },
+      params: { initiationPartner, startDate, endDate },
       signal,
     }
   );

@@ -587,10 +587,11 @@ export function UserManagementContent() {
                   <TableCell>
                     <div className="font-medium">{u.organizationName}</div>
                     <div className="text-sm text-muted-foreground">{u.email}</div>
-                    {/* Debug: Show org ID in development */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="text-xs text-gray-400">ID: {u.organizationId}</div>
-                    )}
+                    <div className="mt-1">
+                      <Badge variant="outline" className="rounded-md px-2 py-0 text-[10px] font-mono text-muted-foreground">
+                        ID {u.organizationId}
+                      </Badge>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(u.role)} className="flex items-center gap-1 w-fit">
@@ -729,5 +730,4 @@ export function UserManagementContent() {
     </div>
   )
 }
-
 

@@ -449,6 +449,7 @@ export function PaymentsContent() {
       const streamEndDate = `${endDate}T23:59:59`;
 
       const exportRows: StreamPaymentItem[] = await getStreamPayments(
+        user.organizationName,
         streamStartDate,
         streamEndDate,
         controller.signal
@@ -541,6 +542,7 @@ export function PaymentsContent() {
       const streamEndDate = `${endDate}T23:59:59`;
 
       const exportRows: StreamPaymentItem[] = await getStreamPayments(
+        user.organizationName,
         streamStartDate,
         streamEndDate,
         controller.signal
@@ -1210,4 +1212,3 @@ export function PaymentsContent() {
     </div>
   );
 }
-
