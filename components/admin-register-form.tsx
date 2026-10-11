@@ -3,6 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { register, getUser } from "@/lib/auth";
+import api from "@/lib/api";
+import {
+  DEFAULT_MTN_ACCOUNT,
+  listMtnAccounts,
+  mtnErrorMessage,
+  switchPartnerMtnAccount,
+} from "@/lib/mtn-accounts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +39,8 @@ import {
   IconMail,
   IconCalculator,
   IconRuler,
+  IconBuildingBank,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 
 enum PlanType {
@@ -75,6 +84,10 @@ export function RegisterForm() {
   const [userType, setUserType] = useState<UserType | "">("");
   const [transactionFee, setTransactionFee] = useState<string>("");
   const [cappedAmount, setCappedAmount] = useState<string>("");
+  const [accountTier, setAccountTier] = useState<string>(DEFAULT_MTN_ACCOUNT);
+  const [accountTiers, setAccountTiers] = useState<string[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(true);
+  const [tiersError, setTiersError] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
@@ -82,6 +95,9 @@ export function RegisterForm() {
     success: boolean;
     error?: string;
     userData?: any;
+    tierWarning?: string;
+    partnerEmail?: string;
+    partnerName?: string;
   }>({ success: false });
 
   useEffect(() => {
@@ -90,6 +106,46 @@ export function RegisterForm() {
     setRegisteredBy(user?.email ?? "");
     setCurrentUserRole(user?.userRoles ?? "");
   }, []);
+
+  // Account Tier options come from the MTN accounts configured on the backend
+  useEffect(() => {
+    listMtnAccounts()
+      .then((codes) =>
+        setAccountTiers(codes.includes(DEFAULT_MTN_ACCOUNT) ? codes : [DEFAULT_MTN_ACCOUNT, ...codes])
+      )
+      .catch((err) => {
+        console.error("Failed to load MTN accounts:", err);
+        setTiersError(mtnErrorMessage(err, "Could not load account tiers"));
+        setAccountTiers([DEFAULT_MTN_ACCOUNT]);
+      })
+      .finally(() => setTiersLoading(false));
+  }, []);
+
+  // Register returns no organization ID, so look the new partner up by email / name
+  const findOrganizationId = async (orgName: string, contactEmail: string) => {
+    const { data } = await api.get<any[]>("/api/v1/auth/profile/partners");
+    const match = data.find(
+      (p) =>
+        p.email?.toLowerCase() === contactEmail.toLowerCase() ||
+        p.organization?.name?.toUpperCase() === orgName.toUpperCase()
+    );
+    return match?.organization?.partnerId as string | undefined;
+  };
+
+  // Partners start on DEFAULT; only a different tier needs an explicit switch
+  const applyAccountTier = async (): Promise<string | undefined> => {
+    if (accountTier === DEFAULT_MTN_ACCOUNT) return undefined;
+    const manualHint = `Set it from Manage Accounts.`;
+    try {
+      const orgId = await findOrganizationId(organizationName.trim(), email);
+      if (!orgId) return `Could not find the new partner to apply tier ${accountTier}. ${manualHint}`;
+      await switchPartnerMtnAccount(orgId, accountTier);
+      return undefined;
+    } catch (err) {
+      console.error("Failed to apply account tier:", err);
+      return `Account tier ${accountTier} was not applied: ${mtnErrorMessage(err, "unknown error")}. ${manualHint}`;
+    }
+  };
 
   // Determine if a user type should be disabled based on current user's role
   const isUserTypeDisabled = (type: UserType): boolean => {
@@ -154,11 +210,16 @@ export function RegisterForm() {
         userType: userType as UserType,
         transactionFee: transactionFee ? parseFloat(transactionFee) : undefined,
         cappedAmount: cappedAmount ? parseFloat(cappedAmount) : undefined,
-      } as RegisterRequest);
+      } as RegisterRequest, { keepSession: true });
+
+      const tierWarning = await applyAccountTier();
 
       setRegisterResult({
         success: true,
         userData: data,
+        tierWarning,
+        partnerEmail: email,
+        partnerName: organizationName.trim(),
       });
 
       setShowResultDialog(true);
@@ -205,6 +266,7 @@ export function RegisterForm() {
       setUserType("");
       setTransactionFee("");
       setCappedAmount("");
+      setAccountTier(DEFAULT_MTN_ACCOUNT);
       setShowBanner(true);
       setTimeout(() => setShowBanner(false), 5000);
     }
@@ -220,6 +282,7 @@ export function RegisterForm() {
     setUserType("");
     setTransactionFee("");
     setCappedAmount("");
+    setAccountTier(DEFAULT_MTN_ACCOUNT);
     setShowResultDialog(false);
     setRegisterResult({ success: false });
   };
@@ -342,7 +405,7 @@ export function RegisterForm() {
                   value={planType}
                   disabled={loading}
                 >
-                  <SelectTrigger id="planType">
+                  <SelectTrigger id="planType" className="w-full">
                     <SelectValue placeholder="Choose a plan" />
                   </SelectTrigger>
                   <SelectContent>
@@ -367,7 +430,7 @@ export function RegisterForm() {
                   value={userType}
                   disabled={loading}
                 >
-                  <SelectTrigger id="userType">
+                  <SelectTrigger id="userType" className="w-full">
                     <SelectValue placeholder="Choose user type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -462,6 +525,40 @@ export function RegisterForm() {
                 <p className="text-xs text-muted-foreground">Maximum fee limit in GHS (e.g., 30)</p>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="accountTier">Account Tier</Label>
+              <Select
+                onValueChange={setAccountTier}
+                value={accountTier}
+                disabled={loading || tiersLoading}
+              >
+                <SelectTrigger id="accountTier" className="w-full">
+                  <div className="flex items-center gap-2">
+                    {tiersLoading ? (
+                      <IconLoader className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <IconBuildingBank className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <SelectValue placeholder={tiersLoading ? "Loading tiers..." : "Choose an account tier"} />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {accountTiers.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {code}
+                      {code === DEFAULT_MTN_ACCOUNT && " (standard)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className={`text-xs ${tiersError ? "text-red-600" : "text-muted-foreground"}`}>
+                {tiersError ||
+                  (!tiersLoading && accountTiers.length <= 1
+                    ? "Only DEFAULT is configured. Other tiers appear here once added on the backend."
+                    : "MTN account the partner's collections are routed into")}
+              </p>
+            </div>
           </div>
 
           <div className="flex justify-center pt-2">
@@ -495,9 +592,9 @@ export function RegisterForm() {
                   <IconLoader className="h-8 w-8 text-blue-600 animate-spin" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">Creating Your Account</h3>
+                  <h3 className="text-lg font-semibold">Onboarding Partner</h3>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Please wait while we set up your account...
+                    Setting up {organizationName.trim() || "the partner"}&apos;s account...
                   </p>
                 </div>
                 <div className="flex items-center justify-center space-x-1">
@@ -529,13 +626,13 @@ export function RegisterForm() {
               <div>
                 <DialogTitle>
                   {registerResult.success
-                    ? "Account Created Successfully!"
+                    ? "Partner Onboarded Successfully"
                     : "Registration Failed"}
                 </DialogTitle>
                 <DialogDescription>
                   {registerResult.success
-                    ? "Please check your email for instructions on the next steps."
-                    : "There was an error creating your account."}
+                    ? `${registerResult.partnerName || "The partner"} has been registered.`
+                    : "There was an error registering this partner."}
                 </DialogDescription>
               </div>
             </div>
@@ -546,11 +643,18 @@ export function RegisterForm() {
               <Alert>
                 <IconMail className="h-4 w-4" />
                 <AlertDescription>
-                  You will receive an email with your account details and
-                  instructions to complete your registration.
+                  Login details and next steps were emailed to{" "}
+                  <span className="font-medium">{registerResult.partnerEmail}</span>.
                 </AlertDescription>
               </Alert>
-            ) : (
+            ) : null}
+            {registerResult.success && registerResult.tierWarning && (
+              <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+                <IconAlertTriangle className="h-4 w-4" />
+                <AlertDescription>{registerResult.tierWarning}</AlertDescription>
+              </Alert>
+            )}
+            {!registerResult.success && (
               <Alert variant="destructive">
                 <IconX className="h-4 w-4" />
                 <AlertDescription>
@@ -583,7 +687,7 @@ export function RegisterForm() {
 
       {showBanner && (
         <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded shadow">
-          ✅ Account created successfully!
+          ✅ Partner onboarded successfully!
         </div>
       )}
     </>

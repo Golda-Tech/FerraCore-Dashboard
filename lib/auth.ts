@@ -82,10 +82,12 @@ export async function updateCallbackUrl(callbackUrl: string) {
 
 
 export async function register(
-  data: RegisterRequest
+  data: RegisterRequest,
+  // Admins onboarding a partner keep their own session; self sign-up starts clean
+  { keepSession = false }: { keepSession?: boolean } = {}
 ): Promise<RegisterResponse> {
   // Clear any existing auth data BEFORE making the request
-  if (typeof window !== "undefined") {
+  if (typeof window !== "undefined" && !keepSession) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     console.log("Cleared auth data before registration"); // Debug log
@@ -97,7 +99,7 @@ export async function register(
   );
 
   // Double-check it's cleared after registration
-  if (typeof window !== "undefined") {
+  if (typeof window !== "undefined" && !keepSession) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     console.log("Cleared auth data after registration"); // Debug log

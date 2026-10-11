@@ -10,7 +10,7 @@ import {
   IconChevronRight,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,16 @@ export function NavMain({
     setOpenFolders((o) => ({ ...o, [name]: !o[name] }));
 
   const isActive = (page: PageName) => currentPath === `/${page}`;
+
+  // Open the folder that holds the current page, so the active item is visible
+  useEffect(() => {
+    const activeGroup = items.find(
+      (item) => "isGroup" in item && item.pages.some((p) => currentPath === `/${p.page}`)
+    );
+    if (activeGroup) {
+      setOpenFolders((o) => (o[activeGroup.title] ? o : { ...o, [activeGroup.title]: true }));
+    }
+  }, [items, currentPath]);
 
   return (
     <SidebarGroup>
@@ -117,7 +127,7 @@ export function NavMain({
                 </CollapsibleTrigger>
 
                 <CollapsibleContent>
-                  <SidebarMenuSub>
+                  <SidebarMenuSub className="mx-2.5 px-1.5">
                     {item.pages.map((sub) => (
                       <SidebarMenuSubItem key={sub.page}>
                         <SidebarMenuSubButton
@@ -128,16 +138,15 @@ export function NavMain({
                         >
                           <button
                           className="
-                            w-full min-w-[14rem]                    /* at least 224 px           */
-                            max-w-none                              /* no upper clamp            */
+                            w-full min-w-0
                             text-left inline-flex items-center
                             data-[active=true]:bg-gray-200 data-[active=true]:text-gray-900
                             dark:data-[active=true]:bg-gray-700 dark:data-[active=true]:text-gray-100
-                            px-3 py-2 rounded-md
+                            px-2 py-2 rounded-md
                           "
                           >
-                            {sub.icon && <sub.icon className="mr-2 h-4 w-4" />}
-                            <span>{sub.title}</span>
+                            {sub.icon && <sub.icon className="mr-2 h-4 w-4 shrink-0" />}
+                            <span className="truncate" title={sub.title}>{sub.title}</span>
                           </button>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -157,8 +166,7 @@ export function NavMain({
                     onClick={() => onNavigate(item.page)}
                     className="
                       cursor-pointer
-                      w-full min-w-[14rem]                    /* at least 224 px           */
-                      max-w-none                              /* no upper clamp            */
+                      w-full min-w-0
                       text-left inline-flex items-center
                       data-[active=true]:bg-gray-200 data-[active=true]:text-gray-900
                       dark:data-[active=true]:bg-gray-700 dark:data-[active=true]:text-gray-100

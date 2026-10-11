@@ -83,6 +83,12 @@ const partnersUsersPages: PartnersUsersPage[] = [
     page: "commissions" as PageName,
     icon: IconReceipt2,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
+  },
+  {
+    title: "Manage Accounts",
+    page: "account-routing" as PageName,
+    icon: IconBuildingBank,
+    allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
   }
   // ,
   // {

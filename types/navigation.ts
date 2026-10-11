@@ -20,4 +20,5 @@ export type PageName =
   | "recurring-payment-summary"
   | "user-audit-trail"
   | "commissions"
+  | "account-routing"
   | "api-docs";
