@@ -4,6 +4,9 @@ import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   IconBuildingBank,
+  IconBuildingPlus,
+  IconCalendarRepeat,
+  IconUserPlus,
   IconChartBar,
   IconCreditCard,
   IconDashboard,
@@ -19,11 +22,9 @@ import {
   IconSettings,
   IconUsers,
   IconFolder,
-  IconRepeat,
   IconReceipt2,
   IconCode,
 } from "@tabler/icons-react";
-import { UserPlus } from "lucide-react";
 
 import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
@@ -57,13 +58,13 @@ const partnersUsersPages: PartnersUsersPage[] = [
   {
     title: "Register Partners",
     page: "admin-register" as PageName,
-    icon: UserPlus,
+    icon: IconBuildingPlus,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN"],
   },
   {
     title: "Register Users",
     page: "user-register" as PageName,
-    icon: UserPlus,
+    icon: IconUserPlus,
     allowedRoles: ["SUPER_ADMIN", "GA_ADMIN", "BUSINESS_ADMIN"],
   },
   {
@@ -148,7 +149,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
           { title: "Payments Summary", page: "payments" as PageName, icon: IconPaywall },
         ];
 
-        basePages.push({ title: "Recurring Summary", page: "recurring-payment-summary" as PageName, icon: IconRepeat });
+        basePages.push({ title: "Recurring Summary", page: "recurring-payment-summary" as PageName, icon: IconCalendarRepeat });
 
     const baseNav: any[] = [
       {
