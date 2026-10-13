@@ -11,7 +11,6 @@ import {
   Landmark,
   Loader2,
   RefreshCw,
-  RotateCcw,
   Search,
   Shuffle,
 } from "lucide-react";
@@ -35,7 +34,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import api from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import {
-  DEFAULT_MTN_ACCOUNT,
   MtnAccountResponse,
   getPartnerMtnAccount,
   listMtnAccounts,
@@ -121,7 +119,7 @@ export function AccountRoutingContent() {
 
   const styleFor = useCallback(
     (code?: string) => {
-      const idx = Math.max(0, accounts.indexOf(code ?? DEFAULT_MTN_ACCOUNT));
+      const idx = Math.max(0, accounts.indexOf(code ?? ""));
       return ACCOUNT_STYLES[idx % ACCOUNT_STYLES.length];
     },
     [accounts]
@@ -137,7 +135,7 @@ export function AccountRoutingContent() {
         listMtnAccounts(),
         api.get<BackendPartner[]>("/api/v1/auth/profile/partners"),
       ]);
-      setAccounts(codes.includes(DEFAULT_MTN_ACCOUNT) ? codes : [DEFAULT_MTN_ACCOUNT, ...codes]);
+      setAccounts(codes);
 
       const seen = new Set<string>();
       const partners: RoutingRow[] = [];
@@ -227,7 +225,7 @@ export function AccountRoutingContent() {
   const openSwitch = (targets: typeof switchTargets, preset?: string) => {
     setSwitchTargets(targets);
     const current = targets.length === 1 ? targets[0].accountCode : undefined;
-    setTargetAccount(preset ?? accounts.find((a) => a !== current) ?? DEFAULT_MTN_ACCOUNT);
+    setTargetAccount(preset ?? accounts.find((a) => a !== current) ?? "");
   };
 
   const handleSwitch = async () => {
@@ -324,8 +322,8 @@ export function AccountRoutingContent() {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Only the DEFAULT MTN account is configured, so partners can&apos;t be switched yet. Other accounts
-            (e.g. TIER1) appear here once they&apos;re added to the MTN provider configuration on the backend.
+            Fewer than two MTN account tiers are configured, so partners can&apos;t be switched yet. Other
+            tiers appear here once they&apos;re added to the MTN provider configuration on the backend.
           </AlertDescription>
         </Alert>
       )}
@@ -350,7 +348,6 @@ export function AccountRoutingContent() {
               </div>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-xl font-bold">{code}</span>
-                {code === DEFAULT_MTN_ACCOUNT && <span className="text-xs text-muted-foreground">standard</span>}
               </div>
               <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
                 <div className={`h-full ${style.bar} transition-all`} style={{ width: `${share}%` }} />
@@ -486,23 +483,11 @@ export function AccountRoutingContent() {
                             className="h-8 w-8"
                             disabled={!r.accountCode || !canSwitch}
                             onClick={() => openSwitch([r])}
-                            title={canSwitch ? "Switch MTN account" : "Only DEFAULT is configured"}
+                            title={canSwitch ? "Switch MTN account" : "Only one account tier is configured"}
                             aria-label={`Switch MTN account for ${r.organizationName}`}
                           >
                             <Shuffle className="h-4 w-4" />
                           </Button>
-                          {r.accountCode && r.accountCode !== DEFAULT_MTN_ACCOUNT && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground"
-                              onClick={() => openSwitch([r], DEFAULT_MTN_ACCOUNT)}
-                              title="Reset to DEFAULT"
-                              aria-label={`Reset ${r.organizationName} to DEFAULT`}
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
-                          )}
                         </TableCell>
                       </TableRow>
                     ))

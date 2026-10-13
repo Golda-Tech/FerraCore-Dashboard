@@ -4,8 +4,6 @@ import api from "./api";
 // Admin-only (SUPER_ADMIN / GA_ADMIN) MTN account routing.
 // See "Auth Service — Admin: MTN Account Routing" in the Postman collection.
 
-export const DEFAULT_MTN_ACCOUNT = "DEFAULT";
-
 export interface MtnAccountResponse {
   organizationId: string;
   organizationName: string;
@@ -39,10 +37,6 @@ export async function switchPartnerMtnAccount(
     { accountCode }
   );
   return data;
-}
-
-export function resetPartnerMtnAccount(organizationId: string) {
-  return switchPartnerMtnAccount(organizationId, DEFAULT_MTN_ACCOUNT);
 }
 
 export function mtnErrorMessage(err: any, fallback: string): string {

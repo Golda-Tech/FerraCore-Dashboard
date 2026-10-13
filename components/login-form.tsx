@@ -26,7 +26,6 @@ import {
   IconLoader,
   IconCheck,
   IconX,
-  IconUser,
   IconLogin,
   IconMail,
   IconEye,
@@ -152,17 +151,11 @@ export function LoginForm() {
 
     if (data.firstTimeUser) {
             console.log("First time user - redirecting to settings page");
-       setLoginResult({ success: true, userData: data });
-       setShowResultDialog(true);
-      return setTimeout(() => router.push("/settings"), 1500);
+      return router.push("/settings");
      }
 
-   if (!data.passwordResetRequired && !data.firstTimeUser) {
             console.log("Regular login - redirecting to dashboard");
-       setLoginResult({ success: true, userData: data });
-       setShowResultDialog(true);
-      return setTimeout(() => router.push("/dashboard"), 1500);
-     }
+      return router.push("/dashboard");
     } catch (err: any) {
 
                  // 1.  Network / timeout
@@ -210,13 +203,6 @@ export function LoginForm() {
     setOtp("");
     setOtpSent(false);
     setResendCooldown(0);
-  };
-
-  const handleCloseDialog = () => {
-    setShowResultDialog(false);
-    if (loginResult.success) {
-      router.push("/dashboard");
-    }
   };
 
   const resetForm = () => {
@@ -441,88 +427,43 @@ export function LoginForm() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  loginResult.success ? "bg-green-100" : "bg-red-100"
-                }`}
-              >
-                {loginResult.success ? (
-                  <IconCheck className="h-6 w-6 text-green-600" />
-                ) : (
-                  <IconX className="h-6 w-6 text-red-600" />
-                )}
+              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-100">
+                <IconX className="h-6 w-6 text-red-600" />
               </div>
               <div>
-                <DialogTitle>
-                  {loginResult.success ? "Welcome Back!" : "Verification Failed"}
-                </DialogTitle>
+                <DialogTitle>Verification Failed</DialogTitle>
                 <DialogDescription>
-                  {loginResult.success
-                    ? "You have been successfully signed in."
-                    : "There was an error with your verification."}
+                  There was an error with your verification.
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
           <div className="space-y-4">
-            {loginResult.success ? (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <IconUser className="h-4 w-4 text-green-600" />
-                  <span className="font-medium text-green-800">
-                    Account Details
-                  </span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-green-700">Email:</span>
-                    <span className="font-medium text-green-800">{email}</span>
-                  </div>
-                  {loginResult.userData?.name && (
-                    <div className="flex justify-between">
-                      <span className="text-green-700">Name:</span>
-                      <span className="font-medium text-green-800">
-                        {loginResult.userData.name}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <Alert variant="destructive">
-                <IconX className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Error:</strong> {loginResult.error}
-                </AlertDescription>
-              </Alert>
-            )}
+            <Alert variant="destructive">
+              <IconX className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Error:</strong> {loginResult.error}
+              </AlertDescription>
+            </Alert>
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            {loginResult.success ? (
-              <Button onClick={handleCloseDialog} className="w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors sm:w-auto">
-                Continue to Dashboard
-              </Button>
-            ) : (
-              <>
-                <Button
-                  onClick={() => setShowResultDialog(false)}
-                  className="w-full w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors sm:w-auto"
-                >
-                  Try Again
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowResultDialog(false);
-                    resetForm();
-                  }}
-                  className="w-full w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors sm:w-auto"
-                >
-                  OK
-                </Button>
-              </>
-            )}
+            <Button
+              onClick={() => setShowResultDialog(false)}
+              className="w-full w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors sm:w-auto"
+            >
+              Try Again
+            </Button>
+            <Button
+              onClick={() => {
+                setShowResultDialog(false);
+                resetForm();
+              }}
+              className="w-full w-full rounded-lg bg-rose-600 text-white font-semibold py-2.5 hover:bg-rose-700 transition-colors sm:w-auto"
+            >
+              OK
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

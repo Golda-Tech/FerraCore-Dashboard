@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { register, getUser } from "@/lib/auth";
 import api from "@/lib/api";
 import {
-  DEFAULT_MTN_ACCOUNT,
   listMtnAccounts,
   mtnErrorMessage,
   switchPartnerMtnAccount,
@@ -84,7 +83,7 @@ export function RegisterForm() {
   const [userType, setUserType] = useState<UserType | "">("");
   const [transactionFee, setTransactionFee] = useState<string>("");
   const [cappedAmount, setCappedAmount] = useState<string>("");
-  const [accountTier, setAccountTier] = useState<string>(DEFAULT_MTN_ACCOUNT);
+  const [accountTier, setAccountTier] = useState<string>("");
   const [accountTiers, setAccountTiers] = useState<string[]>([]);
   const [tiersLoading, setTiersLoading] = useState(true);
   const [tiersError, setTiersError] = useState<string>("");
@@ -110,13 +109,13 @@ export function RegisterForm() {
   // Account Tier options come from the MTN accounts configured on the backend
   useEffect(() => {
     listMtnAccounts()
-      .then((codes) =>
-        setAccountTiers(codes.includes(DEFAULT_MTN_ACCOUNT) ? codes : [DEFAULT_MTN_ACCOUNT, ...codes])
-      )
+      .then((codes) => {
+        setAccountTiers(codes);
+        setAccountTier((prev) => prev || codes[0] || "");
+      })
       .catch((err) => {
         console.error("Failed to load MTN accounts:", err);
         setTiersError(mtnErrorMessage(err, "Could not load account tiers"));
-        setAccountTiers([DEFAULT_MTN_ACCOUNT]);
       })
       .finally(() => setTiersLoading(false));
   }, []);
@@ -132,9 +131,9 @@ export function RegisterForm() {
     return match?.organization?.partnerId as string | undefined;
   };
 
-  // Partners start on DEFAULT; only a different tier needs an explicit switch
+  // Register doesn't take a tier, so apply the chosen one with an explicit switch
   const applyAccountTier = async (): Promise<string | undefined> => {
-    if (accountTier === DEFAULT_MTN_ACCOUNT) return undefined;
+    if (!accountTier) return undefined;
     const manualHint = `Set it from Manage Accounts.`;
     try {
       const orgId = await findOrganizationId(organizationName.trim(), email);
@@ -266,7 +265,7 @@ export function RegisterForm() {
       setUserType("");
       setTransactionFee("");
       setCappedAmount("");
-      setAccountTier(DEFAULT_MTN_ACCOUNT);
+      setAccountTier(accountTiers[0] ?? "");
       setShowBanner(true);
       setTimeout(() => setShowBanner(false), 5000);
     }
@@ -282,7 +281,7 @@ export function RegisterForm() {
     setUserType("");
     setTransactionFee("");
     setCappedAmount("");
-    setAccountTier(DEFAULT_MTN_ACCOUNT);
+    setAccountTier(accountTiers[0] ?? "");
     setShowResultDialog(false);
     setRegisterResult({ success: false });
   };
@@ -547,15 +546,14 @@ export function RegisterForm() {
                   {accountTiers.map((code) => (
                     <SelectItem key={code} value={code}>
                       {code}
-                      {code === DEFAULT_MTN_ACCOUNT && " (standard)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <p className={`text-xs ${tiersError ? "text-red-600" : "text-muted-foreground"}`}>
                 {tiersError ||
-                  (!tiersLoading && accountTiers.length <= 1
-                    ? "Only DEFAULT is configured. Other tiers appear here once added on the backend."
+                  (!tiersLoading && accountTiers.length === 0
+                    ? "No account tiers are configured on the backend."
                     : "MTN account the partner's collections are routed into")}
               </p>
             </div>
