@@ -20,7 +20,7 @@ import { UserInfo } from "@/types/payment"
 import { send } from "process"
 import { LoginResponse } from "@/types/auth";
 import { cn } from "@/lib/utils"
-import { getUser } from "@/lib/auth";
+import { getUser, getUserProfile } from "@/lib/auth";
 import { getCommissionFees } from "@/lib/payment";
 import { detectNetworkProvider, providerCodeToRadioValue, radioValueToProviderCode } from "@/lib/helpers";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "./ui/input-otp"
@@ -256,9 +256,19 @@ return{
         payeeNote: "Payment",
       };
 
+      // The backend rejects any X-Callback-Url that differs from the partner's
+      // configured value, so send the one saved in Settings (or none at all).
+      let callbackUrl = "";
+      try {
+        const profile = await getUserProfile(user?.organizationId ?? "");
+        callbackUrl = (profile?.subscription?.callbackUrl ?? "").trim();
+      } catch (profileErr) {
+        console.warn("Could not load configured callback URL", profileErr);
+      }
+
       // Call the payment API
       const paymentResponse = await createPayment(paymentRequest, {
-        "X-Callback-Url": "https://ferracore.tech/api/v1/payments/mtn/callback ",
+        ...(callbackUrl ? { "X-Callback-Url": callbackUrl } : {}),
         "X-Reference-Id": refId,
         "X-Target-Environment": "poc"
       });
